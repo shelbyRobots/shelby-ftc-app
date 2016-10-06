@@ -43,12 +43,17 @@ public class RedOpLinear extends LinearOpMode {
 
     private void setup()
     {
+        String className = this.getClass().getName();
+        String first3 = className.substring(0,2);
+        if(first3.equals("Blu"))  alliance = Field.Alliance.BLUE;
+        else                      alliance = Field.Alliance.RED;
+
         robot.init(hardwareMap);
         Drivetrain.init(robot.leftMotor, robot.rightMotor);
 
         Points pts = new Points();
-        pathSegs = pts.getSegments(Field.Alliance.RED);
-        turns    = pts.getTurns(Field.Alliance.RED);
+        pathSegs = pts.getSegments(alliance);
+        turns    = pts.getTurns(alliance);
 
         Point2d currPoint = pathSegs[0].getStrtPt();
         Drivetrain.setCurrPt(currPoint);
@@ -93,5 +98,7 @@ public class RedOpLinear extends LinearOpMode {
 
     private ShelbyBot   robot = new ShelbyBot();
     private ElapsedTime timer = new ElapsedTime();
+
+    private static Field.Alliance alliance;
     private static LinearOpMode instance;
 }
