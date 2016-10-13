@@ -1,7 +1,11 @@
+
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
+import com.qualcomm.robotcore.hardware.GyroSensor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -30,6 +34,8 @@ class ShelbyBot
     DcMotor  rightMotor  = null;
     DcMotor  elevMotor   = null;
     DcMotor  sweepMotor  = null;
+    DcMotor  shotmotor1  = null;
+    DcMotor  shotmotor2  = null;
 
     final static int    ENCODER_CPR = 1120;     //Encoder Counts per Revolution
 
@@ -49,6 +55,10 @@ class ShelbyBot
         rightMotor  = hwMap.dcMotor.get("right_drive");
         elevMotor   = hwMap.dcMotor.get("elev_drive");
         sweepMotor  = hwMap.dcMotor.get("sweep_drive");
+        shotmotor1  = hwMap.dcMotor.get("shot_motor_1");
+        shotmotor2  = hwMap.dcMotor.get("shot_motor_2");
+
+        shotmotor2.setDirection(DcMotor.Direction.REVERSE);
         leftMotor.setDirection(DcMotor.Direction.FORWARD);  // FORWARD if using AndyMark motors
         rightMotor.setDirection(DcMotor.Direction.REVERSE); // REVERSE if using AndyMark motors
         elevMotor.setDirection(DcMotor.Direction.REVERSE); // REVERSE if using AndyMark motors
@@ -59,6 +69,8 @@ class ShelbyBot
         rightMotor.setPower(0);
         elevMotor.setPower(0);
         sweepMotor.setPower(0);
+        shotmotor1.setPower(0);
+        shotmotor2.setPower(0);
 
         leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -87,6 +99,7 @@ class ShelbyBot
                 + "prtNum  " + rightMotor.getPortNumber() + "\n"
                 + "curPos  " + rightMotor.getCurrentPosition()
                 + "dir     " + rightMotor.getDirection());
+
     }
 
     /***
