@@ -8,15 +8,21 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 //import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
+@SuppressWarnings("unused")
 @Autonomous(name="RedOpLinear", group="Auton")
 //@Disabled
 public class RedOpLinear extends LinearOpMode {
+
+    public RedOpLinear()
+    {
+        super();
+        instance = this;
+    }
 
     @Override
     public void runOpMode() throws InterruptedException
     {
         setup();
-        idle();
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
@@ -26,18 +32,23 @@ public class RedOpLinear extends LinearOpMode {
         {
             doMove(pathSegs[i]);
             if(i < turns.length)
+            {
                 doTurn(turns[i]);
+                DbgLog.msg("Planned pos: %s %s",
+                        pathSegs[i].getTgtPt(),
+                        pathSegs[i+1].getFieldHeading());
+                findSensedLoc();
+            }
         }
 
-        Drivetrain.stopAndReset();
+        drvTrn.stopAndReset();
 
         telemetry.addData("Path", "Complete");
         telemetry.update();
     }
 
-    LinearOpMode getInstance()
+    static LinearOpMode getInstance()
     {
-        instance = this;
         return instance;
     }
 
@@ -49,14 +60,16 @@ public class RedOpLinear extends LinearOpMode {
         else                      alliance = Field.Alliance.RED;
 
         robot.init(hardwareMap);
-        Drivetrain.init(robot.leftMotor, robot.rightMotor);
+        drvTrn.init(robot.leftMotor, robot.rightMotor);
 
         Points pts = new Points();
         pathSegs = pts.getSegments(alliance);
         turns    = pts.getTurns(alliance);
 
+        DbgLog.msg("SJH ROUTE: \n" + pts.toString());
+
         Point2d currPoint = pathSegs[0].getStrtPt();
-        Drivetrain.setCurrPt(currPoint);
+        drvTrn.setCurrPt(currPoint);
 
         timer.reset();
         DbgLog.msg("SJH Start %s. Time: %6.3f", currPoint, timer.time());
@@ -66,28 +79,53 @@ public class RedOpLinear extends LinearOpMode {
         telemetry.update();
     }
 
-    private void doMove(Segment seg)
+    private void doMove(Segment seg) throws InterruptedException
     {
-        DbgLog.msg("SJH: Drive %s %s %s %6.2f %s",seg.getName(),
-                seg.getStrtPt(), seg.getTgtPt(), seg.getFieldHeading(), seg.getDir());
+        String  snm = seg.getName();
+        Point2d spt = seg.getStrtPt();
+        Point2d ept = seg.getTgtPt();
+        double  fhd = seg.getFieldHeading();
+        Segment.SegDir dir = seg.getDir();
+        DbgLog.msg("SJH: Drive %s %s %s %6.2f %s",
+                snm, spt, ept, fhd, dir);
 
-        telemetry.addData("Path", "%s %s - %s %6.2f %s", seg.getName(),
-                seg.getStrtPt(), seg.getTgtPt(), seg.getFieldHeading(), seg.getDir());
+        telemetry.addData("Path", "%s %s - %s %6.2f %s",
+                snm, spt, ept, fhd, dir);
         telemetry.update();
 
+        Drivetrain.Direction ddir = Drivetrain.Direction.FORWARD;
+        if (dir == Segment.SegDir.REVERSE) ddir = Drivetrain.Direction.REVERSE;
         timer.reset();
         Point2d pt = seg.getTgtPt();
-        Drivetrain.driveToPointLinear(pt, DEF_DRV_PWR, Drivetrain.Direction.FORWARD);
-        Drivetrain.setCurrPt(pt);
+        drvTrn.driveToPointLinear(pt, DEF_DRV_PWR, ddir);
         DbgLog.msg("SJH Completed move %s. Time: %6.3f", seg.getName(), timer.time());
     }
 
-    private void doTurn(double angle)
+    private void doTurn(double angle) throws InterruptedException
     {
         DbgLog.msg("SJH: Turn %5.2f", angle);
         timer.reset();
-        Drivetrain.ctrTurnLinear(angle,DEF_TRN_PWR);
+        drvTrn.ctrTurnLinear(angle,DEF_TRN_PWR);
         DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f", angle, timer.time());
+    }
+
+    private void findSensedLoc() throws InterruptedException
+    {
+        ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
+        tracker.setActive(true);
+        Thread.sleep(200);
+        Point2d sensedBotPos = null;
+        double  sensedFldHdg = pathSegs[0].getFieldHeading();
+        while(sensedBotPos == null && itimer.milliseconds() < 200)
+        {
+            tracker.updateRobotLocationInfo();
+            sensedBotPos = tracker.getSensedPosition();
+            sensedFldHdg = tracker.getSensedFldHeading();
+        }
+        tracker.setActive(false);
+
+        if ( sensedBotPos != null )
+            DbgLog.msg("Image based location: %s %5.2f", sensedBotPos, sensedFldHdg);
     }
 
     private final static double DEF_DRV_PWR = 0.7;
@@ -98,7 +136,10 @@ public class RedOpLinear extends LinearOpMode {
 
     private ShelbyBot   robot = new ShelbyBot();
     private ElapsedTime timer = new ElapsedTime();
+    private Drivetrain drvTrn = new Drivetrain();
+
+    private ImageTracker tracker = new ImageTracker();
 
     private static Field.Alliance alliance;
-    private static LinearOpMode instance;
+    private static LinearOpMode instance = null;
 }
