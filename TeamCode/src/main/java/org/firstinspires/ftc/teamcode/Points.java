@@ -124,6 +124,17 @@ class Points
         double by = -rpt.getX();
         return new Point2d(bx,by);
     }
+    
+    public String toString()
+    {
+        StringBuilder sbldr = new StringBuilder();
+        for (Segment seg : redSegs)
+        {
+            sbldr.append(seg.toString() + "\n");
+        }
+        return sbldr.toString();
+    }
+
 
     private final static double REAR_OFFSET = ShelbyBot.REAR_OFFSET;
     private final static double FRNT_OFFSET = ShelbyBot.FRNT_OFFSET;
