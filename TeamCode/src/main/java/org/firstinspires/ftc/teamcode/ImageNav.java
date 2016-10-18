@@ -36,6 +36,7 @@ import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.ftcrobotcontroller.R;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
@@ -87,11 +88,12 @@ import java.util.Locale;
  * is explained below.
  */
 
+@SuppressWarnings("WeakerAccess")
 @Autonomous(name="ImageNav", group ="Concept")
 //@Disabled
 public class ImageNav extends LinearOpMode {
 
-    public static final String TAG = "SJH Image Tracker";
+    private static final String TAG = "SJH Image Tracker";
 
     // Vuforia units are mm = units used in XML for the trackables
 
@@ -108,13 +110,22 @@ public class ImageNav extends LinearOpMode {
     private VuforiaLocalizer.Parameters parameters;
     private VuforiaTrackables ftcImages;
     private String lastVisName = "UNKNOWN";
+    private boolean useScreen = true;
+
+    private ElapsedTime timer = new ElapsedTime();
 
     public void setupTrackables()
     {
         //To see camera feedback, pass the view id
         //For competition, we don't want this - so use the no param ctor
-        parameters = new VuforiaLocalizer.Parameters(R.id.cameraMonitorViewId);
-        //new VuforiaLocalizer.Parameters();
+        if(useScreen)
+        {
+            parameters = new VuforiaLocalizer.Parameters(R.id.cameraMonitorViewId);
+        }
+        else
+        {
+            parameters = new VuforiaLocalizer.Parameters();
+        }
 
         //SJH Teams license
         parameters.vuforiaLicenseKey =
@@ -251,9 +262,10 @@ public class ImageNav extends LinearOpMode {
 
         /** Start tracking the data sets we care about. */
         ftcImages.activate();
+        timer.reset();
 
         OpenGLMatrix robotLocationTransform;
-        while (opModeIsActive())
+        while (opModeIsActive() && timer.seconds() < 0.2)
         {
             robotLocationTransform = getRobotLocation();
             if (robotLocationTransform != null)
@@ -268,6 +280,7 @@ public class ImageNav extends LinearOpMode {
             telemetry.update();
             idle();
         }
+        ftcImages.deactivate();
     }
 
     /**
