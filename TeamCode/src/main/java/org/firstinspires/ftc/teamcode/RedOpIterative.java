@@ -15,7 +15,7 @@ public class RedOpIterative extends OpMode
     @Override
     public void init() {
         robot.init(hardwareMap);
-        Drivetrain.init(robot.leftMotor, robot.rightMotor);
+        drvTrn.init(robot.leftMotor, robot.rightMotor);
 
         setup();
         for(int t = 0; t < turns.length; ++t)
@@ -31,7 +31,7 @@ public class RedOpIterative extends OpMode
     {
         timer.reset();
         currPoint = pathSegs[0].getStrtPt();
-        Drivetrain.setCurrPt(currPoint);
+        drvTrn.setCurrPt(currPoint);
         DbgLog.msg("SJH start: %s (%5.2f, %5.2f). Frame: %4d Time: %6.3f",
                 state.toString(), currPoint.getX(), currPoint.getY(),
                 frame, timer.time());
@@ -87,7 +87,7 @@ public class RedOpIterative extends OpMode
             case TRN6: procTurnStateFrame(ang, nxt);      break;
             case DRV7: procMoveStateFrame(seg, nxt, dir); break;
             case STOP: state = State.DONE;                break;
-            case DONE: Drivetrain.stopAndReset();         break;
+            case DONE: drvTrn.stopAndReset();         break;
         }
         telemetry.addData("RunTime", "%6.3f", getRuntime());
         telemetry.addData("Frame_State", "%5d %s %s", frame, state, nxt);
@@ -97,14 +97,14 @@ public class RedOpIterative extends OpMode
     private void setup()
     {
         robot.init(hardwareMap);
-        Drivetrain.init(robot.leftMotor, robot.rightMotor);
+        drvTrn.init(robot.leftMotor, robot.rightMotor);
 
         Points pts = new Points();
         pathSegs = pts.getSegments(Field.Alliance.RED);
         turns    = pts.getTurns(Field.Alliance.RED);
 
         Point2d currPoint = pathSegs[0].getStrtPt();
-        Drivetrain.setCurrPt(currPoint);
+        drvTrn.setCurrPt(currPoint);
 
         timer.reset();
         DbgLog.msg("SJH Start %s. Time: %6.3f", currPoint, timer.time());
@@ -119,7 +119,7 @@ public class RedOpIterative extends OpMode
     {
         if(frame % 100 == 0)
         {
-            Drivetrain.logDriveState();
+            drvTrn.logDriveState();
         }
 
         if (firstPassInState)
@@ -130,22 +130,22 @@ public class RedOpIterative extends OpMode
                     seg.getName(), nextPoint.getX(),nextPoint.getY(),
                     frame, timer.time(), dist);
             firstPassInState = false;
-            Drivetrain.driveToPoint(nextPoint, DEF_DRV_PWR, dir);
+            drvTrn.driveToPoint(nextPoint, DEF_DRV_PWR, dir);
             timer.reset();
         }
 
-        else if (!Drivetrain.isBusy())
+        else if (!drvTrn.isBusy())
         {
             DbgLog.msg("SJH Completed state %s. Time: %6.3f", seg.getName(), timer.time());
-            Drivetrain.stopAndReset();
+            drvTrn.stopAndReset();
             firstPassInState = true;
             state = nextState;
             currPoint = nextPoint;
-            Drivetrain.setCurrPt(currPoint);
+            drvTrn.setCurrPt(currPoint);
         }
         else
         {
-            Drivetrain.makeCorrections(DEF_DRV_PWR, dir);
+            drvTrn.makeCorrections(DEF_DRV_PWR, dir);
         }
     }
 
@@ -153,7 +153,7 @@ public class RedOpIterative extends OpMode
     {
         if(frame % 100 == 0)
         {
-            Drivetrain.logDriveState();
+            drvTrn.logDriveState();
         }
 
         Drivetrain.Direction dir = Drivetrain.Direction.FORWARD;
@@ -163,22 +163,22 @@ public class RedOpIterative extends OpMode
             firstPassInState = false;
             DbgLog.msg("SJH Start Turn: %s Angle: %5.2f Frame: %4d Time: %6.3f, Hdg: %5.2f",
                     state, angle, frame, timer.time(), currHdg);
-            Drivetrain.ctrTurn(angle, DEF_DRV_PWR);
+            drvTrn.ctrTurn(angle, DEF_DRV_PWR);
             currHdg += angle;
             while(currHdg >  360.0) currHdg -= 360.0;
             while(currHdg <    0.0) currHdg += 360.0;
             timer.reset();
         }
-        else if(!Drivetrain.isBusy())
+        else if(!drvTrn.isBusy())
         {
             DbgLog.msg("SJH Completed turn %s. Time: %6.3f", state, timer.time());
-            Drivetrain.stopAndReset();
+            drvTrn.stopAndReset();
             firstPassInState = true;
             state = nextState;
         }
         else
         {
-            Drivetrain.makeCorrections(DEF_TRN_PWR, dir);
+            drvTrn.makeCorrections(DEF_TRN_PWR, dir);
         }
     }
 
@@ -231,4 +231,5 @@ public class RedOpIterative extends OpMode
     private double[] turns;
 
     private ShelbyBot robot = new ShelbyBot();
+    private Drivetrain drvTrn = new Drivetrain();
 }
