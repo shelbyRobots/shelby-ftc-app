@@ -51,12 +51,12 @@ class ShelbyBot
     public void init(HardwareMap hwMap)
     {
         // Define and Initialize Motors
-        leftMotor   = hwMap.dcMotor.get("left_drive");
-        rightMotor  = hwMap.dcMotor.get("right_drive");
-        elevMotor   = hwMap.dcMotor.get("elev_drive");
-        sweepMotor  = hwMap.dcMotor.get("sweep_drive");
-        shotmotor1  = hwMap.dcMotor.get("shot_motor_1");
-        shotmotor2  = hwMap.dcMotor.get("shot_motor_2");
+        leftMotor   = hwMap.dcMotor.get("leftdrive");
+        rightMotor  = hwMap.dcMotor.get("rightdrive");
+        elevMotor   = hwMap.dcMotor.get("elevmotor");
+        sweepMotor  = hwMap.dcMotor.get("sweepmotor");
+        shotmotor1  = hwMap.dcMotor.get("leftshooter");
+        shotmotor2  = hwMap.dcMotor.get("rightshooter");
 
         shotmotor2.setDirection(DcMotor.Direction.REVERSE);
         leftMotor.setDirection(DcMotor.Direction.FORWARD);  // FORWARD if using AndyMark motors
@@ -135,7 +135,7 @@ class ShelbyBot
     static final float FRNT_OFFSET             = BOT_LENGTH - REAR_OFFSET;
     private static final float CAMERA_X_IN_BOT = 0.0f  * MM_PER_INCH;
     private static final float CAMERA_Y_IN_BOT = 0.0f; //FRONT_OFFSET * MM_PER_INCH;
-    private static final float CAMERA_Z_IN_BOT = 0.0f; //10.6f * MM_PER_INCH;
+    private static final float CAMERA_Z_IN_BOT = 10.6f * MM_PER_INCH;
 
     //With phone laid flat in portrait mode with screen up:
     //The phone axis is 0,0,0 at Camera (using front camera)
