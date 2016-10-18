@@ -63,15 +63,17 @@ public class TeleopTank_Driver extends LinearOpMode {
         double g2left;
         double g2right;
         double shooter;
+        boolean shoot_pressed = false;
+        boolean last_shoot_pressed = false;
 
-        boolean elev;
-        boolean sweep;
+        double elev;
+        double sweep;
 
         /* Initialize the hardware variables.
          * The init() method of the hardware class does all the work here
          */
         robot.init(hardwareMap);
-        Drivetrain.init(robot.leftMotor, robot.rightMotor);
+        drvTrn.init(robot.leftMotor, robot.rightMotor);
 
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Say", "Hello Driver");    //
@@ -84,39 +86,37 @@ public class TeleopTank_Driver extends LinearOpMode {
         while (opModeIsActive()) {
 
             // Run wheels in tank mode (note: The joystick goes negative when pushed forwards, so negate it)
-            left =  -gamepad1.left_stick_y;
+            left  = -gamepad1.left_stick_y;
             right = -gamepad1.right_stick_y;
-            elev = gamepad2.a;
-            sweep = gamepad2.y;
             shooter = gamepad2.right_trigger;
+
             robot.leftMotor.setPower(left);
             robot.rightMotor.setPower(right);
-            g2left = gamepad2.left_stick_y;
-            g2right = gamepad2.right_stick_y;
-            robot.elevMotor.setPower(g2left);
-            robot.sweepMotor.setPower(g2right);
+            elev  = gamepad2.left_stick_y;
+            sweep = gamepad2.right_stick_y;
+            robot.elevMotor.setPower(elev);
+            robot.sweepMotor.setPower(sweep);
 
             if(shooter > 0)
-                shooter_motors(1);
+                shoot_pressed = true;
             else
-                shooter_motors(0);
+                shoot_pressed = false;
 
-            // Use gamepad 2 Y & A raise and lower the arm
-            if (elev)
-                robot.elevMotor.setPower(1.0);
-            else
-                robot.elevMotor.setPower(0);
-
-            if (sweep)
-                robot.sweepMotor.setPower(1.0);
-            else
-                robot.sweepMotor.setPower(0);
+            if(shoot_pressed != last_shoot_pressed)
+            {
+                last_shoot_pressed = shoot_pressed;
+                if(shoot_pressed)
+                    shooter_motors(1);
+                else
+                    shooter_motors(0);
+            }
 
             telemetry.addData("left : ",  "%.2f", left);
             telemetry.addData("right : ", "%.2f", right);
             telemetry.addData("elev : ", elev);
             telemetry.addData("sweep : ",  sweep);
             telemetry.addData("shooters", "%.2f", shooter);
+            telemetry.addData("shootpwr", "%s", last_shoot_pressed);
             telemetry.update();
 
             // Pause for metronome tick.  40 mS each cycle = update 25 times a second.
@@ -132,4 +132,5 @@ public class TeleopTank_Driver extends LinearOpMode {
         robot.shotmotor2.setPower(speed);
     }
     private ShelbyBot robot = new ShelbyBot();
+    private Drivetrain drvTrn = new Drivetrain();
 }
