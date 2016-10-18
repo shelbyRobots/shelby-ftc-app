@@ -2,22 +2,30 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
+
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 class Drivetrain
 {
-    private static void move(double lPwr, double rPwr)
+    Drivetrain()
+    {
+        rt.reset();
+    }
+
+    private void move(double lPwr, double rPwr)
     {
         left_drive.setPower(lPwr);
         right_drive.setPower(rPwr);
     }
 
-    private static void move(double pwr)
+    private void move(double pwr)
     {
         move(pwr, pwr);
     }
 
-    private static void stopMotion()
+    private void stopMotion()
     {
         move(0.0, 0.0);
     }
@@ -32,20 +40,20 @@ class Drivetrain
         move(pwr, 0.0);
     }*/
 
-    private static void resetCounts()
+    private void resetCounts()
     {
         left_drive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         right_drive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
 
-    static void stopAndReset()
+    void stopAndReset()
     {
         stopMotion();
         resetCounts();
         //time.reset();
     }
 
-    private static void driveDistance(double dst, double pwr, Direction dir)
+    private void driveDistance(double dst, double pwr, Direction dir)
     {
         int counts = distanceToCounts(dst);
         DbgLog.msg("SJH driveDistance: %6.2f Counts %d", dst, counts);
@@ -55,7 +63,7 @@ class Drivetrain
             counts*=-1;
         }
 
-        int lft_target = left_drive.getCurrentPosition() + counts;
+        int lft_target =  left_drive.getCurrentPosition() + counts;
         int rgt_target = right_drive.getCurrentPosition() + counts;
         left_drive.setTargetPosition(lft_target);
         right_drive.setTargetPosition(rgt_target);
@@ -67,15 +75,16 @@ class Drivetrain
         move(pwr);
     }
 
-    static void driveToPoint(Point2d tgtPt, double pwr, Direction dir)
+    void driveToPoint(Point2d tgtPt, double pwr, Direction dir)
     {
         if (tgtPt == null)  DbgLog.error("SJH tgtPt null in driveToPoint");
         if (currPt == null) DbgLog.error("SJH currPt null in driveToPoint");
         double dist = currPt.distance(tgtPt);
+        if(dist < 6) pwr *= 0.2;
         driveDistance(dist, pwr, dir);
     }
 
-    static void driveToPointLinear(Point2d tgtPt, double pwr, Direction dir)
+    void driveToPointLinear(Point2d tgtPt, double pwr, Direction dir) throws InterruptedException
     {
         if (tgtPt == null)  DbgLog.error("SJH tgtPt null in driveToPoint");
         if (currPt == null) DbgLog.error("SJH currPt null in driveToPoint");
@@ -84,6 +93,7 @@ class Drivetrain
         while(isBusy())
         {
             makeCorrections(pwr, dir);
+            waitForTick(20);
         }
 
         DbgLog.msg("SJH: ldc %6d rdc %6d",
@@ -94,7 +104,7 @@ class Drivetrain
         currPt = tgtPt;
     }
 
-    static void ctrTurn(double angle, double pwr)
+    void ctrTurn(double angle, double pwr)
     {
         //perform a turn about rear axle center
         //left turns are positive angles
@@ -114,12 +124,14 @@ class Drivetrain
         move(pwr, pwr);
     }
 
-    static void ctrTurnLinear(double angle, double pwr)
+    void ctrTurnLinear(double angle, double pwr) throws InterruptedException
     {
         ctrTurn(angle, pwr);
+        Direction tdir = Direction.FORWARD;
         while(isBusy())
         {
-            makeCorrections(pwr, Direction.FORWARD);
+            makeCorrections(pwr, tdir);
+            waitForTick(20);
         }
 
         DbgLog.msg("SJH: ldc %6d rdc %6d",
@@ -162,38 +174,49 @@ class Drivetrain
 //        }
 //    }
 
-    private static int distanceToCounts(double distance)
+    private int distanceToCounts(double distance)
     {
         return (int)(distance * CPI);
     }
 
-    private static int angleToCounts(double angle, double radius)
+    private int angleToCounts(double angle, double radius)
     {
         return distanceToCounts(Math.toRadians(angle) * radius);
     }
 
-    private static double countsToAngle(int counts, double radius)
+    private double countsToAngle(int counts, double radius)
     {
         return (double)counts/(CPI*radius);
     }
 
-    static void setCurrPt(Point2d curPt)
+    void setCurrPt(Point2d curPt)
     {
         currPt = curPt;
     }
 
-    public static void init(DcMotor lft_drv, DcMotor rgt_drv)
+    public void init(DcMotor lft_drv, DcMotor rgt_drv)
     {
         DbgLog.msg("SJH CPI: %5.2f", CPI);
-        left_drive = lft_drv;
+        frame = 0;
+        left_drive  = lft_drv;
         right_drive = rgt_drv;
+        //lom = RedOpLinear.getInstance();
     }
 
-
-    static void makeCorrections(double pwr, Direction dir)
+    private void waitForTick(long periodMs) throws InterruptedException
     {
-//      int ldc = left_drive.getCurrentPosition();
-//      int rdc = right_drive.getCurrentPosition();
+        long  remaining = periodMs - (long)period.milliseconds();
+
+        // sleep for the remaining portion of the regular cycle period.
+        if (remaining > 0)
+            Thread.sleep(remaining);
+
+        // Reset the cycle clock for the next pass.
+        period.reset();
+    }
+
+    void makeCorrections(double pwr, Direction dir)
+    {
         double ldp; // = Math.abs(left_drive.getPower());
         double rdp; // = Math.abs(right_drive.getPower());
 
@@ -202,12 +225,7 @@ class Drivetrain
         if(Math.abs(err) > THRESH)
         {
             double steer = getSteer(err, PADJ);
-            int d = 1;
-            if (dir == Direction.REVERSE) d = -1;
-            steer *= d;
-//          int diff = Math.abs(ldc) - Math.abs(rdc);
-//          DbgLog.msg("SJH ldc: %6d rdc: %6d diff: %d lpwr: %5.3f rpwr: %5.3f err: %5.3f str %5.3f",
-//                  ldc, rdc, diff, ldp, rdp, err, steer);
+            //if (dir == Direction.REVERSE) steer *= -1;
 
             rdp = pwr - steer;
             ldp = pwr + steer;
@@ -219,14 +237,47 @@ class Drivetrain
                 ldp = ldp / max;
             }
 
-//          DbgLog.msg("SJH New power. lpwr: %5.3f rpwr: %5.3f",
-//                  ldp, rdp);
+            int ldc = left_drive.getCurrentPosition();
+            int rdc = right_drive.getCurrentPosition();
+            int diff = Math.abs(ldc) - Math.abs(rdc);
+            int tgtCnts = left_drive.getTargetPosition();
+
+            if(Math.abs(ldc) >= Math.abs(tgtCnts))
+            {
+                ldp = 0.0;
+                left_drive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                if(Math.abs(diff) < 30)
+                {
+                    rdp = 0.0;
+                    right_drive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                }
+            }
+
+            if(Math.abs(rdc) >= Math.abs(tgtCnts))
+            {
+                rdp = 0.0;
+                right_drive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                if(Math.abs(diff) < 30)
+                {
+                    ldp = 0.0;
+                    left_drive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                }
+            }
 
             move(ldp, rdp);
+
+            if (frame%2 == 0)
+            {
+                DbgLog.msg("SJH %4d ldc: %6d rdc: %6d diff: %2d " +
+                                "lpwr: %5.3f rpwr: %5.3f err: %5.3f str %5.3f rt %5.3f",
+                        frame, ldc, rdc, diff, ldp, rdp, err, steer, rt.seconds());
+            }
+
+            frame++;
         }
     }
 
-    private static double getDriveError()
+    private double getDriveError()
     {
         int ldc = Math.abs(left_drive.getCurrentPosition());
         int rdc = Math.abs(right_drive.getCurrentPosition());
@@ -235,12 +286,12 @@ class Drivetrain
         return countsToAngle(rdc - ldc, VEH_WIDTH);
     }
 
-    private static double getSteer(double error, double PCoeff)
+    private double getSteer(double error, double PCoeff)
     {
         return Range.clip(error * PCoeff, -1, 1);
     }
 
-    static void logDriveState()
+    void logDriveState()
     {
         boolean ldb = left_drive.isBusy();
         boolean rdb = right_drive.isBusy();
@@ -255,10 +306,10 @@ class Drivetrain
                 " ldp:" + ldp + " rdp:" + rdp);
     }
 
-    static boolean isBusy()
+    boolean isBusy()
     {
-        return (left_drive.isBusy() && right_drive.isBusy());   //true if both are busy
-        //return (left_drive.isBusy() || right_drive.isBusy()); //true if 1 is busy
+        //return (left_drive.isBusy() && right_drive.isBusy());   //true if both are busy
+        return (left_drive.isBusy() || right_drive.isBusy()); //true if 1 is busy
     }
 
     private final static double DRV_TUNER = 1.0;
@@ -272,13 +323,18 @@ class Drivetrain
     private final static double CIRCUMFERENCE = Math.PI * WHL_DIAMETER;
     private final static double CPI = ENCODER_CPR * GEAR_RATIO / CIRCUMFERENCE;
 
-    private static final double PADJ = 0.5;
-    private static final double THRESH = Math.toRadians(1.0);
+    private static final double PADJ = 4.0;
+    private static final double THRESH = Math.toRadians(0.004);
 
     public enum Direction {FORWARD, REVERSE}
 
-    private static DcMotor left_drive;
-    private static DcMotor right_drive;
+    private DcMotor left_drive;
+    private DcMotor right_drive;
 
-    private static Point2d currPt = new Point2d(0.0, 0.0);
+    private Point2d currPt = new Point2d(0.0, 0.0);
+
+    private int frame   = 0;
+    //private LinearOpMode lom;
+    private ElapsedTime period  = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
+    private ElapsedTime rt = new ElapsedTime();
 }
