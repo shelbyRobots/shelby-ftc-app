@@ -5,7 +5,6 @@ import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
-import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
@@ -19,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+@SuppressWarnings("WeakerAccess")
 public class ImageTracker
 {
     ImageTracker()
@@ -27,12 +27,18 @@ public class ImageTracker
         setupPhoneOnRobot();
     }
 
-    public void setupTrackables()
+    private void setupTrackables()
     {
         //To see camera feedback, pass the view id
         //For competition, we don't want this - so use the no param ctor
-        parameters = new VuforiaLocalizer.Parameters(com.qualcomm.ftcrobotcontroller.R.id.cameraMonitorViewId);
-        //new VuforiaLocalizer.Parameters();
+        if(useScreen)
+        {
+            parameters = new VuforiaLocalizer.Parameters(com.qualcomm.ftcrobotcontroller.R.id.cameraMonitorViewId);
+        }
+        else
+        {
+            parameters = new VuforiaLocalizer.Parameters();
+        }
 
         //SJH Teams license
         parameters.vuforiaLicenseKey =
@@ -46,10 +52,11 @@ public class ImageTracker
                         "9Q6DZmhz4FCT49shA+4PyNOzqsjhRC";
 
         parameters.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
-        this.vuforia = ClassFactory.createVuforiaLocalizer(parameters);
+        VuforiaLocalizer vuforia;
+        vuforia = ClassFactory.createVuforiaLocalizer(parameters);
         DbgLog.msg("SJH Vuforia LicKey: " + parameters.vuforiaLicenseKey);
 
-        ftcImages = this.vuforia.loadTrackablesFromAsset("FTC_2016-17");
+        ftcImages = vuforia.loadTrackablesFromAsset("FTC_2016-17");
         //Wheels are on blue side closest to blue corner
         blueWheels = ftcImages.get(0);
         blueWheels.setName("BlueWheels");
@@ -69,22 +76,22 @@ public class ImageTracker
         allTrackables.addAll(ftcImages);
 
         redTools.setLocation(Field.redToolsLocationOnField);
-        RobotLog.ii(TAG, "Red Tools=%s", format(Field.redToolsLocationOnField));
+        RobotLog.ii(TAG, "Red Tools=%s", getLocString(Field.redToolsLocationOnField));
 
         redGears.setLocation(Field.redToolsLocationOnField);
-        RobotLog.ii(TAG, "Red Gears=%s", format(Field.redGearsLocationOnField));
+        RobotLog.ii(TAG, "Red Gears=%s", getLocString(Field.redGearsLocationOnField));
 
         blueWheels.setLocation(Field.blueWheelsLocationOnField);
-        RobotLog.ii(TAG, "Blue Wheels=%s", format(Field.blueWheelsLocationOnField));
+        RobotLog.ii(TAG, "Blue Wheels=%s", getLocString(Field.blueWheelsLocationOnField));
 
         blueLegos.setLocation(Field.blueLegosLocationOnField);
-        RobotLog.ii(TAG, "Blue Legos=%s", format(Field.blueLegosLocationOnField));
+        RobotLog.ii(TAG, "Blue Legos=%s", getLocString(Field.blueLegosLocationOnField));
     }
 
-    public void setupPhoneOnRobot()
+    private void setupPhoneOnRobot()
     {
         OpenGLMatrix phoneLocationOnRobot = ShelbyBot.phoneLocationOnRobot;
-        RobotLog.ii(TAG, "phone=%s", format(phoneLocationOnRobot));
+        RobotLog.ii(TAG, "phone=%s", getLocString(phoneLocationOnRobot));
 
         /**
          * A brief tutorial: here's how all the math is going to work:
@@ -115,7 +122,8 @@ public class ImageTracker
                 setPhoneInformation(phoneLocationOnRobot, parameters.cameraDirection);
     }
 
-    public OpenGLMatrix getRobotLocation()
+    //public OpenGLMatrix getRobotLocation()
+    public void updateRobotLocationInfo()
     {
         /**
          * getUpdatedRobotLocation() will return null if no new information is available
@@ -123,7 +131,7 @@ public class ImageTracker
          * visible.
          * getRobotLocation() will return null if the trackable is not currently visible.
          */
-        OpenGLMatrix robotLocationTransform = null;
+        OpenGLMatrix robotLocationTransform;
         for (VuforiaTrackable trackable : allTrackables)
         {
             robotLocationTransform = ((VuforiaTrackableDefaultListener) trackable.getListener())
@@ -131,19 +139,37 @@ public class ImageTracker
             if(robotLocationTransform != null)
             {
                 lastVisName = trackable.getName();
-                break;
+                float xyz[] = robotLocationTransform.getTranslation().getData();
+                currPos = new Point2d(xyz[0], xyz[1]);
+                currOri = Orientation.getOrientation(lastLocation,
+                        AxesReference.EXTRINSIC, AxesOrder.ZXY, AngleUnit.DEGREES);
+                currYaw = (double)currOri.firstAngle;
+                //return robotLocationTransform;
             }
         }
-        return robotLocationTransform;
+        currPos = null;
+        currOri = null;
+        currYaw = null;
+        //return null;
     }
 
-    public String getLocStirng(OpenGLMatrix mat)
+    public Point2d getSensedPosition()
+    {
+        return currPos;
+    }
+
+    public double getSensedFldHeading()
+    {
+        return currYaw;
+    }
+
+    public String getLocString(OpenGLMatrix mat)
     {
         String locStr = null;
         if(mat != null)
         {
             float xyz[] = mat.getTranslation().getData();
-            Orientation ori = Orientation.getOrientation(lastLocation,
+            Orientation ori = Orientation.getOrientation(mat,
                     AxesReference.EXTRINSIC, AxesOrder.ZXY, AngleUnit.DEGREES);
 
             locStr = String.format(Locale.US,
@@ -154,34 +180,28 @@ public class ImageTracker
         return locStr;
     }
 
-    public void activate()
+    public void setActive(boolean active)
     {
-        ftcImages.activate();
-    }
-
-    public void deactivate()
-    {
-        ftcImages.deactivate();
-    }
-
-    String format(OpenGLMatrix transformationMatrix)
-    {
-        return transformationMatrix.formatAsTransform();
+        if(active) ftcImages.activate();
+        else       ftcImages.deactivate();
     }
 
     // Vuforia units are mm = units used in XML for the trackables
     private static final float MM_PER_INCH        = 25.4f;
-    public static final String TAG = "SJH Image Tracker";
+    private static final String TAG = "SJH ImageTracker";
 
-    private VectorF currPos = new VectorF(0.0f, 0.0f, 0.0f);
     private List<VuforiaTrackable> allTrackables = new ArrayList<>();
     private OpenGLMatrix lastLocation = null;
-    private VuforiaLocalizer vuforia;
+
     private VuforiaTrackable blueWheels;
     private VuforiaTrackable blueLegos;
     private VuforiaTrackable redTools;
     private VuforiaTrackable redGears;
     private VuforiaLocalizer.Parameters parameters;
     private VuforiaTrackables ftcImages;
-    private String lastVisName = "UNKNOWN";
+    private Point2d currPos = null;
+    private Double  currYaw = null;
+    private Orientation currOri = null;
+    private String lastVisName = "";
+    private boolean useScreen = false;
 }
