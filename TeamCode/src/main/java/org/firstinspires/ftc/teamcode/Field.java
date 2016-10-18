@@ -28,14 +28,14 @@ public class Field
     static final float[] toolsPos  = {W_WALL_X,  3.0f*12, IMAGE_Z};
     static final float[] gearsPos  = {W_WALL_X, -1.0f*12, IMAGE_Z};
     static final float[] wheelsPos = { 1.0f*12, N_WALL_Y, IMAGE_Z};
-    //static final float[] legosPos  = {-3.0f*12, N_WALL_Y, IMAGE_Z};
-    static final float[] legosPos  = {0.0f*12, 0.0f, 0.0f};
+    static final float[] legosPos  = {-3.0f*12, N_WALL_Y, IMAGE_Z};
+    //static final float[] legosPos  = {0.0f*12, 0.0f, 0.0f};
 
     private static final float[] toolsRot  = {90.0f, 0.0f, 90.0f};
     private static final float[] gearsRot  = {90.0f, 0.0f, 90.0f};
     private static final float[] wheelsRot = {90.0f, 0.0f,  0.0f};
-    //private static final float[] legosRot  = {90.0f, 0.0f,  0.0f};
-    private static final float[] legosRot  = {0.0f, 0.0f,  0.0f};
+    private static final float[] legosRot  = {90.0f, 0.0f,  0.0f};
+    //private static final float[] legosRot  = {0.0f, 0.0f,  0.0f};
 
     private static final float[] toolsPosMm  = scaleArr(toolsPos,  MM_PER_INCH);
     private static final float[] gearsPosMm  = scaleArr(gearsPos,  MM_PER_INCH);
