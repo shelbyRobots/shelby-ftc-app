@@ -144,13 +144,13 @@ public class ImageTracker
                 currOri = Orientation.getOrientation(lastLocation,
                         AxesReference.EXTRINSIC, AxesOrder.ZXY, AngleUnit.DEGREES);
                 currYaw = (double)currOri.firstAngle;
-                //return robotLocationTransform;
+                return;
             }
         }
         currPos = null;
         currOri = null;
         currYaw = null;
-        //return null;
+        return;
     }
 
     public Point2d getSensedPosition()

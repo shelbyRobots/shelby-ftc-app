@@ -60,10 +60,8 @@ public class TeleopTank_Driver extends LinearOpMode {
     public void runOpMode() throws InterruptedException {
         double left;
         double right;
-        double g2left;
-        double g2right;
         double shooter;
-        boolean shoot_pressed = false;
+        boolean shoot_pressed;
         boolean last_shoot_pressed = false;
 
         double elev;
@@ -82,6 +80,7 @@ public class TeleopTank_Driver extends LinearOpMode {
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
+        boolean toggle = false;
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
 
@@ -97,19 +96,19 @@ public class TeleopTank_Driver extends LinearOpMode {
             robot.elevMotor.setPower(elev);
             robot.sweepMotor.setPower(sweep);
 
-            if(shooter > 0)
-                shoot_pressed = true;
-            else
-                shoot_pressed = false;
+            shoot_pressed = (shooter > 0);
 
-            if(shoot_pressed != last_shoot_pressed)
+            if(shoot_pressed && !last_shoot_pressed)
             {
-                last_shoot_pressed = shoot_pressed;
-                if(shoot_pressed)
+                toggle = !toggle;
+
+                if(toggle)
                     shooter_motors(1);
                 else
                     shooter_motors(0);
             }
+
+            last_shoot_pressed = shoot_pressed;
 
             telemetry.addData("left : ",  "%.2f", left);
             telemetry.addData("right : ", "%.2f", right);
@@ -126,7 +125,7 @@ public class TeleopTank_Driver extends LinearOpMode {
     }
 
 
-    void shooter_motors(double speed)
+    private void shooter_motors(double speed)
     {
         robot.shotmotor1.setPower(speed);
         robot.shotmotor2.setPower(speed);
