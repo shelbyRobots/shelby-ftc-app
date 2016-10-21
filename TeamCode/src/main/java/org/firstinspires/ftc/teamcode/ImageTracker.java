@@ -51,7 +51,7 @@ public class ImageTracker
                         "CAAJVHqqyyubMy8EqE5onzw/WFEcEwfQ6nolsNwYTEZb/JppU8" +
                         "9Q6DZmhz4FCT49shA+4PyNOzqsjhRC";
 
-        parameters.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
+        parameters.cameraDirection = VuforiaLocalizer.CameraDirection.FRONT;
         VuforiaLocalizer vuforia;
         vuforia = ClassFactory.createVuforiaLocalizer(parameters);
         DbgLog.msg("SJH Vuforia LicKey: " + parameters.vuforiaLicenseKey);
@@ -140,17 +140,17 @@ public class ImageTracker
             {
                 lastVisName = trackable.getName();
                 float xyz[] = robotLocationTransform.getTranslation().getData();
-                currPos = new Point2d(xyz[0], xyz[1]);
-                currOri = Orientation.getOrientation(lastLocation,
+                currPos = new Point2d(xyz[0]/MM_PER_INCH, xyz[1]/MM_PER_INCH);
+                DbgLog.msg("Found Image " + lastVisName);
+                currOri = Orientation.getOrientation(robotLocationTransform,
                         AxesReference.EXTRINSIC, AxesOrder.ZXY, AngleUnit.DEGREES);
-                currYaw = (double)currOri.firstAngle;
+                currYaw = Double.valueOf((double)currOri.firstAngle);
                 return;
             }
         }
         currPos = null;
         currOri = null;
         currYaw = null;
-        return;
     }
 
     public Point2d getSensedPosition()
@@ -173,9 +173,26 @@ public class ImageTracker
                     AxesReference.EXTRINSIC, AxesOrder.ZXY, AngleUnit.DEGREES);
 
             locStr = String.format(Locale.US,
-                    "%10s POS: %5.2f, %5.2f, %5.2f ROT: %4.1f, %4.1f, %4.1f",
-                    lastVisName, xyz[0] / MM_PER_INCH, xyz[1] / MM_PER_INCH, xyz[2] / MM_PER_INCH,
+                    "POS: %5.2f, %5.2f, %5.2f ROT: %4.1f, %4.1f, %4.1f",
+                    xyz[0] / MM_PER_INCH, xyz[1] / MM_PER_INCH, xyz[2] / MM_PER_INCH,
                     ori.firstAngle, ori.secondAngle, ori.thirdAngle);
+        }
+        return locStr;
+    }
+
+    public String getLocString()
+    {
+        String locStr = null;
+        if(currPos != null && currYaw != null)
+        {
+            locStr ="";
+            if(lastVisName != null) locStr = String.format(Locale.US,
+                    "%10s ", lastVisName);
+
+            locStr += String.format(Locale.US,
+                    "POS: %5.2f, %5.2f  ROT: %4.1f",
+                    currPos.getX() / MM_PER_INCH, currPos.getY() / MM_PER_INCH,
+                    currYaw);
         }
         return locStr;
     }

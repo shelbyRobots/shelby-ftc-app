@@ -22,11 +22,14 @@ public class RedOpLinear extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException
     {
+        telemetry.addData("STATE:", "INITIALIZING");
+        telemetry.update();
         setup();
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
         timer.reset();
+        telemetry.addData("STATE:", "RUNNING");
 
         for(int i = 0; i< pathSegs.length; ++i)
         {
@@ -34,10 +37,11 @@ public class RedOpLinear extends LinearOpMode {
             if(i < turns.length)
             {
                 doTurn(turns[i]);
-                DbgLog.msg("Planned pos: %s %s",
+                DbgLog.msg("SJH Planned pos: %s %s",
                         pathSegs[i].getTgtPt(),
                         pathSegs[i+1].getFieldHeading());
                 findSensedLoc();
+                if (curPos != null) drvTrn.setCurrPt(curPos);
             }
         }
 
@@ -109,23 +113,36 @@ public class RedOpLinear extends LinearOpMode {
         DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f", angle, timer.time());
     }
 
-    private void findSensedLoc() throws InterruptedException
+    private boolean findSensedLoc() throws InterruptedException
     {
+        DbgLog.msg("SJH findSensedLoc");
+        curPos = null;
         ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
         tracker.setActive(true);
-        Thread.sleep(200);
+        Thread.sleep(500);
         Point2d sensedBotPos = null;
         double  sensedFldHdg = pathSegs[0].getFieldHeading();
-        while(sensedBotPos == null && itimer.milliseconds() < 200)
+        while(sensedBotPos == null && itimer.milliseconds() < 1000)
         {
             tracker.updateRobotLocationInfo();
             sensedBotPos = tracker.getSensedPosition();
             sensedFldHdg = tracker.getSensedFldHeading();
+            curPos = sensedBotPos;
         }
+
         tracker.setActive(false);
 
         if ( sensedBotPos != null )
+        {
             DbgLog.msg("Image based location: %s %5.2f", sensedBotPos, sensedFldHdg);
+            telemetry.addData("SensLoc", "%s 5.2f", sensedBotPos, sensedFldHdg);
+        }
+        else
+        {
+            telemetry.addData("SensLoc", "No Value");
+        }
+        telemetry.update();
+        return (curPos != null);
     }
 
     private final static double DEF_DRV_PWR = 0.7;
@@ -142,4 +159,6 @@ public class RedOpLinear extends LinearOpMode {
 
     private static Field.Alliance alliance;
     private static LinearOpMode instance = null;
+
+    private static Point2d curPos;
 }

@@ -127,7 +127,7 @@ class ShelbyBot
     //NOTE:  Notes reference center of bot on ground as bot coord frame origin.
     //However, it seems logical to use the center of the rear axis (pivot point)
     private static final float MM_PER_INCH     = 25.4f;
-    static final float BOT_WIDTH               = 16.5f; //Vehicle width at rear wheels
+    static final float BOT_WIDTH               = 15.5f; //Vehicle width at rear wheels
     private static final float BOT_LENGTH      = 18.0f;
 
     //Distance from ctr of rear wheel to tail
@@ -135,7 +135,7 @@ class ShelbyBot
     static final float FRNT_OFFSET             = BOT_LENGTH - REAR_OFFSET;
     private static final float CAMERA_X_IN_BOT = 0.0f  * MM_PER_INCH;
     private static final float CAMERA_Y_IN_BOT = 0.0f; //FRONT_OFFSET * MM_PER_INCH;
-    private static final float CAMERA_Z_IN_BOT = 10.6f * MM_PER_INCH;
+    private static final float CAMERA_Z_IN_BOT = 15.2f * MM_PER_INCH;
 
     //With phone laid flat in portrait mode with screen up:
     //The phone axis is 0,0,0 at Camera (using front camera)
@@ -149,5 +149,5 @@ class ShelbyBot
             .translation(CAMERA_X_IN_BOT, CAMERA_Y_IN_BOT, CAMERA_Z_IN_BOT)
             .multiplied(Orientation.getRotationMatrix(
                     AxesReference.EXTRINSIC, AxesOrder.ZXY,
-                    AngleUnit.DEGREES, 90, -90, 0));
+                    AngleUnit.DEGREES, -90, -90, 0));
 }

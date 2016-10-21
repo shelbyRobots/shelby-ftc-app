@@ -138,7 +138,7 @@ public class ImageNav extends LinearOpMode {
                 "CAAJVHqqyyubMy8EqE5onzw/WFEcEwfQ6nolsNwYTEZb/JppU8" +
                 "9Q6DZmhz4FCT49shA+4PyNOzqsjhRC";
 
-        parameters.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
+        parameters.cameraDirection = VuforiaLocalizer.CameraDirection.FRONT;
         this.vuforia = ClassFactory.createVuforiaLocalizer(parameters);
         DbgLog.msg("SJH Vuforia LicKey: " + parameters.vuforiaLicenseKey);
 
@@ -265,7 +265,7 @@ public class ImageNav extends LinearOpMode {
         timer.reset();
 
         OpenGLMatrix robotLocationTransform;
-        while (opModeIsActive() && timer.seconds() < 0.2)
+        while (opModeIsActive() && timer.seconds() < 100)
         {
             robotLocationTransform = getRobotLocation();
             if (robotLocationTransform != null)

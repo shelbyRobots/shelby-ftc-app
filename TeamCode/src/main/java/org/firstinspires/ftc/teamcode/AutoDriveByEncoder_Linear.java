@@ -85,37 +85,39 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode {
     static final double     DRIVE_SPEED             = 0.6;
     static final double     TURN_SPEED              = 0.5;
 
+
     @Override
     public void runOpMode() throws InterruptedException {
-
+        
+        robot.init(hardwareMap);
         /*
          * Initialize the drive system variables.
          * The init() method of the hardware class does all the work here
          */
         //robot.init(hardwareMap);
 
-        left_drive = hardwareMap.dcMotor.get("left_drive");
-        right_drive = hardwareMap.dcMotor.get("right_drive");
-        right_drive.setDirection(DcMotorSimple.Direction.REVERSE);
+        //robot.leftMotor = hardwareMap.dcMotor.get("leftMotor");
+        //robot.rightMotor = hardwareMap.dcMotor.get("rightMotor");
+        //robot.rightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Status", "Resetting Encoders");    //
         telemetry.update();
 
-        left_drive .setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        right_drive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+       // robot.leftMotor .setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+       // robot.rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
-        left_drive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        right_drive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        //robot.robot.leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        //robot.rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         idle();
 
-        left_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        right_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         // Send telemetry message to indicate successful Encoder reset
         telemetry.addData("Path0",  "Starting at %7d :%7d",
-                          left_drive.getCurrentPosition(),
-                          right_drive.getCurrentPosition());
+                          robot.leftMotor.getCurrentPosition(),
+                          robot.rightMotor.getCurrentPosition());
         telemetry.update();
 
         // Wait for the game to start (driver presses PLAY)
@@ -155,30 +157,30 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode {
         if (opModeIsActive()) {
 
             // Determine new target position, and pass to motor controller
-            newLeftTarget = left_drive.getCurrentPosition() + (int)(leftInches * COUNTS_PER_INCH);
-            newRightTarget = right_drive.getCurrentPosition() + (int)(rightInches * COUNTS_PER_INCH);
-            left_drive.setTargetPosition(newLeftTarget);
-            right_drive.setTargetPosition(newRightTarget);
+            newLeftTarget = robot.leftMotor.getCurrentPosition() + (int)(leftInches * COUNTS_PER_INCH);
+            newRightTarget = robot.rightMotor.getCurrentPosition() + (int)(rightInches * COUNTS_PER_INCH);
+            robot.leftMotor.setTargetPosition(newLeftTarget);
+            robot.rightMotor.setTargetPosition(newRightTarget);
 
             // Turn On RUN_TO_POSITION
-            left_drive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            right_drive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
             // reset the timeout time and start motion.
             runtime.reset();
-            left_drive.setPower(Math.abs(speed));
-            right_drive.setPower(Math.abs(speed));
+            robot.leftMotor.setPower(Math.abs(speed));
+            robot.rightMotor.setPower(Math.abs(speed));
 
             // keep looping while we are still active, and there is time left, and both motors are running.
             while (opModeIsActive() &&
                    (runtime.seconds() < timeoutS) &&
-                   (left_drive.isBusy() && right_drive.isBusy())) {
+                   (robot.leftMotor.isBusy() && robot.rightMotor.isBusy())) {
 
                 // Display it for the driver.
                 telemetry.addData("Path1",  "Running to %7d :%7d", newLeftTarget,  newRightTarget);
                 telemetry.addData("Path2",  "Running at %7d :%7d",
-                                            left_drive.getCurrentPosition(),
-                                            right_drive.getCurrentPosition());
+                                            robot.leftMotor.getCurrentPosition(),
+                                            robot.rightMotor.getCurrentPosition());
                 telemetry.update();
 
                 // Allow time for other processes to run.
@@ -186,16 +188,17 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode {
             }
 
             // Stop all motion;
-            left_drive.setPower(0);
-            right_drive.setPower(0);
+            robot.leftMotor.setPower(0);
+            robot.rightMotor.setPower(0);
 
             // Turn off RUN_TO_POSITION
-            left_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            right_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
             //  sleep(250);   // optional pause after each move
         }
     }
-    private DcMotor left_drive;
-    private DcMotor right_drive;
+    //private DcMotor robot.leftMotor;
+    //private DcMotor robot.robot.rightMotor;
+    private ShelbyBot   robot = new ShelbyBot();
 }
