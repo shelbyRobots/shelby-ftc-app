@@ -38,6 +38,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.res.Configuration;
+import android.hardware.Camera;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.net.wifi.WifiManager;
@@ -50,6 +51,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.WebView;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -90,11 +92,15 @@ import com.qualcomm.robotcore.wifi.WifiDirectAssistant;
 
 import org.firstinspires.ftc.robotcore.internal.AppUtil;
 import org.firstinspires.inspection.RcInspectionActivity;
+import for_camera_opmodes.CameraPreview;
+import for_camera_opmodes.LinearOpModeCamera;
+import for_camera_opmodes.OpModeCamera;
 
 import java.io.File;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+@SuppressWarnings("deprecation")
 public class FtcRobotControllerActivity extends Activity {
 
   public static final String TAG = "RCActivity";
@@ -133,6 +139,58 @@ public class FtcRobotControllerActivity extends Activity {
 
   protected FtcEventLoop eventLoop;
   protected Queue<UsbDevice> receivedUsbAttachmentNotifications;
+
+  /////////////////////////////////////////////////////////
+  // ADDED FOR CAMERA!!!
+
+  public void initPreview(final Camera camera, final OpModeCamera context, final Camera.PreviewCallback previewCallback) {
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        context.preview = new CameraPreview(FtcRobotControllerActivity.this, camera, previewCallback);
+        FrameLayout previewLayout = (FrameLayout) findViewById(R.id.previewLayout);
+        previewLayout.addView(context.preview);
+      }
+    });
+  }
+
+  // poor coding style here.  Shouldn't have to duplicate these routines for regular and linear OpModes.
+  public void initPreviewLinear(final Camera camera, final LinearOpModeCamera context, final Camera.PreviewCallback previewCallback) {
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        context.preview = new CameraPreview(FtcRobotControllerActivity.this, camera, previewCallback);
+        FrameLayout previewLayout = (FrameLayout) findViewById(R.id.previewLayout);
+        previewLayout.addView(context.preview);
+      }
+    });
+  }
+
+
+  public void removePreview(final OpModeCamera context) {
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        FrameLayout previewLayout = (FrameLayout) findViewById(R.id.previewLayout);
+        previewLayout.removeAllViews();
+      }
+    });
+  }
+
+  public void removePreviewLinear(final LinearOpModeCamera context) {
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        FrameLayout previewLayout = (FrameLayout) findViewById(R.id.previewLayout);
+        previewLayout.removeAllViews();
+      }
+    });
+  }
+
+  // END CAMERA ADD!!!
+  //////////////////////////////////////////////
+
+
 
   protected class RobotRestarter implements Restarter {
 
