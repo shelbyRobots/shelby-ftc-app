@@ -15,7 +15,7 @@ import java.util.List;
 
 
 public class BeaconDetector {
-    private final static double MIN_COLOR_ZONE_AREA = 0.08; 	// fraction of total image area
+    private final static double MIN_COLOR_ZONE_AREA = 0.05; 	// fraction of total image area
     private final static double MIN_BUTTON_AREA = 0.01; 		// fraction of total image area
     private final static double MIN_BUTTON_EDGE_DIST = 20; 		// pixels from edge of cropped image
 
@@ -110,8 +110,9 @@ public class BeaconDetector {
         Core.inRange( image, new Scalar( 0,100,100 ), new Scalar( 10,255,255 ), red_areas);
 
         Rect red_light_box = findLargestObject(red_areas, FindMode.LIGHT);
+        if ( red_light_box == null ) DbgLog.msg("SH BOOO :(");
         if ( red_light_box == null ) return;
-
+        DbgLog.msg( "SH SZ: " + String.valueOf( red_light_box.width ) + "x" + String.valueOf( red_light_box.height ) );
         Mat red_crop = red_areas.submat(red_light_box);
         Rect red_button_box = findLargestObject(invert(red_crop), FindMode.BUTTON);
         if ( red_button_box == null ) return;
@@ -124,7 +125,7 @@ public class BeaconDetector {
         Mat inv = new Mat();
         Mat white = img.clone();
         white = white.setTo( new Scalar( 255 ) );
-        Core.subtract( white, image, inv );
+        Core.subtract( white, img, inv );
         return inv;
     }
 
@@ -159,10 +160,13 @@ public class BeaconDetector {
                       bbox.x + bbox.width < w - MIN_BUTTON_EDGE_DIST &&
                       bbox.y + bbox.height < h - MIN_BUTTON_EDGE_DIST &&
                       Imgproc.contourArea(wrapper) / ima > MIN_BUTTON_AREA;
-            } else // mode == FindMode.LIGHT
+            }
+            else // mode == FindMode.LIGHT
             {
                 // Only blobs that make up a sizable area of the image
+
                 cdn = Imgproc.contourArea(wrapper) / ima > MIN_COLOR_ZONE_AREA;
+                DbgLog.msg("SH BOX: " + String.valueOf(Imgproc.contourArea(wrapper)) + ":" + String.valueOf(ima));
             }
 
             if (cdn && (bigr == null || carea > barea))
@@ -173,6 +177,7 @@ public class BeaconDetector {
         }
 
         if ( bigr == null ) return null;
+        DbgLog.msg("SH WEEEE!!!!!: ");
         return Imgproc.boundingRect(bigr);
     }
 

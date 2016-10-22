@@ -2,10 +2,16 @@ package sample_camera_opmodes;
 
 import android.graphics.Bitmap;
 
+import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
-import for_camera_opmodes.OpModeCamera;
+import org.firstinspires.ftc.teamcode.BeaconDetector;
+import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+
 import for_camera_opmodes.LinearOpModeCamera;
 
 /**
@@ -18,8 +24,15 @@ import for_camera_opmodes.LinearOpModeCamera;
 //@Disabled
 public class LinearDetectColor extends LinearOpModeCamera {
 
+    static {
+        if (!OpenCVLoader.initDebug()) {
+            // Handle initialization error
+        }
+    }
+
   DcMotor motorRight;
   DcMotor motorLeft;
+  Mat cvImage = null;
 
   int ds2 = 2;  // additional downsampling of the image
   // set to 1 to disable further downsampling
@@ -48,7 +61,10 @@ public class LinearDetectColor extends LinearOpModeCamera {
       telemetry.addLine("Wait for camera to finish initializing!");
       telemetry.update();
       startCamera();  // can take a while.
-      // best started before waitForStart
+
+      cvImage = new Mat(width, height, CvType.CV_8UC1);
+
+        // best started before waitForStart
       telemetry.addLine("Camera ready!");
       telemetry.update();
 
@@ -66,45 +82,24 @@ public class LinearDetectColor extends LinearOpModeCamera {
       try { // try is needed so catch the interrupt when the opmode is ended to stop the camera
         while (opModeIsActive()) {
           if (imageReady()) { // only do this if an image has been returned from the camera
-            int redValue = 0;
-            int blueValue = 0;
-            int greenValue = 0;
 
-            // get image, rotated so (0,0) is in the bottom left of the preview window
-            Bitmap rgbImage;
-            rgbImage = convertYuvImageToRgb(yuvImage, width, height, ds2);
+            Bitmap rgbImage = convertYuvImageToRgb(yuvImage, width, height, ds2);
 
-            for (int x = 0; x < rgbImage.getWidth(); x++) {
-              for (int y = 0; y < rgbImage.getHeight(); y++) {
-                int pixel = rgbImage.getPixel(x, y);
-                redValue += red(pixel);
-                blueValue += blue(pixel);
-                greenValue += green(pixel);
-              }
-            }
-            int color = highestColor(redValue, greenValue, blueValue);
+            Utils.bitmapToMat(rgbImage, cvImage);
 
-            switch (color) {
-              case 0:
-                colorString = "RED";
-                break;
-              case 1:
-                colorString = "GREEN";
-                break;
-              case 2:
-                colorString = "BLUE";
-            }
+            BeaconDetector detector = new BeaconDetector(cvImage);
 
-          } else {
-            colorString = "NONE";
+            DbgLog.msg("SH:" + "Red? " + String.valueOf(detector.isRed()));
+            DbgLog.msg("SH:" + "Blue? " + String.valueOf(detector.isBlue()));
+            telemetry.addData("Color:", "Red? " + String.valueOf(detector.isRed()));
+            telemetry.addData("Color:", "Blue? " + String.valueOf(detector.isBlue()));
+            telemetry.update();
+            sleep(10);
           }
-
-          telemetry.addData("Color:", "Color detected is: " + colorString);
-          telemetry.update();
-          sleep(10);
         }
       } catch (Exception e) {
         stopCamera();
+        throw e;
       }
     }
   }

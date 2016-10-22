@@ -1,10 +1,7 @@
 package for_camera_opmodes;
 
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
-import android.graphics.Matrix;
-import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.util.Log;
@@ -12,8 +9,6 @@ import android.util.Log;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
-
-import java.io.ByteArrayOutputStream;
 
 /**
  * TeleOp Mode
@@ -72,7 +67,7 @@ public class LinearOpModeCamera extends LinearOpMode {
     for (int i = 0; i < numberOfCameras; i++) {
       Camera.CameraInfo info = new Camera.CameraInfo();
       Camera.getCameraInfo(i, info);
-      if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) { // Camera.CameraInfo.CAMERA_FACING_FRONT or BACK
+      if (info.facing == Camera.CameraInfo.CAMERA_FACING_BACK) { // Camera.CameraInfo.CAMERA_FACING_FRONT or BACK
         cameraId = i;
         break;
       }

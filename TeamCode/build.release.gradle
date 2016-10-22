@@ -1,5 +1,5 @@
 dependencies {
-    compile project(':Ftc3543Lib')
+    //compile project(':Ftc3543Lib')
     compile project(':FtcRobotController')
     compile project(':openCVLibrary310')
     compile (name: 'RobotCore-release', ext: 'aar')
