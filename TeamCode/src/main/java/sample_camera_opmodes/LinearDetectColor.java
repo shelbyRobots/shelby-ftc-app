@@ -89,17 +89,14 @@ public class LinearDetectColor extends LinearOpModeCamera {
 
             BeaconDetector detector = new BeaconDetector(cvImage);
 
-            DbgLog.msg("SH:" + "Red? " + String.valueOf(detector.isRed()));
-            DbgLog.msg("SH:" + "Blue? " + String.valueOf(detector.isBlue()));
-            telemetry.addData("Color:", "Red? " + String.valueOf(detector.isRed()));
-            telemetry.addData("Color:", "Blue? " + String.valueOf(detector.isBlue()));
+            DbgLog.msg("SH Beacon Color: " + detector.getLightOrder());
+            telemetry.addData("Beacon Color: ", detector.getLightOrder());
             telemetry.update();
             sleep(10);
           }
         }
       } catch (Exception e) {
         stopCamera();
-        throw e;
       }
     }
   }
