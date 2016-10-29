@@ -316,7 +316,7 @@ class Drivetrain
     private final static double TRN_TUNER = 1.0;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
-    private final static double WHL_DIAMETER = 6.684 * DRV_TUNER; //Diameter of the wheel (inches)
+    private final static double WHL_DIAMETER = 6.5 * DRV_TUNER; //Diameter of the wheel (inches)
     private final static int    ENCODER_CPR = ShelbyBot.ENCODER_CPR;
     private final static double GEAR_RATIO  = 1;                   //Gear ratio
 
