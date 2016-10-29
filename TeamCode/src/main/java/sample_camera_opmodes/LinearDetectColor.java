@@ -69,7 +69,6 @@ public class LinearDetectColor extends LinearOpModeCamera {
         }
       } catch (Exception e) {
         stopCamera();
-        throw e;
       }
     }
   }
