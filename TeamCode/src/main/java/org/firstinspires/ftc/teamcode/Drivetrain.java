@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
@@ -9,6 +10,34 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 class Drivetrain
 {
+    void Turn_to_heading(double HEADING) {
+        double CURRENT_HEADING = gyro.getHeading();
+        double TARGET_HEADING = CURRENT_HEADING + HEADING;
+        while(Math.abs(TARGET_HEADING - CURRENT_HEADING) > TURN_TOLERANCE)
+        {
+            if( TARGET_HEADING > CURRENT_HEADING)
+            {
+                move(0.5, -0.5);
+            }
+        }
+        stopMotion();
+    }
+    void Turn_To_Angle(double ANGLE)
+    {
+        double CURRENT_ANGLE = gyro.getHeading() * 360;
+        double TARGET_ANGLE = CURRENT_ANGLE + ANGLE;
+        while(Math.abs(TARGET_ANGLE - CURRENT_ANGLE) > TURN_TOLERANCE)
+        {
+            if(TARGET_ANGLE > CURRENT_ANGLE)
+            {
+                move(0.5, -0.5);
+            }
+            else if(TARGET_ANGLE < CURRENT_ANGLE)
+            {
+                move(-0.5, 0.5);
+            }
+        }
+    }
     Drivetrain()
     {
         rt.reset();
@@ -314,6 +343,7 @@ class Drivetrain
 
     private final static double DRV_TUNER = 1.0;
     private final static double TRN_TUNER = 1.0;
+    private final static double TURN_TOLERANCE = 0.5;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
     private final static double WHL_DIAMETER = 6.684 * DRV_TUNER; //Diameter of the wheel (inches)
@@ -330,6 +360,7 @@ class Drivetrain
 
     private DcMotor left_drive;
     private DcMotor right_drive;
+    public ModernRoboticsI2cGyro gyro;
 
     private Point2d currPt = new Point2d(0.0, 0.0);
 
