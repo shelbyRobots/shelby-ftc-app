@@ -3,8 +3,8 @@ package org.firstinspires.ftc.teamcode;
 public interface BeaconFinder
 {
     LightOrder getLightOrder();
-    double getLButtonPos();
-    double getRButtonPos();
+    //double getLButtonPos();
+    //double getRButtonPos();
 
     enum LightOrder
     {

@@ -7,6 +7,7 @@ import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.hardware.GyroSensor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
@@ -36,6 +37,7 @@ class ShelbyBot
     DcMotor  sweepMotor  = null;
     DcMotor  shotmotor1  = null;
     DcMotor  shotmotor2  = null;
+    Servo    pusher      = null;
 
     final static int    ENCODER_CPR = 1120;     //Encoder Counts per Revolution
 
@@ -57,6 +59,7 @@ class ShelbyBot
         sweepMotor  = hwMap.dcMotor.get("sweepmotor");
         shotmotor1  = hwMap.dcMotor.get("leftshooter");
         shotmotor2  = hwMap.dcMotor.get("rightshooter");
+        pusher      = hwMap.servo.get("pusher");
 
         shotmotor2.setDirection(DcMotor.Direction.REVERSE);
         leftMotor.setDirection(DcMotor.Direction.FORWARD);  // FORWARD if using AndyMark motors
@@ -72,15 +75,17 @@ class ShelbyBot
         shotmotor1.setPower(0);
         shotmotor2.setPower(0);
 
+        leftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+
         leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         elevMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        elevMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         sweepMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        sweepMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        elevMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        sweepMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
 
         DbgLog.msg("SBH left_drive: \n"
                 + "cncInfo " + leftMotor.getConnectionInfo() + "\n"

@@ -6,6 +6,8 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import java.util.Vector;
+
 //import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 @SuppressWarnings("unused")
@@ -33,15 +35,26 @@ public class RedOpLinear extends LinearOpMode {
 
         for(int i = 0; i< pathSegs.length; ++i)
         {
-            doMove(pathSegs[i]);
+            doMove(pathSegs[i], speeds.get(i), dirs.get(i));
             if(i < turns.length)
             {
                 doTurn(turns[i]);
                 DbgLog.msg("SJH Planned pos: %s %s",
                         pathSegs[i].getTgtPt(),
                         pathSegs[i+1].getFieldHeading());
-                findSensedLoc();
+                if(findSensedLoc())
+                {
+                    DbgLog.msg("SJH Sensed pos: %s %s",
+                            curPos, curHdg);
+                }
                 if (curPos != null) drvTrn.setCurrPt(curPos);
+            }
+            switch (actions.get(i))
+            {
+                case FIND_BEACON: do_findBeaconOrder(true);  break;
+                case RST_PUSHER: robot.pusher.setPosition(RGT_PUSH_POS); break;
+                case SHOOT:       do_shoot();           break;
+                case NOTHING:                           break;
             }
         }
 
@@ -69,11 +82,16 @@ public class RedOpLinear extends LinearOpMode {
         Points pts = new Points();
         pathSegs = pts.getSegments(alliance);
         turns    = pts.getTurns(alliance);
+        actions  = pts.getActions();
+        dirs     = pts.getSegDirs();
+        speeds   = pts.getSegSpeeds();
 
         DbgLog.msg("SJH ROUTE: \n" + pts.toString());
 
         Point2d currPoint = pathSegs[0].getStrtPt();
         drvTrn.setCurrPt(currPoint);
+
+        robot.pusher.setPosition(RGT_PUSH_POS);
 
         timer.reset();
         DbgLog.msg("SJH Start %s. Time: %6.3f", currPoint, timer.time());
@@ -81,15 +99,21 @@ public class RedOpLinear extends LinearOpMode {
         // Send telemetry message to indicate successful Encoder reset
         telemetry.addData("Path", "Start at %s", currPoint);
         telemetry.update();
+
+        //FtcRobotControllerActivity act =
+        //        (FtcRobotControllerActivity)hardwareMap.appContext;
+
+        //ocah = new OpenCvActivityHelper(act);
+        //ocah.addCallback(bd);
     }
 
-    private void doMove(Segment seg) throws InterruptedException
+    private void doMove(Segment seg, double speed, Segment.SegDir dir)
+            throws InterruptedException
     {
         String  snm = seg.getName();
         Point2d spt = seg.getStrtPt();
         Point2d ept = seg.getTgtPt();
         double  fhd = seg.getFieldHeading();
-        Segment.SegDir dir = seg.getDir();
         DbgLog.msg("SJH: Drive %s %s %s %6.2f %s",
                 snm, spt, ept, fhd, dir);
 
@@ -101,7 +125,7 @@ public class RedOpLinear extends LinearOpMode {
         if (dir == Segment.SegDir.REVERSE) ddir = Drivetrain.Direction.REVERSE;
         timer.reset();
         Point2d pt = seg.getTgtPt();
-        drvTrn.driveToPointLinear(pt, DEF_DRV_PWR, ddir);
+        drvTrn.driveToPointLinear(pt, speed, ddir);
         DbgLog.msg("SJH Completed move %s. Time: %6.3f", seg.getName(), timer.time());
     }
 
@@ -119,15 +143,20 @@ public class RedOpLinear extends LinearOpMode {
         curPos = null;
         ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
         tracker.setActive(true);
-        Thread.sleep(500);
         Point2d sensedBotPos = null;
         double  sensedFldHdg = pathSegs[0].getFieldHeading();
         while(sensedBotPos == null && itimer.milliseconds() < 1000)
         {
             tracker.updateRobotLocationInfo();
             sensedBotPos = tracker.getSensedPosition();
-            sensedFldHdg = tracker.getSensedFldHeading();
-            curPos = sensedBotPos;
+
+            if(sensedBotPos != null)
+            {
+                curPos = sensedBotPos;
+                sensedFldHdg = tracker.getSensedFldHeading();
+                curHdg = sensedFldHdg;
+            }
+            Thread.sleep(50);
         }
 
         tracker.setActive(false);
@@ -145,20 +174,127 @@ public class RedOpLinear extends LinearOpMode {
         return (curPos != null);
     }
 
-    private final static double DEF_DRV_PWR = 0.7;
-    private final static double DEF_TRN_PWR = 0.5;
+    private void do_findBeaconOrder(boolean push) throws InterruptedException
+    {
+        DbgLog.msg("SJH: FIND BEACON ORDER!!!");
+        int timeout = 1000;
+        BeaconFinder.LightOrder ord = BeaconFinder.LightOrder.UNKNOWN;
+        ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
+        //ocah.attach();
+        while (ord == BeaconFinder.LightOrder.UNKNOWN &&
+               itimer.milliseconds() < timeout)
+        {
+            //ord = bd.getLightOrder();
+            Thread.sleep(50);
+        }
+        //ocah.stop();
+
+        if (ord != BeaconFinder.LightOrder.UNKNOWN)
+        {
+            DbgLog.msg("SJH: Found Beacon!!! " + ord);
+        }
+
+        if (ord == BeaconFinder.LightOrder.BLUE_RED)
+        {
+            if (alliance == Field.Alliance.BLUE)
+            {
+                bSide = ButtonSide.LEFT;
+            }
+            else
+            {
+                bSide = ButtonSide.RIGHT;
+            }
+        }
+        else if (ord == BeaconFinder.LightOrder.RED_BLUE)
+        {
+            if (alliance == Field.Alliance.BLUE)
+            {
+                bSide = ButtonSide.RIGHT;
+            }
+            else
+            {
+                bSide = ButtonSide.LEFT;
+            }
+        }
+
+        //TESTING ONLY - remove when beacon finder is working
+        if(bSide == ButtonSide.UNKNOWN)
+            bSide = ButtonSide.LEFT;
+        else if (bSide == ButtonSide.LEFT)
+            bSide = ButtonSide.RIGHT;
+        DbgLog.msg("SJH: Gonna push button " + bSide);
+
+        if(push == true)
+        {
+            do_pushButton(bSide);
+        }
+    }
+
+    private void do_pushButton(ButtonSide bside)
+    {
+        DbgLog.msg("SJH: PUSH BUTTON!!!");
+        if (bside == ButtonSide.LEFT)
+        {
+            robot.pusher.setPosition(LFT_PUSH_POS);
+            DbgLog.msg("SJH: Pushing left button");
+        }
+        else if (bside == ButtonSide.RIGHT)
+        {
+            robot.pusher.setPosition(RGT_PUSH_POS);
+            DbgLog.msg("SJH: Pushing right button");
+        }
+    }
+
+    private void do_shoot()
+    {
+        DbgLog.msg("SJH: SHOOT!!!");
+        ElapsedTime stimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
+        robot.shotmotor1.setPower(DEF_SHT_PWR);
+        robot.shotmotor2.setPower(DEF_SHT_PWR);
+        sleep(500);
+        robot.sweepMotor.setPower(-DEF_SWP_PWR);
+        robot.elevMotor.setPower(-DEF_ELV_PWR);
+        sleep(1500);
+        robot.shotmotor1.setPower(0);
+        robot.shotmotor2.setPower(0);
+        robot.sweepMotor.setPower(0);
+        robot.elevMotor.setPower(0);
+    }
+
+    private enum ButtonSide
+    {
+        UNKNOWN,
+        LEFT,
+        RIGHT
+    }
+    private final static double RGT_PUSH_POS = 0.2;
+    private final static double LFT_PUSH_POS = 0.8;
+
+    private final static double DEF_DRV_PWR  = 0.7;
+    private final static double DEF_TRN_PWR  = 0.5;
+
+    private final static double DEF_SHT_PWR = 0.55;
+    private final static double DEF_SWP_PWR = 1.0;
+    private final static double DEF_ELV_PWR = 0.5;
 
     private Segment[] pathSegs;
     private double[]  turns;
+    private Vector<Points.Action> actions;
+    private Vector<Segment.SegDir> dirs;
+    private Vector<Double> speeds;
 
     private ShelbyBot   robot = new ShelbyBot();
     private ElapsedTime timer = new ElapsedTime();
     private Drivetrain drvTrn = new Drivetrain();
 
     private ImageTracker tracker = new ImageTracker();
+    //BeaconDetector bd = new BeaconDetector();
+    //private OpenCvActivityHelper ocah;
+    private ButtonSide bSide = ButtonSide.UNKNOWN;
 
     private static Field.Alliance alliance;
     private static LinearOpMode instance = null;
 
     private static Point2d curPos;
+    private static double  curHdg;
 }
