@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import java.util.Vector;
@@ -16,11 +15,11 @@ import hallib.HalDashboard;
 //import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 @SuppressWarnings("unused")
-@Autonomous(name="RedOpLinear", group="Auton")
+@Autonomous(name="AutonShelby", group="Auton")
 //@Disabled
-public class RedOpLinear extends FtcOpMode implements FtcMenu.MenuButtons
+public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 {
-    public RedOpLinear()
+    public FtcAutoShelby()
     {
         super();
 //        instance = this;
