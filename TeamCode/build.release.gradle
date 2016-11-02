@@ -1,11 +1,13 @@
 dependencies {
-    //compile project(':Ftc3543Lib')
     compile project(':FtcRobotController')
-    compile project(':openCVLibrary310')
+
     compile (name: 'RobotCore-release', ext: 'aar')
     compile (name: 'Hardware-release', ext: 'aar')
     compile (name: 'FtcCommon-release', ext: 'aar')
     compile (name:'ModernRobotics-release', ext:'aar')
     compile (name:'Analytics-release', ext:'aar')
     compile (name:'WirelessP2p-release', ext:'aar')
+
+    compile project(':openCVLibrary310')
+    compile project(':Ftc3543Lib')
 }

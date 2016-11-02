@@ -11,6 +11,7 @@ class Segment
         this.strtPt = start;
         this.tgtPt  = end;
         this.fldHdg = angle(tgtPt);
+        len = start.distance(end);
     }
 
     SegDir getDir()
@@ -38,6 +39,8 @@ class Segment
         return tgtPt;
     }
 
+    double getLength() { return len; }
+
     void setDir(SegDir dir)
     {
         this.dir = dir;
@@ -61,6 +64,7 @@ class Segment
     private Point2d tgtPt;
     private String  name;
     private SegDir dir = SegDir.FORWARD;
+    private double len = 0;
 
     //pointer to action function (i.e. shoot ball, findAndPushButton)
 }

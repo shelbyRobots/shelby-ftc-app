@@ -32,8 +32,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.Range;
 
 /**
  * This OpMode uses the common HardwareK9bot class to define the devices on the robot.
@@ -54,15 +57,25 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 @TeleOp(name="Telop Tank", group="Tele")
 //@Disabled
-public class TeleopTank_Driver extends LinearOpMode {
+public class TeleopTank_Driver extends LinearOpMode
+{
 
     @Override
-    public void runOpMode() throws InterruptedException {
+    public void runOpMode() throws InterruptedException
+    {
         double left;
         double right;
         double shooter;
         boolean shoot_pressed;
         boolean last_shoot_pressed = false;
+        boolean d_down_last = false;
+        boolean d_up_last = false;
+        boolean b_pressed;
+        boolean b_pressed_last = false;
+
+        DcMotor.ZeroPowerBehavior zeroPwr = DcMotor.ZeroPowerBehavior.FLOAT;
+
+        double shoot_scale = 0.55;
 
         double elev;
         double sweep;
@@ -71,7 +84,6 @@ public class TeleopTank_Driver extends LinearOpMode {
          * The init() method of the hardware class does all the work here
          */
         robot.init(hardwareMap);
-        drvTrn.init(robot.leftMotor, robot.rightMotor);
 
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Say", "Hello Driver");    //
@@ -84,10 +96,23 @@ public class TeleopTank_Driver extends LinearOpMode {
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
 
-            // Run wheels in tank mode (note: The joystick goes negative when pushed forwards, so negate it)
+            // Run wheels in tank mode
+            // (note: The joystick goes negative when pushed forwards, so negate it)
+            if(gamepad2.dpad_down && !d_down_last)   shoot_scale -= 0.05;
+            else if(gamepad2.dpad_up && !d_up_last)  shoot_scale += 0.05;
+
+            shoot_scale = Range.clip(shoot_scale, 0.0, 1.0);
+            d_down_last = gamepad2.dpad_down;
+            d_up_last   = gamepad2.dpad_up;
+
             left  = -gamepad1.left_stick_y;
             right = -gamepad1.right_stick_y;
             shooter = gamepad2.right_trigger;
+
+            lpush = gamepad1.left_trigger  > 0.1;
+            rpush = gamepad1.right_trigger > 0.1;
+
+            b_pressed = gamepad1.b;
 
             robot.leftMotor.setPower(left);
             robot.rightMotor.setPower(right);
@@ -103,12 +128,23 @@ public class TeleopTank_Driver extends LinearOpMode {
                 toggle = !toggle;
 
                 if(toggle)
-                    shooter_motors(1);
+                    shooter_motors(shoot_scale);
                 else
-                    shooter_motors(0);
+                    shooter_motors(0.0);
             }
-
             last_shoot_pressed = shoot_pressed;
+
+            if(lpush) do_pushButton(ButtonSide.LEFT);
+            else if (rpush) do_pushButton(ButtonSide.RIGHT);
+
+            if(b_pressed && !b_pressed_last)
+            {
+                if(zeroPwr == DcMotor.ZeroPowerBehavior.BRAKE)
+                    zeroPwr = DcMotor.ZeroPowerBehavior.FLOAT;
+                else
+                    zeroPwr = DcMotor.ZeroPowerBehavior.BRAKE;
+            }
+            b_pressed_last = b_pressed;
 
             telemetry.addData("left : ",  "%.2f", left);
             telemetry.addData("right : ", "%.2f", right);
@@ -116,6 +152,7 @@ public class TeleopTank_Driver extends LinearOpMode {
             telemetry.addData("sweep : ",  sweep);
             telemetry.addData("shooters", "%.2f", shooter);
             telemetry.addData("shootpwr", "%s", last_shoot_pressed);
+            telemetry.addData("shoot_scale", "%.2f", shoot_scale);
             telemetry.update();
 
             // Pause for metronome tick.  40 mS each cycle = update 25 times a second.
@@ -124,12 +161,39 @@ public class TeleopTank_Driver extends LinearOpMode {
         }
     }
 
-
     private void shooter_motors(double speed)
     {
         robot.shotmotor1.setPower(speed);
         robot.shotmotor2.setPower(speed);
     }
+
+    private void do_pushButton(ButtonSide bside)
+    {
+        DbgLog.msg("SJH: PUSH BUTTON!!!");
+        if (bside == ButtonSide.LEFT)
+        {
+            robot.pusher.setPosition(LEFT_POS);
+            DbgLog.msg("SJH: Pushing left button");
+        }
+        else if (bside == ButtonSide.RIGHT)
+        {
+            robot.pusher.setPosition(RIGHT_POS);
+            DbgLog.msg("SJH: Pushing right button");
+        }
+    }
+
+    private enum ButtonSide
+    {
+        UNKNOWN,
+        LEFT,
+        RIGHT
+    }
+
+    static final double LEFT_POS        = 0.8;
+    static final double RIGHT_POS       = 0.2;
+
+    static boolean lpush = false;
+    static boolean rpush = false;
+
     private ShelbyBot robot = new ShelbyBot();
-    private Drivetrain drvTrn = new Drivetrain();
 }

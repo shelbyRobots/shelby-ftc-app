@@ -1,14 +1,48 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-
 class Drivetrain
 {
+    double TRNPWR = 0.5;
+    void turnDelta(double angle)
+    {
+        double currentHdg = gyro.getHeading();
+        double targetHdg = currentHdg + angle;
+        while(Math.abs(targetHdg - currentHdg) > TURN_TOLERANCE)
+        {
+            if(targetHdg > currentHdg)
+            {
+                move(TRNPWR, -TRNPWR);
+            }
+            else if(targetHdg < currentHdg)
+            {
+                move(-TRNPWR, TRNPWR);
+            }
+        }
+    }
+
+    void turnToHeading(double heading)
+    {
+        double currentHdg = gyro.getHeading();
+        double targetHdg = heading;
+        while(Math.abs(targetHdg - currentHdg) > TURN_TOLERANCE)
+        {
+            if(targetHdg > currentHdg)
+            {
+                move(TRNPWR, -TRNPWR);
+            }
+            else if(targetHdg < currentHdg)
+            {
+                move(-TRNPWR, TRNPWR);
+            }
+        }
+    }
+
     Drivetrain()
     {
         rt.reset();
@@ -194,13 +228,16 @@ class Drivetrain
         currPt = curPt;
     }
 
-    public void init(DcMotor lft_drv, DcMotor rgt_drv)
+    public void init(DcMotor lft_drv, DcMotor rgt_drv, ModernRoboticsI2cGyro gyro)
     {
         DbgLog.msg("SJH CPI: %5.2f", CPI);
         frame = 0;
         left_drive  = lft_drv;
         right_drive = rgt_drv;
-        //lom = RedOpLinear.getInstance();
+        this.gyro = gyro;
+        
+        left_drive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        right_drive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
     private void waitForTick(long periodMs) throws InterruptedException
@@ -220,7 +257,7 @@ class Drivetrain
         double ldp; // = Math.abs(left_drive.getPower());
         double rdp; // = Math.abs(right_drive.getPower());
 
-        double err = getDriveError();
+        double err = getEncoderError();
 
         if(Math.abs(err) > THRESH)
         {
@@ -277,13 +314,19 @@ class Drivetrain
         }
     }
 
-    private double getDriveError()
+    private double getEncoderError()
     {
         int ldc = Math.abs(left_drive.getCurrentPosition());
         int rdc = Math.abs(right_drive.getCurrentPosition());
 
         //convert LR count difference to angle
         return countsToAngle(rdc - ldc, VEH_WIDTH);
+    }
+
+    private int getGyroError(int tgtHdg)
+    {
+        int curHdg = gyro.getHeading();
+        return tgtHdg - curHdg;
     }
 
     private double getSteer(double error, double PCoeff)
@@ -314,9 +357,10 @@ class Drivetrain
 
     private final static double DRV_TUNER = 1.0;
     private final static double TRN_TUNER = 1.0;
+    private final static double TURN_TOLERANCE = 0.5;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
-    private final static double WHL_DIAMETER = 6.684 * DRV_TUNER; //Diameter of the wheel (inches)
+    private final static double WHL_DIAMETER = 6.5 * DRV_TUNER; //Diameter of the wheel (inches)
     private final static int    ENCODER_CPR = ShelbyBot.ENCODER_CPR;
     private final static double GEAR_RATIO  = 1;                   //Gear ratio
 
@@ -330,6 +374,7 @@ class Drivetrain
 
     private DcMotor left_drive;
     private DcMotor right_drive;
+    public ModernRoboticsI2cGyro gyro;
 
     private Point2d currPt = new Point2d(0.0, 0.0);
 
