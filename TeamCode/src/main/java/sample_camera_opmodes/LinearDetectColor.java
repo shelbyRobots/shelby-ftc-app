@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
 import org.firstinspires.ftc.teamcode.BeaconDetector;
+import org.firstinspires.ftc.teamcode.BeaconFinder;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;
@@ -51,7 +52,7 @@ public class LinearDetectColor extends LinearOpModeCamera {
 
     if (isCameraAvailable()) {
 
-      setCameraDownsampling(8);
+      setCameraDownsampling(1);
       // parameter determines how downsampled you want your images
       // 8, 4, 2, or 1.
       // higher number is more downsampled, so less resolution but faster
@@ -79,6 +80,7 @@ public class LinearDetectColor extends LinearOpModeCamera {
         motorRight.setPower(0);
         sleep(1000);            // wait a second.
         */
+      BeaconFinder.LightOrder oldlo = BeaconFinder.LightOrder.UNKNOWN;
       try { // try is needed so catch the interrupt when the opmode is ended to stop the camera
         while (opModeIsActive()) {
           if (imageReady()) { // only do this if an image has been returned from the camera
@@ -89,9 +91,16 @@ public class LinearDetectColor extends LinearOpModeCamera {
 
             BeaconDetector detector = new BeaconDetector(cvImage);
 
-            DbgLog.msg("SH Beacon Color: " + detector.getLightOrder());
-            telemetry.addData("Beacon Color: ", detector.getLightOrder());
-            telemetry.update();
+            BeaconFinder.LightOrder curlo = detector.getLightOrder();
+
+            if(oldlo != curlo)
+            {
+              DbgLog.msg("SJH Beacon Color: " +  curlo);
+              telemetry.addData("Beacon Color: ", curlo);
+              telemetry.update();
+            }
+
+            oldlo = curlo;
             sleep(10);
           }
         }
