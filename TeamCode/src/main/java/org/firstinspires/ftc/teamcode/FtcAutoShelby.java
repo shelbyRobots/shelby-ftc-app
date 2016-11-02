@@ -93,8 +93,10 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
         doMenus();
 
-        if (robot.leftMotor != null && robot.rightMotor != null)
-            drvTrn.init(robot.leftMotor, robot.rightMotor);
+        if (robot.leftMotor  != null &&
+            robot.rightMotor != null &&
+            robot.gyro       != null)
+            drvTrn.init(robot.leftMotor, robot.rightMotor, robot.gyro);
 
         robot.gyro.calibrate();
 
@@ -105,7 +107,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             idle();
         }
 
-        Points pts = new Points();
+        Points pts = new Points(autoStrategy);
         pathSegs = pts.getSegments(alliance);
         turns    = pts.getTurns(alliance);
         actions  = pts.getActions();
@@ -329,14 +331,14 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         FtcChoiceMenu strategyMenu = new FtcChoiceMenu("Auto Strategies:", null, this);
         FtcChoiceMenu allianceMenu = new FtcChoiceMenu("Alliance:", strategyMenu, this);
 
-        strategyMenu.addChoice("Shoot_Push_ParkCenter",      AutoStrategy.SHOOT_PUSH_PARKCNTR,    allianceMenu);
-        strategyMenu.addChoice("Shoot_Push_ParkCorner",      AutoStrategy.SHOOT_PUSH_PARKCRNR,    allianceMenu);
-        strategyMenu.addChoice("Shoot_ParkCenter",           AutoStrategy.SHOOT_PARKCNTR,         allianceMenu);
-        strategyMenu.addChoice("Shoot_ParkCorner",           AutoStrategy.SHOOT_PARKCRNR,         allianceMenu);
-        strategyMenu.addChoice("AngleShoot_Push_ParkCenter", AutoStrategy.ANGSHOOT_PUSH_PARKCNTR, allianceMenu);
-        strategyMenu.addChoice("AngleShoot_Push_ParkCorner", AutoStrategy.ANGSHOOT_PUSH_PARKCRNR, allianceMenu);
-        strategyMenu.addChoice("AngleShoot_ParkCenter",      AutoStrategy.SHOOT_PARKCNTR,         allianceMenu);
-        strategyMenu.addChoice("AngleShoot_ParkCorner",      AutoStrategy.SHOOT_PARKCRNR,         allianceMenu);
+        strategyMenu.addChoice("Shoot_Push_ParkCenter",      Field.AutoStrategy.SHOOT_PUSH_PARKCNTR,    allianceMenu);
+        strategyMenu.addChoice("Shoot_Push_ParkCorner",      Field.AutoStrategy.SHOOT_PUSH_PARKCRNR,    allianceMenu);
+        strategyMenu.addChoice("Shoot_ParkCenter",           Field.AutoStrategy.SHOOT_PARKCNTR,         allianceMenu);
+        strategyMenu.addChoice("Shoot_ParkCorner",           Field.AutoStrategy.SHOOT_PARKCRNR,         allianceMenu);
+        strategyMenu.addChoice("AngleShoot_Push_ParkCenter", Field.AutoStrategy.ANGSHOOT_PUSH_PARKCNTR, allianceMenu);
+        strategyMenu.addChoice("AngleShoot_Push_ParkCorner", Field.AutoStrategy.ANGSHOOT_PUSH_PARKCRNR, allianceMenu);
+        strategyMenu.addChoice("AngleShoot_ParkCenter",      Field.AutoStrategy.SHOOT_PARKCNTR,         allianceMenu);
+        strategyMenu.addChoice("AngleShoot_ParkCorner",      Field.AutoStrategy.SHOOT_PARKCRNR,         allianceMenu);
 
         allianceMenu.addChoice("Red",  Field.Alliance.RED);
         allianceMenu.addChoice("Blue", Field.Alliance.BLUE);
@@ -349,7 +351,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         //
         // Set choices variables.
         //
-        autoStrategy = (AutoStrategy)strategyMenu.getCurrentChoiceObject();
+        autoStrategy = (Field.AutoStrategy)strategyMenu.getCurrentChoiceObject();
         alliance = (Field.Alliance)allianceMenu.getCurrentChoiceObject();
 
         dashboard.displayPrintf(0, "Auto Strategy: %s", autoStrategy);
@@ -361,18 +363,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         UNKNOWN,
         LEFT,
         RIGHT
-    }
-
-    private enum AutoStrategy
-    {
-        SHOOT_PUSH_PARKCRNR,
-        SHOOT_PUSH_PARKCNTR,
-        SHOOT_PARKCRNR,
-        SHOOT_PARKCNTR,
-        ANGSHOOT_PUSH_PARKCRNR,
-        ANGSHOOT_PUSH_PARKCNTR,
-        ANGSHOOT_PARKCRNR,
-        ANGSHOOT_PARKCNTR
     }
 
     private final static double RGT_PUSH_POS = 0.2;
@@ -405,7 +395,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private static Point2d curPos;
     private static double  curHdg;
 
-    private AutoStrategy autoStrategy = AutoStrategy.SHOOT_PARKCNTR;
+    private static Field.AutoStrategy autoStrategy =
+            Field.AutoStrategy.SHOOT_PARKCNTR;
     private static Field.Alliance alliance;
 
     private HalDashboard dashboard;

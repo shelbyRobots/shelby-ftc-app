@@ -10,6 +10,18 @@ public class Field
 {
     static enum Alliance {BLUE, RED};
 
+    static enum AutoStrategy
+    {
+        SHOOT_PUSH_PARKCRNR,
+        SHOOT_PUSH_PARKCNTR,
+        SHOOT_PARKCRNR,
+        SHOOT_PARKCNTR,
+        ANGSHOOT_PUSH_PARKCRNR,
+        ANGSHOOT_PUSH_PARKCNTR,
+        ANGSHOOT_PARKCRNR,
+        ANGSHOOT_PARKCNTR
+    }
+
     //  X axis parallel to red  alliance wall point toward    blue alliance
     //  Y axis parallel to blue alliance wall point away from red  alliance
 

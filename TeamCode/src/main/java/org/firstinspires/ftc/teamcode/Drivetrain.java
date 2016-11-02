@@ -6,38 +6,43 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-
 class Drivetrain
 {
-    void Turn_to_heading(double HEADING) {
-        double CURRENT_HEADING = gyro.getHeading();
-        double TARGET_HEADING = CURRENT_HEADING + HEADING;
-        while(Math.abs(TARGET_HEADING - CURRENT_HEADING) > TURN_TOLERANCE)
-        {
-            if( TARGET_HEADING > CURRENT_HEADING)
-            {
-                move(0.5, -0.5);
-            }
-        }
-        stopMotion();
-    }
-    void Turn_To_Angle(double ANGLE)
+    double TRNPWR = 0.5;
+    void turnDelta(double angle)
     {
-        double CURRENT_ANGLE = gyro.getHeading() * 360;
-        double TARGET_ANGLE = CURRENT_ANGLE + ANGLE;
-        while(Math.abs(TARGET_ANGLE - CURRENT_ANGLE) > TURN_TOLERANCE)
+        double currentHdg = gyro.getHeading();
+        double targetHdg = currentHdg + angle;
+        while(Math.abs(targetHdg - currentHdg) > TURN_TOLERANCE)
         {
-            if(TARGET_ANGLE > CURRENT_ANGLE)
+            if(targetHdg > currentHdg)
             {
-                move(0.5, -0.5);
+                move(TRNPWR, -TRNPWR);
             }
-            else if(TARGET_ANGLE < CURRENT_ANGLE)
+            else if(targetHdg < currentHdg)
             {
-                move(-0.5, 0.5);
+                move(-TRNPWR, TRNPWR);
             }
         }
     }
+
+    void turnToHeading(double heading)
+    {
+        double currentHdg = gyro.getHeading();
+        double targetHdg = heading;
+        while(Math.abs(targetHdg - currentHdg) > TURN_TOLERANCE)
+        {
+            if(targetHdg > currentHdg)
+            {
+                move(TRNPWR, -TRNPWR);
+            }
+            else if(targetHdg < currentHdg)
+            {
+                move(-TRNPWR, TRNPWR);
+            }
+        }
+    }
+
     Drivetrain()
     {
         rt.reset();
@@ -223,13 +228,13 @@ class Drivetrain
         currPt = curPt;
     }
 
-    public void init(DcMotor lft_drv, DcMotor rgt_drv)
+    public void init(DcMotor lft_drv, DcMotor rgt_drv, ModernRoboticsI2cGyro gyro)
     {
         DbgLog.msg("SJH CPI: %5.2f", CPI);
         frame = 0;
         left_drive  = lft_drv;
         right_drive = rgt_drv;
-        //lom = RedOpLinear.getInstance();
+        this.gyro = gyro;
     }
 
     private void waitForTick(long periodMs) throws InterruptedException
@@ -249,7 +254,7 @@ class Drivetrain
         double ldp; // = Math.abs(left_drive.getPower());
         double rdp; // = Math.abs(right_drive.getPower());
 
-        double err = getDriveError();
+        double err = getEncoderError();
 
         if(Math.abs(err) > THRESH)
         {
@@ -306,13 +311,19 @@ class Drivetrain
         }
     }
 
-    private double getDriveError()
+    private double getEncoderError()
     {
         int ldc = Math.abs(left_drive.getCurrentPosition());
         int rdc = Math.abs(right_drive.getCurrentPosition());
 
         //convert LR count difference to angle
         return countsToAngle(rdc - ldc, VEH_WIDTH);
+    }
+
+    private int getGyroError(int tgtHdg)
+    {
+        int curHdg = gyro.getHeading();
+        return tgtHdg - curHdg;
     }
 
     private double getSteer(double error, double PCoeff)
