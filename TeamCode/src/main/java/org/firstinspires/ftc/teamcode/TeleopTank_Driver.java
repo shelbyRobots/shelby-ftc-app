@@ -35,6 +35,7 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.Range;
 
 /**
@@ -69,6 +70,10 @@ public class TeleopTank_Driver extends LinearOpMode
         boolean last_shoot_pressed = false;
         boolean d_down_last = false;
         boolean d_up_last = false;
+        boolean b_pressed;
+        boolean b_pressed_last = false;
+
+        DcMotor.ZeroPowerBehavior zeroPwr = DcMotor.ZeroPowerBehavior.FLOAT;
 
         double shoot_scale = 0.55;
 
@@ -79,7 +84,6 @@ public class TeleopTank_Driver extends LinearOpMode
          * The init() method of the hardware class does all the work here
          */
         robot.init(hardwareMap);
-        drvTrn.init(robot.leftMotor, robot.rightMotor);
 
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Say", "Hello Driver");    //
@@ -108,6 +112,8 @@ public class TeleopTank_Driver extends LinearOpMode
             lpush = gamepad1.left_trigger  > 0.1;
             rpush = gamepad1.right_trigger > 0.1;
 
+            b_pressed = gamepad1.b;
+
             robot.leftMotor.setPower(left);
             robot.rightMotor.setPower(right);
             elev  = gamepad2.left_stick_y;
@@ -126,11 +132,19 @@ public class TeleopTank_Driver extends LinearOpMode
                 else
                     shooter_motors(0.0);
             }
+            last_shoot_pressed = shoot_pressed;
 
             if(lpush) do_pushButton(ButtonSide.LEFT);
             else if (rpush) do_pushButton(ButtonSide.RIGHT);
 
-            last_shoot_pressed = shoot_pressed;
+            if(b_pressed && !b_pressed_last)
+            {
+                if(zeroPwr == DcMotor.ZeroPowerBehavior.BRAKE)
+                    zeroPwr = DcMotor.ZeroPowerBehavior.FLOAT;
+                else
+                    zeroPwr = DcMotor.ZeroPowerBehavior.BRAKE;
+            }
+            b_pressed_last = b_pressed;
 
             telemetry.addData("left : ",  "%.2f", left);
             telemetry.addData("right : ", "%.2f", right);
@@ -182,5 +196,4 @@ public class TeleopTank_Driver extends LinearOpMode
     static boolean rpush = false;
 
     private ShelbyBot robot = new ShelbyBot();
-    private Drivetrain drvTrn = new Drivetrain();
 }

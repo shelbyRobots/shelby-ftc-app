@@ -235,6 +235,9 @@ class Drivetrain
         left_drive  = lft_drv;
         right_drive = rgt_drv;
         this.gyro = gyro;
+        
+        left_drive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        right_drive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
     private void waitForTick(long periodMs) throws InterruptedException

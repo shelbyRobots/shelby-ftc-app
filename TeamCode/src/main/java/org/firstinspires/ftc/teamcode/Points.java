@@ -13,12 +13,11 @@ class Points
         {
             case ANGSHOOT_PARKCNTR:
             {
-                //TODO: CHANGE START and SHOOT PTS
-                points.add(new Point2d(STARTX, STARTY));
+                points.add(new Point2d(ASTARTX, STARTY));
                 segDirs.add(Segment.SegDir.FORWARD);
                 segSpeeds.add(DEF_SPEED);
                 actions.add(Action.SHOOT);
-                points.add(new Point2d(STARTX,  SHOOTY));
+                points.add(new Point2d(ASTARTX,  ASHOOTY));
                 segDirs.add(Segment.SegDir.FORWARD);
                 segSpeeds.add(DEF_SPEED);
                 actions.add(Action.NOTHING);
@@ -27,12 +26,11 @@ class Points
             }
             case ANGSHOOT_PARKCRNR:
             {
-                //TODO: CHANGE START and SHOOT PTS
-                points.add(new Point2d(STARTX, STARTY));
+                points.add(new Point2d(ASTARTX, STARTY));
                 segDirs.add(Segment.SegDir.FORWARD);
                 segSpeeds.add(DEF_SPEED);
                 actions.add(Action.SHOOT);
-                points.add(new Point2d(STARTX,  SHOOTY));
+                points.add(new Point2d(ASTARTX,  ASHOOTY));
                 segDirs.add(Segment.SegDir.FORWARD);
                 segSpeeds.add(DEF_SPEED);
                 actions.add(Action.NOTHING);
@@ -41,12 +39,11 @@ class Points
             }
             case ANGSHOOT_PUSH_PARKCNTR:
             {
-                //TODO: CHANGE START and SHOOT PTS
-                points.add(new Point2d(STARTX, STARTY));
+                points.add(new Point2d(ASTARTX, STARTY));
                 segDirs.add(Segment.SegDir.FORWARD);
                 segSpeeds.add(DEF_SPEED);
                 actions.add(Action.SHOOT);
-                points.add(new Point2d(STARTX,  SHOOTY));
+                points.add(new Point2d(ASTARTX,  ASHOOTY));
                 segDirs.add(Segment.SegDir.FORWARD);
                 segSpeeds.add(DEF_SPEED);
                 actions.add(Action.NOTHING);
@@ -91,12 +88,11 @@ class Points
             }
             case ANGSHOOT_PUSH_PARKCRNR:
             {
-                //TODO: CHANGE START and SHOOT PTS
-                points.add(new Point2d(STARTX, STARTY));
+                points.add(new Point2d(ASTARTX, STARTY));
                 segDirs.add(Segment.SegDir.FORWARD);
                 segSpeeds.add(DEF_SPEED);
                 actions.add(Action.SHOOT);
-                points.add(new Point2d(STARTX,  SHOOTY));
+                points.add(new Point2d(ASTARTX,  ASHOOTY));
                 segDirs.add(Segment.SegDir.FORWARD);
                 segSpeeds.add(DEF_SPEED);
                 actions.add(Action.NOTHING);
@@ -449,8 +445,10 @@ class Points
     private static final double W_WALL = Field.W_WALL_X;
 
     private static final double STARTX  = -1*12;
+    private static final double ASTARTX =  1*12;
     private static final double STARTY  =  S_WALL + REAR_OFFSET;
     private static final double SHOOTY  =  STARTY + 1.0;
+    private static final double ASHOOTY =  STARTY + 1*12;
     private static final double TRN_1_Y =  S_WALL + 2*12;
     private static final double TGT_1_Y = -1*12;
     private static final double TGT_2_Y =  3*12;
