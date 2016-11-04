@@ -9,83 +9,11 @@ class Points
     {
         Vector<Point2d> points = new Vector<>(MAX_SEGMENTS);
 
-        switch (autoStrategy)
+        switch (autoStrategy) //setup SHOOT points/actions
         {
             case ANGSHOOT_PARKCNTR:
-            {
-                points.add(new Point2d(ASTARTX, STARTY));
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.SHOOT);
-                points.add(new Point2d(ASTARTX,  ASHOOTY));
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.NOTHING);
-                points.add(new Point2d(CTR_PRK_X, CTR_PRK_Y));
-                break;
-            }
             case ANGSHOOT_PARKCRNR:
-            {
-                points.add(new Point2d(ASTARTX, STARTY));
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.SHOOT);
-                points.add(new Point2d(ASTARTX,  ASHOOTY));
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.NOTHING);
-                points.add(new Point2d(CRN_PRK_X, CRN_PRK_Y));
-                break;
-            }
             case ANGSHOOT_PUSH_PARKCNTR:
-            {
-                points.add(new Point2d(ASTARTX, STARTY));
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.SHOOT);
-                points.add(new Point2d(ASTARTX,  ASHOOTY));
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.NOTHING);
-                points.add(new Point2d(STARTX,  TRN_1_Y)); //1st turn pt
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.SCAN_IMAGE);
-                points.add(new Point2d(SCAN_X,  TGT_1_Y)); //2nd turn - scan images
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.FIND_BEACON);
-                points.add(new Point2d(BECN_X,  TGT_1_Y)); //2nd turn - find beacon
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(APP_SPEED);
-                actions.add(Action.NOTHING);
-                points.add(new Point2d(TOUCH_X, TGT_1_Y)); //Push button
-                segDirs.add(Segment.SegDir.REVERSE);
-                segSpeeds.add(REV_SPEED);
-                actions.add(Action.RST_PUSHER);
-                points.add(new Point2d(SCAN_X,  TGT_1_Y)); //Rev to clear pt for turn
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.SCAN_IMAGE);
-                points.add(new Point2d(SCAN_X,  TGT_2_Y)); //scan for images
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.FIND_BEACON);
-                points.add(new Point2d(BECN_X,  TGT_2_Y)); //find beacon
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(APP_SPEED);
-                actions.add(Action.NOTHING);
-                points.add(new Point2d(TOUCH_X, TGT_2_Y)); //push button
-                segDirs.add(Segment.SegDir.REVERSE);
-                segSpeeds.add(REV_SPEED);
-                actions.add(Action.RST_PUSHER);
-                points.add(new Point2d(SCAN_X,  TGT_2_Y)); //Rev to clear for turn
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.NOTHING);
-                points.add(new Point2d(CTR_PRK_X, CTR_PRK_Y));
-                break;
-            }
             case ANGSHOOT_PUSH_PARKCRNR:
             {
                 points.add(new Point2d(ASTARTX, STARTY));
@@ -96,45 +24,15 @@ class Points
                 segDirs.add(Segment.SegDir.FORWARD);
                 segSpeeds.add(DEF_SPEED);
                 actions.add(Action.NOTHING);
-                points.add(new Point2d(STARTX,  TRN_1_Y)); //1st turn pt
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.SCAN_IMAGE);
-                points.add(new Point2d(SCAN_X,  TGT_1_Y)); //2nd turn - scan images
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.FIND_BEACON);
-                points.add(new Point2d(BECN_X,  TGT_1_Y)); //2nd turn - find beacon
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(APP_SPEED);
-                actions.add(Action.NOTHING);
-                points.add(new Point2d(TOUCH_X, TGT_1_Y)); //Push button
-                segDirs.add(Segment.SegDir.REVERSE);
-                segSpeeds.add(REV_SPEED);
-                actions.add(Action.RST_PUSHER);
-                points.add(new Point2d(SCAN_X,  TGT_1_Y)); //Rev to clear pt for turn
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.SCAN_IMAGE);
-                points.add(new Point2d(SCAN_X,  TGT_2_Y)); //scan for images
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.FIND_BEACON);
-                points.add(new Point2d(BECN_X,  TGT_2_Y)); //find beacon
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(APP_SPEED);
-                actions.add(Action.NOTHING);
-                points.add(new Point2d(TOUCH_X, TGT_2_Y)); //push button
-                segDirs.add(Segment.SegDir.REVERSE);
-                segSpeeds.add(REV_SPEED);
-                actions.add(Action.RST_PUSHER);
-                points.add(new Point2d(SCAN_X,  TGT_2_Y)); //Rev to clear for turn
+                points.add(new Point2d(TGTX,  TGTY));
                 segDirs.add(Segment.SegDir.FORWARD);
                 segSpeeds.add(DEF_SPEED);
                 actions.add(Action.NOTHING);
-                points.add(new Point2d(CRN_PRK_X, CRN_PRK_Y));
                 break;
             }
+
+
+            case SHOOT_PARKCRNR:
             case SHOOT_PARKCNTR:
             {
                 points.add(new Point2d(STARTX, STARTY));
@@ -145,71 +43,13 @@ class Points
                 segDirs.add(Segment.SegDir.FORWARD);
                 segSpeeds.add(DEF_SPEED);
                 actions.add(Action.NOTHING);
-                points.add(new Point2d(CTR_PRK_X, CTR_PRK_Y));
-                break;
-            }
-            case SHOOT_PARKCRNR:
-            {
-                points.add(new Point2d(STARTX, STARTY));
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.SHOOT);
-                points.add(new Point2d(STARTX,  SHOOTY));
+                points.add(new Point2d(TGTX,  TGTY));
                 segDirs.add(Segment.SegDir.FORWARD);
                 segSpeeds.add(DEF_SPEED);
                 actions.add(Action.NOTHING);
-                points.add(new Point2d(CRN_PRK_X, CRN_PRK_Y));
                 break;
             }
             case SHOOT_PUSH_PARKCNTR:
-            {
-                points.add(new Point2d(STARTX, STARTY));
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.SHOOT);
-                points.add(new Point2d(STARTX,  SHOOTY));
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.NOTHING);
-                points.add(new Point2d(STARTX,  TRN_1_Y)); //1st turn pt
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.SCAN_IMAGE);
-                points.add(new Point2d(SCAN_X,  TGT_1_Y)); //2nd turn - scan images
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.FIND_BEACON);
-                points.add(new Point2d(BECN_X,  TGT_1_Y)); //2nd turn - find beacon
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(APP_SPEED);
-                actions.add(Action.NOTHING);
-                points.add(new Point2d(TOUCH_X, TGT_1_Y)); //Push button
-                segDirs.add(Segment.SegDir.REVERSE);
-                segSpeeds.add(REV_SPEED);
-                actions.add(Action.RST_PUSHER);
-                points.add(new Point2d(SCAN_X,  TGT_1_Y)); //Rev to clear pt for turn
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.SCAN_IMAGE);
-                points.add(new Point2d(SCAN_X,  TGT_2_Y)); //scan for images
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.FIND_BEACON);
-                points.add(new Point2d(BECN_X,  TGT_2_Y)); //find beacon
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(APP_SPEED);
-                actions.add(Action.NOTHING);
-                points.add(new Point2d(TOUCH_X, TGT_2_Y)); //push button
-                segDirs.add(Segment.SegDir.REVERSE);
-                segSpeeds.add(REV_SPEED);
-                actions.add(Action.RST_PUSHER);
-                points.add(new Point2d(SCAN_X,  TGT_2_Y)); //Rev to clear for turn
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.NOTHING);
-                points.add(new Point2d(CTR_PRK_X, CTR_PRK_Y));
-                break;
-            }
             case SHOOT_PUSH_PARKCRNR:
             {
                 points.add(new Point2d(STARTX, STARTY));
@@ -220,6 +60,23 @@ class Points
                 segDirs.add(Segment.SegDir.FORWARD);
                 segSpeeds.add(DEF_SPEED);
                 actions.add(Action.NOTHING);
+                break;
+            }
+        }
+
+        switch (autoStrategy) //setup PUSH points/actions
+        {
+            case ANGSHOOT_PARKCNTR:
+            case ANGSHOOT_PARKCRNR:
+            case SHOOT_PARKCNTR:
+            case SHOOT_PARKCRNR:
+                break;
+
+            case ANGSHOOT_PUSH_PARKCNTR:
+            case ANGSHOOT_PUSH_PARKCRNR:
+            case SHOOT_PUSH_PARKCNTR:
+            case SHOOT_PUSH_PARKCRNR:
+            {
                 points.add(new Point2d(STARTX,  TRN_1_Y)); //1st turn pt
                 segDirs.add(Segment.SegDir.FORWARD);
                 segSpeeds.add(DEF_SPEED);
@@ -256,8 +113,27 @@ class Points
                 segDirs.add(Segment.SegDir.FORWARD);
                 segSpeeds.add(DEF_SPEED);
                 actions.add(Action.NOTHING);
-                points.add(new Point2d(CRN_PRK_X, CRN_PRK_Y));
+                break;
+            }
+        }
 
+        switch (autoStrategy) //setup PARK points/actions
+        {
+            case ANGSHOOT_PARKCNTR:
+            case ANGSHOOT_PUSH_PARKCNTR:
+            case SHOOT_PARKCNTR:
+            case SHOOT_PUSH_PARKCNTR:
+            {
+                points.add(new Point2d(CTR_PRK_X, CTR_PRK_Y));
+                break;
+            }
+
+            case ANGSHOOT_PARKCRNR:
+            case ANGSHOOT_PUSH_PARKCRNR:
+            case SHOOT_PARKCRNR:
+            case SHOOT_PUSH_PARKCRNR:
+            {
+                points.add(new Point2d(CRN_PRK_X, CRN_PRK_Y));
                 break;
             }
         }
@@ -282,7 +158,7 @@ class Points
 
     final Segment[] getSegments(Field.Alliance color)
     {
-        Segment[] segments = redSegs;
+        segments = redSegs;
         if (color == Field.Alliance.BLUE)
         {
             segments = blueSegs;
@@ -293,7 +169,7 @@ class Points
 
     final double[] getTurns(Field.Alliance color)
     {
-        double[] turns = redTurns;
+        turns = redTurns;
         if (color == Field.Alliance.BLUE)
         {
             turns = blueTurns;
@@ -352,7 +228,6 @@ class Points
             pathSegs[i].setDir(segDirs.get(i));
         }
 
-        segments = pathSegs;
         return pathSegs;
     }
 
@@ -371,7 +246,7 @@ class Points
     {
         int numTrns = segs.length - 1;
 
-        turns = new double[numTrns];
+        double inturns[] = new double[numTrns];
 
         for(int t = 0; t < numTrns; ++t)
         {
@@ -386,7 +261,7 @@ class Points
 
             while(ang >   180.0) ang -= 360.0;
             while(ang <= -180.0) ang += 360.0;
-            turns[t] = ang;
+            inturns[t] = ang;
 
             System.out.println(
                     String.format(Locale.US,
@@ -401,7 +276,7 @@ class Points
                             h2, s2.getLength()));
             System.out.println(String.format(Locale.US, "%6.2f", ang));
         }
-        return turns;
+        return inturns;
     }
 
     private Point2d convertRtoB(Point2d rpt)
@@ -448,14 +323,16 @@ class Points
     private static final double ASTARTX =  1*12;
     private static final double STARTY  =  S_WALL + REAR_OFFSET;
     private static final double SHOOTY  =  STARTY + 1.0;
+    private static final double TGTX    =  -1*12;
+    private static final double TGTY    =  -1*12;
     private static final double ASHOOTY =  STARTY + 1*12;
     private static final double TRN_1_Y =  S_WALL + 2*12;
     private static final double TGT_1_Y = -1*12;
     private static final double TGT_2_Y =  3*12;
     private static final double CTR_PRK_X = -9.0;
     private static final double CTR_PRK_Y = -9.0;
-    private static final double CRN_PRK_X = W_WALL + 1*12;
-    private static final double CRN_PRK_Y = S_WALL + 1*12;
+    private static final double CRN_PRK_X = W_WALL + 2*12;
+    private static final double CRN_PRK_Y = S_WALL + 2*12;
 
     private static final double SAFETY = 3;
     private static final double SCAN_X = W_WALL + 4*12;
@@ -480,7 +357,7 @@ class Points
             Field.AutoStrategy.SHOOT_PUSH_PARKCNTR;
 
     @SuppressWarnings("FieldCanBeLocal")
-    private static double DEF_SPEED = 0.5;
+    private static double DEF_SPEED = 0.6;
     @SuppressWarnings("FieldCanBeLocal")
     private static double REV_SPEED = 0.4;
     @SuppressWarnings("FieldCanBeLocal")

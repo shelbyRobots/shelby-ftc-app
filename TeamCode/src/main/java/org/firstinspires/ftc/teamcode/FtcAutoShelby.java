@@ -32,6 +32,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         dashboard.displayPrintf(2, "STATE: %s", "INITIALIZING");
 
         setup();
+        firstPass = true;
     }
 
     @Override
@@ -40,37 +41,50 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         dashboard.displayPrintf(6, "GHDG: %d",
                 robot.gyro.getIntegratedZValue());
 
-        try
+        if(firstPass)
         {
-            for(int i = 0; i< pathSegs.length; ++i)
+            try
             {
-                doMove(pathSegs[i], speeds.get(i), dirs.get(i));
-                if(i < turns.length)
+                for (int i = 0; i < pathSegs.length; ++i)
                 {
-                    doTurn(turns[i]);
-                    DbgLog.msg("SJH Planned pos: %s %s",
-                            pathSegs[i].getTgtPt(),
-                            pathSegs[i+1].getFieldHeading());
-                    if(findSensedLoc())
+                    doMove(pathSegs[i], speeds.get(i), dirs.get(i));
+                    if (i < turns.length)
                     {
-                        DbgLog.msg("SJH Sensed pos: %s %s",
-                                curPos, curHdg);
+                        //doTurn(turns[i]);
+                        doTurn(pathSegs[i+1]);
+                        DbgLog.msg("SJH Planned pos: %s %s",
+                                pathSegs[i].getTgtPt(),
+                                pathSegs[i + 1].getFieldHeading());
                     }
-                    if (curPos != null) drvTrn.setCurrPt(curPos);
+                    switch (actions.get(i))
+                    {
+                        case SHOOT:
+                            do_shoot();
+                            break;
+                        case SCAN_IMAGE:
+                            if (findSensedLoc())
+                            {
+                                DbgLog.msg("SJH Sensed pos: %s %s",
+                                        curPos, curHdg);
+                            }
+                            if (curPos != null) drvTrn.setCurrPt(curPos);
+                            break;
+                        case FIND_BEACON:
+                            do_findBeaconOrder(true);
+                            break;
+                        case RST_PUSHER:
+                            robot.pusher.setPosition(RGT_PUSH_POS);
+                            break;
+                        case NOTHING:
+                            break;
+                    }
                 }
-                switch (actions.get(i))
-                {
-                    case FIND_BEACON: do_findBeaconOrder(true);  break;
-                    case RST_PUSHER: robot.pusher.setPosition(RGT_PUSH_POS); break;
-                    case SHOOT:       do_shoot();           break;
-                    case NOTHING:                           break;
-                }
+            } catch (InterruptedException e)
+            {
+                DbgLog.error("SJH Interruped");
             }
         }
-        catch (InterruptedException e)
-        {
-            DbgLog.error("SJH Interruped");
-        }
+        firstPass = false;
     }
 
     @Override
@@ -82,9 +96,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     @Override
     public void stopMode()
     {
-        drvTrn.stopAndReset();
-
-        dashboard.displayPrintf(2, "STATE: %s", "PATH COMPLETE");
+        //drvTrn.stopAndReset();
+        //dashboard.displayPrintf(2, "STATE: %s", "PATH COMPLETE");
     }
 
     private void setup()
@@ -96,15 +109,17 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         if (robot.leftMotor  != null &&
             robot.rightMotor != null &&
             robot.gyro       != null)
-            drvTrn.init(robot.leftMotor, robot.rightMotor, robot.gyro);
-
-        robot.gyro.calibrate();
-
-        // make sure the gyro is calibrated before continuing
-        while (!isStopRequested() && robot.gyro.isCalibrating())
         {
-            sleep(50);
-            idle();
+            drvTrn.init(robot.leftMotor, robot.rightMotor, robot.gyro);
+            drvTrn.setOpMode(getInstance());
+            robot.gyro.calibrate();
+
+            // make sure the gyro is calibrated before continuing
+            while (!isStopRequested() && robot.gyro.isCalibrating())
+            {
+                sleep(50);
+                idle();
+            }
         }
 
         Points pts = new Points(autoStrategy);
@@ -114,10 +129,13 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         dirs     = pts.getSegDirs();
         speeds   = pts.getSegSpeeds();
 
+        double initHdg = pathSegs[0].getFieldHeading();
+
         DbgLog.msg("SJH ROUTE: \n" + pts.toString());
 
         Point2d currPoint = pathSegs[0].getStrtPt();
         drvTrn.setCurrPt(currPoint);
+        drvTrn.setInitHdg(initHdg);
 
         robot.pusher.setPosition(RGT_PUSH_POS);
 
@@ -163,8 +181,21 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         DbgLog.msg("SJH: Turn %5.2f", angle);
         dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
         timer.reset();
-        drvTrn.ctrTurnLinear(angle,DEF_TRN_PWR);
+        //drvTrn.ctrTurnLinear(angle,DEF_TRN_PWR);
+        drvTrn.ctrTurnLinearGyro(angle,DEF_TRN_PWR);
         DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f", angle, timer.time());
+    }
+
+    private void doTurn(Segment seg)
+    {
+        double hdg = seg.getFieldHeading();
+        if(seg.getDir() == Segment.SegDir.REVERSE)
+            hdg += 180;
+        DbgLog.msg("SJH: TurnToHdg %5.2f", hdg);
+        dashboard.displayPrintf(2, "STATE: %s %5.2f", "HDG", hdg);
+        timer.reset();
+        drvTrn.ctrTurnToHeading(hdg, DEF_TRN_PWR);
+        DbgLog.msg("SJH Completed turnHdg %5.2f. Time: %6.3f", hdg, timer.time());
     }
 
     private boolean findSensedLoc() throws InterruptedException
@@ -368,8 +399,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private final static double RGT_PUSH_POS = 0.2;
     private final static double LFT_PUSH_POS = 0.8;
 
-    private final static double DEF_DRV_PWR  = 0.7;
-    private final static double DEF_TRN_PWR  = 0.5;
+    //private final static double DEF_DRV_PWR  = 0.7;
+    private final static double DEF_TRN_PWR  = 0.3;
 
     private final static double DEF_SHT_PWR = 0.55;
     private final static double DEF_SWP_PWR = 1.0;
@@ -400,4 +431,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private static Field.Alliance alliance;
 
     private HalDashboard dashboard;
+
+    private boolean firstPass;
 }

@@ -6,14 +6,16 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
+import ftclib.FtcOpMode;
+
 class Drivetrain
 {
     double TRNPWR = 0.5;
-    void turnDelta(double angle)
+    void turnDelta(int angle)
     {
-        double currentHdg = gyro.getHeading();
-        double targetHdg = currentHdg + angle;
-        while(Math.abs(targetHdg - currentHdg) > TURN_TOLERANCE)
+        int currentHdg = gyro.getHeading();
+        int targetHdg = currentHdg + angle;
+        while(Math.abs(getGyroError(targetHdg)) > TURN_TOLERANCE)
         {
             if(targetHdg > currentHdg)
             {
@@ -23,14 +25,15 @@ class Drivetrain
             {
                 move(-TRNPWR, TRNPWR);
             }
+            currentHdg = gyro.getHeading();
         }
     }
 
-    void turnToHeading(double heading)
+    void turnToHeading(int heading)
     {
-        double currentHdg = gyro.getHeading();
-        double targetHdg = heading;
-        while(Math.abs(targetHdg - currentHdg) > TURN_TOLERANCE)
+        int currentHdg = gyro.getHeading();
+        int targetHdg = heading;
+        while(Math.abs(getGyroError(targetHdg)) > TURN_TOLERANCE)
         {
             if(targetHdg > currentHdg)
             {
@@ -40,6 +43,7 @@ class Drivetrain
             {
                 move(-TRNPWR, TRNPWR);
             }
+            currentHdg = gyro.getHeading();
         }
     }
 
@@ -124,12 +128,22 @@ class Drivetrain
         if (currPt == null) DbgLog.error("SJH currPt null in driveToPoint");
         driveToPoint(tgtPt, pwr, dir);
 
+        ptmr.reset();
         while(isBusy())
         {
-            makeCorrections(pwr, dir);
-            waitForTick(20);
+            if(ptmr.seconds() > 0.1)
+            {
+                DbgLog.msg("SJH: ldc %6d rdc %6d",
+                        left_drive.getCurrentPosition(),
+                        right_drive.getCurrentPosition());
+                ptmr.reset();
+            }
+            //makeCorrections(pwr, dir);
+            op.idle();
         }
 
+        left_drive.setPower(0.0);
+        right_drive.setPower(0.0);
         DbgLog.msg("SJH: ldc %6d rdc %6d",
                 left_drive.getCurrentPosition(),
                 right_drive.getCurrentPosition());
@@ -158,6 +172,45 @@ class Drivetrain
         move(pwr, pwr);
     }
 
+    boolean ctrTurnGyro(double hdg, double pwr)
+    {
+        double   error;
+        double   steer;
+        boolean  onTarget = false;
+        double leftSpeed;
+        double rightSpeed;
+
+        // determine turn power based on +/- error
+        error = getGyroError((int)hdg);
+
+        if (Math.abs(error) <= TURN_TOLERANCE)
+        {
+            steer = 0.0;
+            leftSpeed  = 0.0;
+            rightSpeed = 0.0;
+            onTarget = true;
+        }
+        else
+        {
+            steer = getSteer(error, PADJ_TURN);
+            rightSpeed  = pwr * steer;
+            Range.clip(rightSpeed, -1, 1);
+            leftSpeed   = -rightSpeed;
+        }
+
+        left_drive.setPower(leftSpeed);
+        right_drive.setPower(rightSpeed);
+
+        if(ptmr.seconds() > 0.1)
+        {
+            ptmr.reset();
+            DbgLog.msg("SJH: TGT %d INTZ %d ERR %d STR %4.2f L %4.2f R %4.2f",
+                    (int) hdg, gyro.getIntegratedZValue(),
+                    (int) error, steer, leftSpeed, rightSpeed);
+        }
+        return onTarget;
+    }
+
     void ctrTurnLinear(double angle, double pwr) throws InterruptedException
     {
         ctrTurn(angle, pwr);
@@ -173,6 +226,34 @@ class Drivetrain
                 right_drive.getCurrentPosition());
 
         stopAndReset();
+    }
+
+    void ctrTurnToHeading(double tgtHdg, double pwr)
+    {
+        left_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        right_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        tgtHdg = Math.round(tgtHdg - initHdg);
+
+        DbgLog.msg("SJH: GYRO TURN to HDG %d", (int)tgtHdg);
+
+        ptmr.reset();
+        while(!ctrTurnGyro(tgtHdg, pwr))
+        {
+            op.idle();
+            frame++;
+        }
+        stopAndReset();
+    }
+
+    void ctrTurnLinearGyro(double angle, double pwr)
+    {
+        angle = Math.round(angle);
+        int tgtHdg = (int)angle + gyro.getIntegratedZValue();
+        while(tgtHdg > 180)   tgtHdg -= 360;
+        while(tgtHdg <= -180) tgtHdg += 360;
+        DbgLog.msg("SJH: GYRO TURN %d to HDG %d", (int)angle, tgtHdg);
+
+        ctrTurnToHeading(tgtHdg, pwr);
     }
 
 //    static void turn(double angle, double pwr, double radius)
@@ -228,6 +309,16 @@ class Drivetrain
         currPt = curPt;
     }
 
+    void setInitHdg(double initHdg)
+    {
+        this.initHdg = initHdg;
+    }
+
+    void setOpMode(FtcOpMode op)
+    {
+        this.op = op;
+    }
+
     public void init(DcMotor lft_drv, DcMotor rgt_drv, ModernRoboticsI2cGyro gyro)
     {
         DbgLog.msg("SJH CPI: %5.2f", CPI);
@@ -235,7 +326,7 @@ class Drivetrain
         left_drive  = lft_drv;
         right_drive = rgt_drv;
         this.gyro = gyro;
-        
+
         left_drive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         right_drive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
@@ -303,7 +394,7 @@ class Drivetrain
 
             move(ldp, rdp);
 
-            if (frame%2 == 0)
+            if (ptmr.seconds() > 0.05)
             {
                 DbgLog.msg("SJH %4d ldc: %6d rdc: %6d diff: %2d " +
                                 "lpwr: %5.3f rpwr: %5.3f err: %5.3f str %5.3f rt %5.3f",
@@ -325,8 +416,13 @@ class Drivetrain
 
     private int getGyroError(int tgtHdg)
     {
-        int curHdg = gyro.getHeading();
-        return tgtHdg - curHdg;
+        //int curHdg = gyro.getHeading();
+
+        int robotError;
+        robotError = tgtHdg - gyro.getIntegratedZValue();
+        while (robotError > 180)  robotError -= 360;
+        while (robotError <= -180) robotError += 360;
+        return robotError;
     }
 
     private double getSteer(double error, double PCoeff)
@@ -351,16 +447,16 @@ class Drivetrain
 
     boolean isBusy()
     {
-        //return (left_drive.isBusy() && right_drive.isBusy());   //true if both are busy
-        return (left_drive.isBusy() || right_drive.isBusy()); //true if 1 is busy
+        return (left_drive.isBusy() && right_drive.isBusy());   //true if both are busy
+        //return (left_drive.isBusy() || right_drive.isBusy()); //true if 1 is busy
     }
 
-    private final static double DRV_TUNER = 1.0;
+    private final static double DRV_TUNER = 1.15;
     private final static double TRN_TUNER = 1.0;
-    private final static double TURN_TOLERANCE = 0.5;
+    private final static double TURN_TOLERANCE = 1.0;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
-    private final static double WHL_DIAMETER = 6.5 * DRV_TUNER; //Diameter of the wheel (inches)
+    private final static double WHL_DIAMETER = 6.6 * DRV_TUNER; //Diameter of the wheel (inches)
     private final static int    ENCODER_CPR = ShelbyBot.ENCODER_CPR;
     private final static double GEAR_RATIO  = 1;                   //Gear ratio
 
@@ -368,6 +464,7 @@ class Drivetrain
     private final static double CPI = ENCODER_CPR * GEAR_RATIO / CIRCUMFERENCE;
 
     private static final double PADJ = 4.0;
+    private static final double PADJ_TURN = 0.0333;
     private static final double THRESH = Math.toRadians(0.004);
 
     public enum Direction {FORWARD, REVERSE}
@@ -377,9 +474,13 @@ class Drivetrain
     public ModernRoboticsI2cGyro gyro;
 
     private Point2d currPt = new Point2d(0.0, 0.0);
+    private double initHdg = 0.0;
 
     private int frame   = 0;
     //private LinearOpMode lom;
     private ElapsedTime period  = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
     private ElapsedTime rt = new ElapsedTime();
+    private ElapsedTime ptmr = new ElapsedTime();
+
+    private FtcOpMode op = null;
 }
