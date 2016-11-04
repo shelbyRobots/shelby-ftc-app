@@ -28,7 +28,7 @@ public class LinearDetectColor extends LinearOpModeCamera {
 
   Mat cvImage = null;
 
-  int ds = 8;
+  int ds = 1;
   int ds2 = 2;  // additional downsampling of the image
   int cameraType = Camera.CameraInfo.CAMERA_FACING_FRONT;
 

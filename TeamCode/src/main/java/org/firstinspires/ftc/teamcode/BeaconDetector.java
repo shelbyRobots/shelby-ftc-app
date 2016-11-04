@@ -1,9 +1,10 @@
 package org.firstinspires.ftc.teamcode;
 
-import android.graphics.Canvas;
+import android.graphics.Bitmap;
 
 import com.qualcomm.ftccommon.DbgLog;
 
+import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
@@ -15,28 +16,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class BeaconDetector implements BeaconFinder, MatCallback
-{
+public class BeaconDetector implements BeaconFinder {
     private final static double MIN_COLOR_ZONE_AREA = 0.05; 	// fraction of total image area
     private final static double MIN_BUTTON_AREA = 0.01; 		// fraction of total image area
     private final static double MIN_BUTTON_EDGE_DIST = 20; 		// pixels from edge of cropped image
 
-    private enum FindMode {LIGHT, BUTTON}
-
     private Mat image;
 
-    private Rect blue_light_box;
-    private Rect red_light_box;
+    private double blue_light_box = -1;
+    private double red_light_box = -1;
+    private LightOrder light_order;
 
-    private LightOrder order = LightOrder.UNKNOWN;
 
     @SuppressWarnings("WeakerAccess")
     public BeaconDetector(Mat img ) {
         setImage( img );
-    }
-
-    @SuppressWarnings("WeakerAccess")
-    public BeaconDetector() {
     }
 
     public void setImage( Mat img )
@@ -45,81 +39,76 @@ public class BeaconDetector implements BeaconFinder, MatCallback
         // Convert to HSV colorspace to make it easier to
         // threshold certain colors (ig red/blue)
         image = new Mat();
-        Imgproc.cvtColor(img, image, Imgproc.COLOR_RGB2HSV );
+        Imgproc.cvtColor(img, image, Imgproc.COLOR_RGB2HSV, 4 );
 
         findColors();
     }
 
-    private LightOrder calcLightOrder()
-    {
-        LightOrder f = LightOrder.UNKNOWN;
+    public LightOrder getLightOrder() {
+        return light_order;
+    }
 
-        if ( blue_light_box != null && red_light_box != null )
-        {
-            if ( blue_light_box.x > red_light_box.x )
-                f = LightOrder.BLUE_RED;
+    public void calcLightOrder() {
+
+        light_order = LightOrder.UNKNOWN;
+        DbgLog.msg("pos r: "+ String.valueOf(red_light_box)+ " b: "+ String.valueOf(blue_light_box));
+
+        if ( blue_light_box != -1 && red_light_box != -1 ) {
+            if ( blue_light_box > red_light_box )
+                light_order = LightOrder.BLUE_RED;
             else
-                f = LightOrder.RED_BLUE;
-        } else if ( blue_light_box != null ) {
-            f = LightOrder.BLUE_BLUE;
-        } else if ( red_light_box != null ) {
-            f = LightOrder.RED_RED;
+                light_order = LightOrder.RED_BLUE;
+        } else if ( blue_light_box != -1 ) {
+            light_order = LightOrder.BLUE_BLUE;
+        } else if ( red_light_box != -1 ) {
+            light_order = LightOrder.RED_RED;
         }
 
-        return f;
-    }
-
-    public LightOrder getLightOrder()
-    {
-        return order;
-    }
-
-    public void handleMat(Mat mat)
-    {
-        setImage(mat);
-        order = getLightOrder();
-    }
-
-    public void draw(Canvas canvas)
-    {
     }
 
     private void findColors()
     {
         findBlue();
         findRed();
-        order = calcLightOrder();
+        calcLightOrder();
+        //findAverage();
     }
 
     private void findBlue()
     {
         Mat blue_areas = new Mat();
+
+        blue_light_box = -1;
+
         // Threshold based on color.  White regions match the desired color.  Black do not.
         // We now have a binary image to work with.  Contour detection looks for white blobs
-        Core.inRange( image, new Scalar( 110,100,100 ), new Scalar( 130,255,255 ), blue_areas );
+        Core.inRange( image, new Scalar( 105,100,100 ), new Scalar( 125,255,255 ), blue_areas );
 
         // There can be several blobs.  Find the largest that fills a certain amount
         // of the image.  These are crude heuristics but should be fine if we control
         // the conditions of when we start searching (ie, appx size of beacon in image
         // frame, etc).
-        blue_light_box = findLargestObject(blue_areas, FindMode.LIGHT);
+        blue_light_box = findWeightedX(blue_areas);
     }
 
     private void findRed()
     {
         // Same game, just a different hue
+        Mat red1 = new Mat();
+        Mat red2 = new Mat();
         Mat red_areas = new Mat();
 
-        Core.inRange( image, new Scalar( 0,100,100 ), new Scalar( 10,255,255 ), red_areas);
-        red_light_box = findLargestObject(red_areas, FindMode.LIGHT);
+        red_light_box = -1;
 
-        if ( red_light_box == null ) {
-            Core.inRange(image, new Scalar(160, 100, 100), new Scalar(179, 255, 255), red_areas);
-            red_light_box = findLargestObject(red_areas, FindMode.LIGHT);
-        }
+        Core.inRange( image, new Scalar( 0,100,100 ), new Scalar( 10,255,255 ), red1);
+        Core.inRange( image, new Scalar( 160,100,100 ), new Scalar( 179,255,255 ), red2);
+        Core.bitwise_or(red1, red2, red_areas);
+
+        red_light_box = findWeightedX( red_areas );
+
     }
 
-    private Rect findLargestObject( Mat img, FindMode mode )
+    private Rect findLargestObject( Mat img )
     {
 
         double barea = 0;
@@ -143,26 +132,9 @@ public class BeaconDetector implements BeaconFinder, MatCallback
             bbox = Imgproc.boundingRect(wrapper);
             carea = bbox.width * bbox.height;
 
-            if (mode == FindMode.BUTTON)
-            {
-                // Only blobs not along edge
-                cdn = bbox.x > MIN_BUTTON_EDGE_DIST &&
-                      bbox.y > MIN_BUTTON_EDGE_DIST &&
-                      bbox.x + bbox.width  < w - MIN_BUTTON_EDGE_DIST &&
-                      bbox.y + bbox.height < h - MIN_BUTTON_EDGE_DIST &&
-                      Imgproc.contourArea(wrapper) / ima > MIN_BUTTON_AREA;
+            cdn = Imgproc.contourArea(wrapper) / ima > MIN_COLOR_ZONE_AREA;
 
-                DbgLog.msg("SH X,Y: " + String.valueOf(bbox.x) + "," + String.valueOf(bbox.y));
-                DbgLog.msg("SH W,H: " + String.valueOf(bbox.width) + "," + String.valueOf(bbox.height));
-            }
-            else // mode == FindMode.LIGHT
-            {
-                // Only blobs that make up a sizable area of the image
-
-                cdn = Imgproc.contourArea(wrapper) / ima > MIN_COLOR_ZONE_AREA;
-            }
-
-            if (/*cdn &&*/ (bigr == null || carea > barea))
+            if (cdn && (bigr == null || carea > barea))
             {
                 bigr = wrapper;
                 barea = carea;
@@ -170,8 +142,80 @@ public class BeaconDetector implements BeaconFinder, MatCallback
         }
 
         if ( bigr != null )
-            fbox = Imgproc.boundingRect(bigr);
+           fbox = Imgproc.boundingRect(bigr);
 
         return fbox;
+    }
+
+    private double findWeightedX( Mat img )
+    {
+
+        Rect bbox;
+        double barea;
+
+        double h = img.height();
+        double w = img.width();
+        double ima = h * w;
+
+        double xmid, xwgt, xsum = 0, asum = 0;
+
+        Mat hchy = new Mat();
+        List<MatOfPoint> ctr = new ArrayList<>();
+
+        Imgproc.findContours( img, ctr, hchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_NONE );
+
+        // Loop over each blob (contour)
+        for (MatOfPoint wrapper : ctr)
+        {
+            bbox = Imgproc.boundingRect(wrapper);
+            barea = Imgproc.contourArea(wrapper);
+
+            xmid = bbox.width / 2 + bbox.x;
+            xwgt = barea * xmid;
+
+            xsum += xwgt;
+            asum += barea;
+        }
+        //DbgLog.msg("R: "+ String.valueOf(xsum)+ "|"+ String.valueOf(asum));
+        // return -1 if sum of area is less
+        // than MIN_COLOR_ZONE_AREA of total image
+        // area
+        if(asum / ima < MIN_COLOR_ZONE_AREA) return -1;
+        // otherwise, return average sum of weighted x midpoints
+        return xsum / asum;
+    }
+
+    private void findAverage()
+    {
+        Bitmap bitmap = null;
+        try {
+            bitmap = Bitmap.createBitmap(image.cols(), image.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(image, bitmap);
+        }
+        catch (Exception e){DbgLog.error("houston we have a problem");}
+
+        int hueBucket = 0;
+        int satBucket = 0;
+        int valBucket = 0;
+
+
+        int pixelCount = bitmap.getWidth() * bitmap.getHeight();
+        int[] pixels = new int[pixelCount];
+        bitmap.getPixels(pixels, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+
+        for (int y = 0, h = bitmap.getHeight(); y < h; y++)
+        {
+            for (int x = 0, w = bitmap.getWidth(); x < w; x++)
+            {
+                int color = pixels[x + y * w];
+                hueBucket += (color >> 16) & 0xFF;
+                satBucket += (color >> 8) & 0xFF;
+                valBucket += color & 0xFF;
+            }
+        }
+
+        DbgLog.msg( " H: " + String.valueOf( hueBucket / pixelCount ) +
+                " S: " + String.valueOf( satBucket / pixelCount ) +
+                " V: " + String.valueOf( valBucket / pixelCount ) );
     }
 }
