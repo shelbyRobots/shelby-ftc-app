@@ -29,7 +29,7 @@ public class BeaconDetector implements BeaconFinder
     private LightOrder light_order;
 
     private final static boolean DEBUG = true;
-    private final static boolean POS_IS_Y = true;
+    private final static boolean POS_IS_Y = false;
 
     @SuppressWarnings("WeakerAccess")
     public BeaconDetector(Mat img ) {
