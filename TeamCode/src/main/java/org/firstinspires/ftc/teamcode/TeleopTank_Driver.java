@@ -66,8 +66,11 @@ public class TeleopTank_Driver extends LinearOpMode
         double left;
         double right;
         double shooter;
+        double bkwshooter;
         boolean shoot_pressed;
+        boolean bkwshoot_pressed;
         boolean last_shoot_pressed = false;
+        boolean last_bkwshoot_pressed = false;
         boolean d_down_last = false;
         boolean d_up_last = false;
         boolean b_pressed;
@@ -93,6 +96,7 @@ public class TeleopTank_Driver extends LinearOpMode
         waitForStart();
 
         boolean toggle = false;
+        boolean bkwtoggle = false;
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
 
@@ -104,10 +108,12 @@ public class TeleopTank_Driver extends LinearOpMode
             shoot_scale = Range.clip(shoot_scale, 0.0, 1.0);
             d_down_last = gamepad2.dpad_down;
             d_up_last   = gamepad2.dpad_up;
-
             left  = -gamepad1.left_stick_y;
             right = -gamepad1.right_stick_y;
             shooter = gamepad2.right_trigger;
+            bkwshooter = gamepad2.left_trigger;
+
+
 
             lpush = gamepad1.left_trigger  > 0.1;
             rpush = gamepad1.right_trigger > 0.1;
@@ -122,6 +128,7 @@ public class TeleopTank_Driver extends LinearOpMode
             robot.sweepMotor.setPower(sweep);
 
             shoot_pressed = (shooter > 0);
+            bkwshoot_pressed = (bkwshooter > 0);
 
             if(shoot_pressed && !last_shoot_pressed)
             {
@@ -133,6 +140,17 @@ public class TeleopTank_Driver extends LinearOpMode
                     shooter_motors(0.0);
             }
             last_shoot_pressed = shoot_pressed;
+
+            if(bkwshoot_pressed && !last_bkwshoot_pressed)
+            {
+                bkwtoggle = !bkwtoggle;
+
+                if(bkwtoggle)
+                    shooter_motors(-0.7);
+                else
+                    shooter_motors(0.0);
+            }
+            last_bkwshoot_pressed = shoot_pressed;
 
             if(lpush) do_pushButton(ButtonSide.LEFT);
             else if (rpush) do_pushButton(ButtonSide.RIGHT);
@@ -181,6 +199,8 @@ public class TeleopTank_Driver extends LinearOpMode
             DbgLog.msg("SJH: Pushing right button");
         }
     }
+
+    //This line of text has no use. It can be deleted.
 
     private enum ButtonSide
     {

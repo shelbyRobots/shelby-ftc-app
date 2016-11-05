@@ -131,7 +131,7 @@ class Drivetrain
         ptmr.reset();
         while(isBusy())
         {
-            if(ptmr.seconds() > 0.1)
+            if(ptmr.seconds() > 0.2)
             {
                 DbgLog.msg("SJH: ldc %6d rdc %6d",
                         left_drive.getCurrentPosition(),
@@ -201,7 +201,7 @@ class Drivetrain
         left_drive.setPower(leftSpeed);
         right_drive.setPower(rightSpeed);
 
-        if(ptmr.seconds() > 0.1)
+        if(ptmr.seconds() > 0.2)
         {
             ptmr.reset();
             DbgLog.msg("SJH: TGT %d INTZ %d ERR %d STR %4.2f L %4.2f R %4.2f",
@@ -394,7 +394,7 @@ class Drivetrain
 
             move(ldp, rdp);
 
-            if (ptmr.seconds() > 0.05)
+            if (ptmr.seconds() > 0.2)
             {
                 DbgLog.msg("SJH %4d ldc: %6d rdc: %6d diff: %2d " +
                                 "lpwr: %5.3f rpwr: %5.3f err: %5.3f str %5.3f rt %5.3f",
