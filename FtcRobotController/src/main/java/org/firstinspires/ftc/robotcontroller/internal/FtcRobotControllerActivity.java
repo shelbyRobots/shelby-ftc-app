@@ -148,7 +148,8 @@ public class FtcRobotControllerActivity extends Activity {
       public void run() {
         context.preview = new CameraPreview(FtcRobotControllerActivity.this, camera,
                                             previewCallback);
-        FrameLayout previewLayout = (FrameLayout) findViewById(R.id.previewLayout);
+        //FrameLayout previewLayout = (FrameLayout) findViewById(R.id.previewLayout);
+        LinearLayout previewLayout = (LinearLayout) findViewById(R.id.cameraMonitorViewId);
         previewLayout.addView(context.preview);
       }
     });
@@ -159,7 +160,8 @@ public class FtcRobotControllerActivity extends Activity {
     runOnUiThread(new Runnable() {
       @Override
       public void run() {
-        FrameLayout previewLayout = (FrameLayout) findViewById(R.id.previewLayout);
+        //FrameLayout previewLayout = (FrameLayout) findViewById(R.id.previewLayout);
+        LinearLayout previewLayout = (LinearLayout) findViewById(R.id.cameraMonitorViewId);
         previewLayout.removeAllViews();
       }
     });

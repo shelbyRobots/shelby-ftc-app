@@ -40,14 +40,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
               android:id="@+id/entire_screen"
               android:orientation="vertical">
 
-<FrameLayout
-    android:layout_width="100dp"
-    android:layout_height="125dp"
-    android:id="@+id/previewLayout"
-    android:layout_above="@+id/textGamepad1"
-    android:layout_centerHorizontal="true">
-</FrameLayout>
-
   <!-- black bar on top -->
   <RelativeLayout
     android:id="@+id/top_bar"
