@@ -18,7 +18,8 @@ import for_camera_opmodes.LinearOpModeCamera;
 @SuppressWarnings({"unused", "WeakerAccess", "deprecation"})
 @TeleOp(name = "LinearDetectColor", group = "ZZOpModeCameraPackage")
 //@Disabled
-public class LinearDetectColor extends LinearOpModeCamera {
+public class LinearDetectColor extends LinearOpModeCamera
+{
 
     static {
         if (!OpenCVLoader.initDebug()) {
@@ -27,49 +28,57 @@ public class LinearDetectColor extends LinearOpModeCamera {
     }
 
   Mat cvImage = null;
+  int convertDownSample = 2;  // additional downsampling of the image
 
-  int ds = 1;
-  int ds2 = 2;  // additional downsampling of the image
-  int cameraType = Camera.CameraInfo.CAMERA_FACING_FRONT;
+  private void setupCamera()
+  {
+    int cameraDownSample  = 1;
+    int cameraType = Camera.CameraInfo.CAMERA_FACING_FRONT;
 
-  @Override
-  public void runOpMode() throws InterruptedException {
-
-    String colorString = "NONE";
-
-    setCameraDownsampling(ds);
+    setCameraDownsampling(cameraDownSample);
     Camera cam = initCamera(cameraType);
     if (cam != null)
     {
       cvImage = new Mat(width, height, CvType.CV_8UC1);
 
-      telemetry.addLine("Wait for camera to finish initializing!");
-      telemetry.update();
+      DbgLog.msg("Wait for camera to finish initializing!");
       startCamera(cameraType);  // can take a while.
 
       // best started before waitForStart
-      telemetry.addLine("Camera ready!");
+      DbgLog.msg("Camera ready!");
+    }
+  }
+
+  private void procImage()
+  {
+    if (imageReady())
+    {
+      Bitmap rgbImage = convertYuvImageToRgb(yuvImage, width, height,
+                                             convertDownSample);
+      Utils.bitmapToMat(rgbImage, cvImage);
+
+      BeaconFinder detector = new BeaconDetector(cvImage);
+
+      DbgLog.msg("SJH Beacon Color: " + detector.getLightOrder());
+      telemetry.addData("Beacon Color: ", detector.getLightOrder());
       telemetry.update();
+      sleep(10);
+    }
+  }
 
-      waitForStart();
+  @Override
+  public void runOpMode() throws InterruptedException
+  {
+    setupCamera();
+    waitForStart();
 
-      try { // try is needed so catch the interrupt when the opmode is ended to stop the camera
-        while (opModeIsActive()) {
-          if (imageReady()) {
-            Bitmap rgbImage = convertYuvImageToRgb(yuvImage, width, height, ds2);
-            Utils.bitmapToMat(rgbImage, cvImage);
-
-            BeaconFinder detector = new BeaconDetector(cvImage);
-
-            DbgLog.msg("SH Beacon Color: " + detector.getLightOrder());
-            telemetry.addData("Beacon Color: ", detector.getLightOrder());
-            telemetry.update();
-            sleep(10);
-          }
-        }
-      } catch (Exception e) {
-        stopCamera();
-      }
+    try
+    { // try is needed so catch the interrupt when the opmode is ended to stop the camera
+      while (opModeIsActive()) procImage();
+    }
+    catch (Exception e)
+    {
+      stopCamera();
     }
   }
 }

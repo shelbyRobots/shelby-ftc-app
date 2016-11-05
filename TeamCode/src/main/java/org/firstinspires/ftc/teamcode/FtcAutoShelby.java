@@ -1,16 +1,23 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import android.widget.LinearLayout;
+
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
+
 import java.util.Vector;
 
+import for_camera_opmodes.CameraPreview;
 import ftclib.FtcChoiceMenu;
 import ftclib.FtcMenu;
 import ftclib.FtcOpMode;
 import hallib.HalDashboard;
+
+import android.hardware.Camera;
 
 //import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
@@ -105,6 +112,16 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         robot.init(hardwareMap);
 
         doMenus();
+//CAMERA STUFF create camera and callback then call ftca.init
+        FtcRobotControllerActivity ftca = (FtcRobotControllerActivity) hardwareMap.appContext;
+        LinearLayout previewLayout;
+        previewLayout = (LinearLayout) ftca.findViewById(com.qualcomm.ftcrobotcontroller
+                                                                 .R.id.cameraMonitorViewId);
+        Camera camera = null;
+        Camera.PreviewCallback previewCallback = null;
+        //need to create preview in UI thread need to get preview?
+        CameraPreview preview = new CameraPreview(ftca, camera, previewCallback);
+//END CAMERA STUFF
 
         if (robot.leftMotor  != null &&
             robot.rightMotor != null &&

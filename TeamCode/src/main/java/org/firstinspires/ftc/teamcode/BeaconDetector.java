@@ -16,7 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class BeaconDetector implements BeaconFinder {
+public class BeaconDetector implements BeaconFinder
+{
     private final static double MIN_COLOR_ZONE_AREA = 0.05; 	// fraction of total image area
     private final static double MIN_BUTTON_AREA = 0.01; 		// fraction of total image area
     private final static double MIN_BUTTON_EDGE_DIST = 20; 		// pixels from edge of cropped image
@@ -27,6 +28,8 @@ public class BeaconDetector implements BeaconFinder {
     private double red_light_box = -1;
     private LightOrder light_order;
 
+    private final static boolean DEBUG = true;
+    private final static boolean POS_IS_Y = true;
 
     @SuppressWarnings("WeakerAccess")
     public BeaconDetector(Mat img ) {
@@ -51,10 +54,14 @@ public class BeaconDetector implements BeaconFinder {
     public void calcLightOrder() {
 
         light_order = LightOrder.UNKNOWN;
-        DbgLog.msg("pos r: "+ String.valueOf(red_light_box)+ " b: "+ String.valueOf(blue_light_box));
+        if(DEBUG)
+        {
+            DbgLog.msg("SJH: r: " + String.valueOf(red_light_box) +
+                               " b: " + String.valueOf(blue_light_box));
+        }
 
         if ( blue_light_box != -1 && red_light_box != -1 ) {
-            if ( blue_light_box > red_light_box )
+            if ( blue_light_box < red_light_box )
                 light_order = LightOrder.BLUE_RED;
             else
                 light_order = LightOrder.RED_BLUE;
@@ -88,7 +95,8 @@ public class BeaconDetector implements BeaconFinder {
         // of the image.  These are crude heuristics but should be fine if we control
         // the conditions of when we start searching (ie, appx size of beacon in image
         // frame, etc).
-        blue_light_box = findWeightedX(blue_areas);
+        if(DEBUG) DbgLog.msg("SJH: BLUE");
+        blue_light_box = findWeightedPos(blue_areas);
     }
 
     private void findRed()
@@ -104,8 +112,8 @@ public class BeaconDetector implements BeaconFinder {
         Core.inRange( image, new Scalar( 160,100,100 ), new Scalar( 179,255,255 ), red2);
         Core.bitwise_or(red1, red2, red_areas);
 
-        red_light_box = findWeightedX( red_areas );
-
+        if(DEBUG) DbgLog.msg("SJH: RED");
+        red_light_box = findWeightedPos( red_areas );
     }
 
     private Rect findLargestObject( Mat img )
@@ -147,17 +155,20 @@ public class BeaconDetector implements BeaconFinder {
         return fbox;
     }
 
-    private double findWeightedX( Mat img )
+    private double findWeightedPos( Mat img )
     {
 
         Rect bbox;
         double barea;
+
+        double biggest = 0;
 
         double h = img.height();
         double w = img.width();
         double ima = h * w;
 
         double xmid, xwgt, xsum = 0, asum = 0;
+        double ymid, ywgt, ysum = 0;
 
         Mat hchy = new Mat();
         List<MatOfPoint> ctr = new ArrayList<>();
@@ -171,26 +182,44 @@ public class BeaconDetector implements BeaconFinder {
             barea = Imgproc.contourArea(wrapper);
 
             xmid = bbox.width / 2 + bbox.x;
+            ymid = bbox.height / 2 + bbox.y;
             xwgt = barea * xmid;
+            ywgt = barea *ymid;
+
 
             xsum += xwgt;
+            ysum += ywgt;
             asum += barea;
+
+            if (barea > biggest) biggest = barea;
         }
+
         //DbgLog.msg("R: "+ String.valueOf(xsum)+ "|"+ String.valueOf(asum));
         // return -1 if sum of area is less
         // than MIN_COLOR_ZONE_AREA of total image
         // area
         if(asum / ima < MIN_COLOR_ZONE_AREA) return -1;
         // otherwise, return average sum of weighted x midpoints
-        return xsum / asum;
+
+        if(DEBUG)
+        {
+            DbgLog.msg("SJH: CNT %d BIG %6.1f / %d X %3.1f Y %3.1f %d x %d",
+                    ctr.size(), biggest, image.width() * image.height(),
+                    xsum / asum, ysum / asum,
+                    image.width(), image.height());
+        }
+
+        double retValue = xsum / asum;
+        if(POS_IS_Y) retValue = ysum / asum;
+        return retValue;
     }
 
     private void findAverage()
     {
         Bitmap bitmap = null;
         try {
-            bitmap = Bitmap.createBitmap(image.cols(), image.rows(), Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(image, bitmap);
+            bitmap = Bitmap.createBitmap(image.cols(), image.rows(),
+                                         Bitmap.Config.ARGB_8888);
         }
         catch (Exception e){DbgLog.error("houston we have a problem");}
 
@@ -198,7 +227,9 @@ public class BeaconDetector implements BeaconFinder {
         int satBucket = 0;
         int valBucket = 0;
 
+        if(bitmap == null) return;
 
+        Utils.matToBitmap(image, bitmap);
         int pixelCount = bitmap.getWidth() * bitmap.getHeight();
         int[] pixels = new int[pixelCount];
         bitmap.getPixels(pixels, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
