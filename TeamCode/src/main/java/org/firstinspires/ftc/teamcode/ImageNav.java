@@ -32,12 +32,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package org.firstinspires.ftc.teamcode;
 
+import android.graphics.Bitmap;
+
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.ftcrobotcontroller.R;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.RobotLog;
+import com.vuforia.Image;
+import com.vuforia.PIXEL_FORMAT;
+import com.vuforia.Vuforia;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
@@ -50,6 +55,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
+import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -93,6 +102,12 @@ import java.util.Locale;
 //@Disabled
 public class ImageNav extends LinearOpMode {
 
+    static {
+        if (!OpenCVLoader.initDebug()) {
+            DbgLog.error("SJH: OpenCVLoader error"); //Handle opencv loader issue
+        }
+    }
+
     private static final String TAG = "SJH Image Tracker";
 
     // Vuforia units are mm = units used in XML for the trackables
@@ -111,6 +126,7 @@ public class ImageNav extends LinearOpMode {
     private VuforiaTrackables ftcImages;
     private String lastVisName = "UNKNOWN";
     private boolean useScreen = true;
+    private Mat cvImage = null;
 
     private ElapsedTime timer = new ElapsedTime();
 
@@ -140,6 +156,8 @@ public class ImageNav extends LinearOpMode {
 
         parameters.cameraDirection = VuforiaLocalizer.CameraDirection.FRONT;
         this.vuforia = ClassFactory.createVuforiaLocalizer(parameters);
+        Vuforia.setFrameFormat( PIXEL_FORMAT.RGB565, true );
+
         DbgLog.msg("SJH Vuforia LicKey: " + parameters.vuforiaLicenseKey);
 
         ftcImages = this.vuforia.loadTrackablesFromAsset("FTC_2016-17");
@@ -249,8 +267,9 @@ public class ImageNav extends LinearOpMode {
     }
 
     @Override
-    public void runOpMode() throws InterruptedException
+    public void runOpMode()
     {
+
         setupTrackables();
         setupPhoneOnRobot();
 
@@ -261,12 +280,18 @@ public class ImageNav extends LinearOpMode {
         waitForStart();
 
         /** Start tracking the data sets we care about. */
+        vuforia.setFrameQueueCapacity(10);
         ftcImages.activate();
         timer.reset();
 
+        telemetry.addData(":", "Visual Cortex activated!");
+        DbgLog.msg("SJH: Visual Cortex activated!");
+        telemetry.update();
+
         OpenGLMatrix robotLocationTransform;
-        while (opModeIsActive() && timer.seconds() < 100)
+        while (opModeIsActive())// && timer.seconds() < 100)
         {
+
             robotLocationTransform = getRobotLocation();
             if (robotLocationTransform != null)
             {
@@ -277,6 +302,49 @@ public class ImageNav extends LinearOpMode {
                 DbgLog.msg("SJH " + locStr);
             }
 
+
+            Image imgdata = null;
+            Bitmap rgbImage = null;
+            VuforiaLocalizer.CloseableFrame frame = null;
+            try
+            {
+                frame = vuforia.getFrameQueue().take();
+            }
+            catch (InterruptedException e)
+            {
+                DbgLog.msg("SJH: What is going on here");
+            }
+
+            long numImages = frame.getNumImages();
+
+            for (int i = 0; i < numImages; i++)
+            {
+                if (frame.getImage(i).getFormat() == PIXEL_FORMAT.RGB565)
+                {
+                    imgdata = frame.getImage(i);
+                    break;
+                }
+            }
+
+            if ( imgdata != null )
+            {
+                if ( cvImage == null )
+                {
+                    cvImage = new Mat(imgdata.getHeight(), imgdata.getWidth(), CvType.CV_8UC1);
+                }
+
+                rgbImage = Bitmap.createBitmap(imgdata.getWidth(), imgdata.getHeight(), Bitmap.Config.RGB_565);
+                rgbImage.copyPixelsFromBuffer(imgdata.getPixels());
+
+                Utils.bitmapToMat(rgbImage, cvImage);
+
+                BeaconFinder detector = new BeaconDetector(cvImage);
+
+                DbgLog.msg("SJH Beacon Color: " + detector.getLightOrder());
+                telemetry.addData("Beacon Color: ", detector.getLightOrder());
+            }
+
+            frame.close();
             telemetry.update();
             idle();
         }
