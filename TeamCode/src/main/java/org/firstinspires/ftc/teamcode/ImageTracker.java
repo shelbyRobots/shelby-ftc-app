@@ -1,7 +1,12 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.graphics.Bitmap;
+
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.util.RobotLog;
+import com.vuforia.Image;
+import com.vuforia.PIXEL_FORMAT;
+import com.vuforia.Vuforia;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
@@ -52,8 +57,11 @@ public class ImageTracker
                         "9Q6DZmhz4FCT49shA+4PyNOzqsjhRC";
 
         parameters.cameraDirection = VuforiaLocalizer.CameraDirection.FRONT;
-        VuforiaLocalizer vuforia;
+
         vuforia = ClassFactory.createVuforiaLocalizer(parameters);
+        //Set the image sets to allow getting frames from vuforia
+        Vuforia.setFrameFormat( PIXEL_FORMAT.RGB565, true );
+        vuforia.setFrameQueueCapacity(10);
         DbgLog.msg("SJH Vuforia LicKey: " + parameters.vuforiaLicenseKey);
 
         ftcImages = vuforia.loadTrackablesFromAsset("FTC_2016-17");
@@ -122,6 +130,27 @@ public class ImageTracker
                 setPhoneInformation(phoneLocationOnRobot, parameters.cameraDirection);
     }
 
+    public OpenGLMatrix getRobotLocation()
+    {
+        /**
+         * getUpdatedRobotLocation() will return null if no new information is available
+         * since the last time that call was made, or if the trackable is not currently
+         * visible.
+         * getRobotLocation() will return null if the trackable is not currently visible.
+         */
+        OpenGLMatrix robotLocationTransform = null;
+        for (VuforiaTrackable trackable : allTrackables)
+        {
+            robotLocationTransform = ((VuforiaTrackableDefaultListener) trackable.getListener())
+                                             .getUpdatedRobotLocation();
+            if(robotLocationTransform != null)
+            {
+                break;
+            }
+        }
+        return robotLocationTransform;
+    }
+
     //public OpenGLMatrix getRobotLocation()
     public void updateRobotLocationInfo()
     {
@@ -141,7 +170,7 @@ public class ImageTracker
                 lastVisName = trackable.getName();
                 float xyz[] = robotLocationTransform.getTranslation().getData();
                 currPos = new Point2d(xyz[0]/MM_PER_INCH, xyz[1]/MM_PER_INCH);
-                DbgLog.msg("Found Image " + lastVisName);
+                DbgLog.msg("SJH Found Image " + lastVisName);
                 currOri = Orientation.getOrientation(robotLocationTransform,
                         AxesReference.EXTRINSIC, AxesOrder.ZXY, AngleUnit.DEGREES);
                 currYaw = Double.valueOf((double)currOri.firstAngle);
@@ -197,10 +226,65 @@ public class ImageTracker
         return locStr;
     }
 
+    public Bitmap getImage()
+    {
+        //if(frame != null) frame.close();
+        frame = null;
+        try
+        {
+            frame = vuforia.getFrameQueue().take();
+        }
+        catch (InterruptedException e)
+        {
+            DbgLog.error("SJH: InterruptedException in ImageTracker.getImage");
+        }
+
+        if(frame == null)
+        {
+            DbgLog.msg("SJH getImage frame null");
+            return null;
+        }
+
+        long numImages = frame.getNumImages();
+
+        Image imgdata = null;
+        for (int i = 0; i < numImages; i++)
+        {
+            int format = frame.getImage(i).getFormat();
+            if (format == PIXEL_FORMAT.RGB565)
+            {
+                imgdata = frame.getImage(i);
+                break;
+            }
+        }
+
+        if(imgdata == null)
+        {
+            DbgLog.msg("SJH imgData null");
+            return null;
+        }
+
+        int imgW = imgdata.getWidth();
+        int imgH = imgdata.getHeight();
+        Bitmap.Config imgT = Bitmap.Config.RGB_565;
+        if(rgbImage == null) rgbImage = Bitmap.createBitmap(imgW, imgH, imgT);
+
+        rgbImage.copyPixelsFromBuffer(imgdata.getPixels());
+
+        if(frame != null) frame.close();
+
+        return rgbImage;
+    }
+
     public void setActive(boolean active)
     {
         if(active) ftcImages.activate();
         else       ftcImages.deactivate();
+    }
+
+    public void setFrameQueueSize(int size)
+    {
+        vuforia.setFrameQueueCapacity(size);
     }
 
     // Vuforia units are mm = units used in XML for the trackables
@@ -210,6 +294,7 @@ public class ImageTracker
     private List<VuforiaTrackable> allTrackables = new ArrayList<>();
     private OpenGLMatrix lastLocation = null;
 
+    private VuforiaLocalizer vuforia;
     private VuforiaTrackable blueWheels;
     private VuforiaTrackable blueLegos;
     private VuforiaTrackable redTools;
@@ -220,5 +305,8 @@ public class ImageTracker
     private Double  currYaw = null;
     private Orientation currOri = null;
     private String lastVisName = "";
-    private boolean useScreen = false;
+    private boolean useScreen = true;
+
+    private Bitmap rgbImage = null;
+    private VuforiaLocalizer.CloseableFrame frame = null;
 }

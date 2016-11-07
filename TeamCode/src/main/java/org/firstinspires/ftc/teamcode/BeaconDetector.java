@@ -4,8 +4,10 @@ import android.graphics.Bitmap;
 
 import com.qualcomm.ftccommon.DbgLog;
 
+import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Rect;
@@ -23,26 +25,52 @@ public class BeaconDetector implements BeaconFinder
     private final static double MIN_BUTTON_EDGE_DIST = 20; 		// pixels from edge of cropped image
 
     private Mat image;
+    private Mat cvImage;
 
     private double blue_light_box = -1;
     private double red_light_box = -1;
     private LightOrder light_order;
 
-    private final static boolean DEBUG = true;
+    private final static boolean DEBUG = false;
     private final static boolean POS_IS_Y = false;
+
+    static
+    {
+        if (!OpenCVLoader.initDebug()) {
+            DbgLog.error("SJH: OpenCVLoader error"); //Handle opencv loader issue
+        }
+    }
 
     @SuppressWarnings("WeakerAccess")
     public BeaconDetector(Mat img ) {
         setImage( img );
     }
 
+    public BeaconDetector() {}
+
     public void setImage( Mat img )
     {
-        // Assert: image is a CvMat object
         // Convert to HSV colorspace to make it easier to
         // threshold certain colors (ig red/blue)
         image = new Mat();
         Imgproc.cvtColor(img, image, Imgproc.COLOR_RGB2HSV, 4 );
+
+        findColors();
+    }
+
+    public void setBitmap(Bitmap rgbImage)
+    {
+        if(rgbImage == null) return;
+
+        int cvt = CvType.CV_8UC1;
+        int inHeight = rgbImage.getHeight();
+        int inWidth  = rgbImage.getWidth();
+
+        if (cvImage == null) cvImage = new Mat(inHeight, inWidth, cvt);
+        if (image == null)     image = new Mat(inHeight, inWidth, cvt);
+
+        Utils.bitmapToMat(rgbImage, cvImage);
+        Imgproc.cvtColor(cvImage, image, Imgproc.COLOR_RGB2HSV, 4 );
 
         findColors();
     }

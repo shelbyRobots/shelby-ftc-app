@@ -1,6 +1,8 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import android.graphics.Bitmap;
+
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -22,7 +24,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     public FtcAutoShelby()
     {
         super();
-//        instance = this;
     }
 
     @Override
@@ -50,8 +51,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                     doMove(pathSegs[i], speeds.get(i), dirs.get(i));
                     if (i < turns.length)
                     {
-                        //doTurn(turns[i]);
-                        doTurn(pathSegs[i+1]);
+                        doTurn(turns[i]); //quick but rough
+                        doTurn(pathSegs[i+1]); //fine tune using gyro
                         DbgLog.msg("SJH Planned pos: %s %s",
                                 pathSegs[i].getTgtPt(),
                                 pathSegs[i + 1].getFieldHeading());
@@ -96,8 +97,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     @Override
     public void stopMode()
     {
-        //drvTrn.stopAndReset();
-        //dashboard.displayPrintf(2, "STATE: %s", "PATH COMPLETE");
+        drvTrn.stopAndReset();
     }
 
     private void setup()
@@ -147,12 +147,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
         dashboard.displayPrintf(6, "GHDG: %d",
                 robot.gyro.getIntegratedZValue());
-
-        //FtcRobotControllerActivity act =
-        //        (FtcRobotControllerActivity)hardwareMap.appContext;
-
-        //ocah = new OpenCvActivityHelper(act);
-        //ocah.addCallback(bd);
     }
 
     private void doMove(Segment seg, double speed, Segment.SegDir dir)
@@ -181,8 +175,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         DbgLog.msg("SJH: Turn %5.2f", angle);
         dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
         timer.reset();
-        //drvTrn.ctrTurnLinear(angle,DEF_TRN_PWR);
-        drvTrn.ctrTurnLinearGyro(angle,DEF_TRN_PWR);
+        drvTrn.ctrTurnLinear(angle,DEF_TRN_PWR);
+        //drvTrn.ctrTurnLinearGyro(angle,DEF_TRN_PWR);
         DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f", angle, timer.time());
     }
 
@@ -245,14 +239,22 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         int timeout = 1000;
         BeaconFinder.LightOrder ord = BeaconFinder.LightOrder.UNKNOWN;
         ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
-        //ocah.attach();
+
+        tracker.setFrameQueueSize(10);
+        tracker.setActive(true);
         while (ord == BeaconFinder.LightOrder.UNKNOWN &&
                itimer.milliseconds() < timeout)
         {
-            //ord = bd.getLightOrder();
-            Thread.sleep(50);
+            Bitmap bmap = tracker.getImage();
+            if(bmap != null)
+            {
+                bd.setBitmap(bmap);
+                ord = bd.getLightOrder();
+            }
+            sleep(50);
         }
-        //ocah.stop();
+        tracker.setActive(false);
+        tracker.setFrameQueueSize(0);
 
         if (ord != BeaconFinder.LightOrder.UNKNOWN)
         {
@@ -417,11 +419,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private Drivetrain drvTrn = new Drivetrain();
 
     private ImageTracker tracker = new ImageTracker();
-    //BeaconDetector bd = new BeaconDetector();
-    //private OpenCvActivityHelper ocah;
+    BeaconDetector bd = new BeaconDetector();
     private ButtonSide bSide = ButtonSide.UNKNOWN;
-
-//    private static LinearOpMode instance = null;
 
     private static Point2d curPos;
     private static double  curHdg;
