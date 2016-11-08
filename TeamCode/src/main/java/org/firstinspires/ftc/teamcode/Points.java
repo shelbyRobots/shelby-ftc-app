@@ -24,31 +24,13 @@ class Points
                 segDirs.add(Segment.SegDir.FORWARD);
                 segSpeeds.add(DEF_SPEED);
                 actions.add(Action.NOTHING);
-                points.add(new Point2d(TGTX,  TGTY));
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.NOTHING);
+                points.add(new Point2d(ATGTX,  ATGTY));
                 break;
             }
 
 
             case SHOOT_PARKCRNR:
             case SHOOT_PARKCNTR:
-            {
-                points.add(new Point2d(STARTX, STARTY));
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.SHOOT);
-                points.add(new Point2d(STARTX,  SHOOTY));
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.NOTHING);
-                points.add(new Point2d(TGTX,  TGTY));
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.NOTHING);
-                break;
-            }
             case SHOOT_PUSH_PARKCNTR:
             case SHOOT_PUSH_PARKCRNR:
             {
@@ -60,6 +42,7 @@ class Points
                 segDirs.add(Segment.SegDir.FORWARD);
                 segSpeeds.add(DEF_SPEED);
                 actions.add(Action.NOTHING);
+                points.add(new Point2d(TGTX,  TGTY));
                 break;
             }
         }
@@ -77,7 +60,6 @@ class Points
             case SHOOT_PUSH_PARKCNTR:
             case SHOOT_PUSH_PARKCRNR:
             {
-                points.add(new Point2d(STARTX,  TRN_1_Y)); //1st turn pt
                 segDirs.add(Segment.SegDir.FORWARD);
                 segSpeeds.add(DEF_SPEED);
                 actions.add(Action.SCAN_IMAGE);
@@ -110,9 +92,6 @@ class Points
                 segSpeeds.add(REV_SPEED);
                 actions.add(Action.RST_PUSHER);
                 points.add(new Point2d(SCAN_X,  TGT_2_Y)); //Rev to clear for turn
-                segDirs.add(Segment.SegDir.FORWARD);
-                segSpeeds.add(DEF_SPEED);
-                actions.add(Action.NOTHING);
                 break;
             }
         }
@@ -124,6 +103,9 @@ class Points
             case SHOOT_PARKCNTR:
             case SHOOT_PUSH_PARKCNTR:
             {
+                segDirs.add(Segment.SegDir.FORWARD);
+                segSpeeds.add(DEF_SPEED);
+                actions.add(Action.NOTHING);
                 points.add(new Point2d(CTR_PRK_X, CTR_PRK_Y));
                 break;
             }
@@ -133,6 +115,9 @@ class Points
             case SHOOT_PARKCRNR:
             case SHOOT_PUSH_PARKCRNR:
             {
+                segDirs.add(Segment.SegDir.FORWARD);
+                segSpeeds.add(DEF_SPEED);
+                actions.add(Action.NOTHING);
                 points.add(new Point2d(CRN_PRK_X, CRN_PRK_Y));
                 break;
             }
@@ -322,10 +307,12 @@ class Points
     private static final double STARTX  = -1*12;
     private static final double ASTARTX =  1*12;
     private static final double STARTY  =  S_WALL + REAR_OFFSET;
-    private static final double SHOOTY  =  STARTY + 1.0;
+    private static final double SHOOTY  =  STARTY + 6.0;
     private static final double TGTX    =  -1*12;
-    private static final double TGTY    =  -1*12;
-    private static final double ASHOOTY =  STARTY + 1*12;
+    private static final double TGTY    =  -4*12;
+    private static final double ATGTX   =  9;
+    private static final double ATGTY   =  -4*12;
+    private static final double ASHOOTY =  STARTY + 11;
     private static final double TRN_1_Y =  S_WALL + 2*12;
     private static final double TGT_1_Y = -1*12;
     private static final double TGT_2_Y =  3*12;

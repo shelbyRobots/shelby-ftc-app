@@ -414,7 +414,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     //private final static double DEF_DRV_PWR  = 0.7;
     private final static double DEF_TRN_PWR  = 0.3;
 
-    private final static double DEF_SHT_PWR = 0.55;
+    private final static double DEF_SHT_PWR = 0.75;
     private final static double DEF_SWP_PWR = 1.0;
     private final static double DEF_ELV_PWR = 0.5;
 
