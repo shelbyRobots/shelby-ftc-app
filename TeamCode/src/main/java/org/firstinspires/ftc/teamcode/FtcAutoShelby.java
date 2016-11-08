@@ -242,7 +242,9 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
         tracker.setFrameQueueSize(10);
         tracker.setActive(true);
-        while (ord == BeaconFinder.LightOrder.UNKNOWN &&
+        while  ((ord == BeaconFinder.LightOrder.UNKNOWN ||
+                ord == BeaconFinder.LightOrder.RED_RED ||
+                ord == BeaconFinder.LightOrder.BLUE_BLUE) &&
                itimer.milliseconds() < timeout)
         {
             Bitmap bmap = tracker.getImage();
@@ -285,10 +287,10 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         }
 
         //TESTING ONLY - remove when beacon finder is working
-        if(bSide == ButtonSide.UNKNOWN)
-            bSide = ButtonSide.LEFT;
-        else if (bSide == ButtonSide.LEFT)
-            bSide = ButtonSide.RIGHT;
+//        if(bSide == ButtonSide.UNKNOWN)
+//            bSide = ButtonSide.LEFT;
+//        else if (bSide == ButtonSide.LEFT)
+//            bSide = ButtonSide.RIGHT;
         DbgLog.msg("SJH: Gonna push button " + bSide);
         dashboard.displayPrintf(5, "BUTTON: %s", bSide);
 
@@ -312,6 +314,13 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             robot.pusher.setPosition(RGT_PUSH_POS);
             DbgLog.msg("SJH: Pushing right button");
         }
+        else
+        {
+            robot.pusher.setPosition(CTR_PUSH_POS);
+            DbgLog.msg("SJH: Not Pushing A Button");
+
+        }
+
     }
 
     private void do_shoot()
@@ -400,6 +409,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private final static double RGT_PUSH_POS = 0.2;
     private final static double LFT_PUSH_POS = 0.8;
+    private final static double CTR_PUSH_POS = 0.5;
 
     //private final static double DEF_DRV_PWR  = 0.7;
     private final static double DEF_TRN_PWR  = 0.3;

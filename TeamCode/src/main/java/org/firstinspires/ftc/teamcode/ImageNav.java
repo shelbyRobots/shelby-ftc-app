@@ -316,7 +316,7 @@ public class ImageNav extends LinearOpMode {
 
         ftcImages.activate();
         OpenGLMatrix robotLocationTransform;
-        while (opModeIsActive())// && timer.seconds() < 100)
+        while (opModeIsActive())// && timer.seconds() < 100
         {
             /** Start tracking the data sets we care about. */
             robotLocationTransform = getRobotLocation();
