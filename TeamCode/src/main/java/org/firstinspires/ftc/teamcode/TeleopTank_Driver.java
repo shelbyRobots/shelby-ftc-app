@@ -76,6 +76,13 @@ public class TeleopTank_Driver extends LinearOpMode
         boolean b_pressed;
         boolean b_pressed_last = false;
 
+        boolean lpush = false;
+        boolean rpush = false;
+        boolean lpush_last = false;
+        boolean rpush_last = false;
+
+        Input_Shaper ishaper = new Input_Shaper();
+
         DcMotor.ZeroPowerBehavior zeroPwr = DcMotor.ZeroPowerBehavior.FLOAT;
 
         double shoot_scale = 0.55;
@@ -108,18 +115,16 @@ public class TeleopTank_Driver extends LinearOpMode
             shoot_scale = Range.clip(shoot_scale, 0.0, 1.0);
             d_down_last = gamepad2.dpad_down;
             d_up_last   = gamepad2.dpad_up;
+
             left  = -gamepad1.left_stick_y;
             right = -gamepad1.right_stick_y;
             shooter = gamepad2.right_trigger;
             bkwshooter = gamepad2.left_trigger;
 
-
-
-            lpush = gamepad1.left_trigger  > 0.1;
-            rpush = gamepad1.right_trigger > 0.1;
-
             b_pressed = gamepad1.b;
 
+            //left  = ishaper.shape(left);
+            //right = ishaper.shape(right);
             robot.leftMotor.setPower(left);
             robot.rightMotor.setPower(right);
             elev  = gamepad2.left_stick_y;
@@ -152,8 +157,18 @@ public class TeleopTank_Driver extends LinearOpMode
             }
             last_bkwshoot_pressed = shoot_pressed;
 
-            if(lpush) do_pushButton(ButtonSide.LEFT);
-            else if (rpush) do_pushButton(ButtonSide.RIGHT);
+            lpush = gamepad1.left_trigger  > 0.1;
+            rpush = gamepad1.right_trigger > 0.1;
+            if(lpush && !lpush_last)
+            {
+                do_pushButton(ButtonSide.LEFT);
+            }
+            else if (rpush && !rpush_last)
+            {
+                do_pushButton(ButtonSide.RIGHT);
+            }
+            lpush_last = lpush;
+            rpush_last = rpush;
 
             if(b_pressed && !b_pressed_last)
             {
@@ -161,6 +176,8 @@ public class TeleopTank_Driver extends LinearOpMode
                     zeroPwr = DcMotor.ZeroPowerBehavior.FLOAT;
                 else
                     zeroPwr = DcMotor.ZeroPowerBehavior.BRAKE;
+                robot.leftMotor.setZeroPowerBehavior(zeroPwr);
+                robot.rightMotor.setZeroPowerBehavior(zeroPwr);
             }
             b_pressed_last = b_pressed;
 
@@ -171,6 +188,7 @@ public class TeleopTank_Driver extends LinearOpMode
             telemetry.addData("shooters", "%.2f", shooter);
             telemetry.addData("shootpwr", "%s", last_shoot_pressed);
             telemetry.addData("shoot_scale", "%.2f", shoot_scale);
+            telemetry.addData("zmode", "%s", robot.leftMotor.getZeroPowerBehavior());
             telemetry.update();
 
             // Pause for metronome tick.  40 mS each cycle = update 25 times a second.
@@ -209,11 +227,8 @@ public class TeleopTank_Driver extends LinearOpMode
         RIGHT
     }
 
-    static final double LEFT_POS        = 0.8;
-    static final double RIGHT_POS       = 0.2;
-
-    static boolean lpush = false;
-    static boolean rpush = false;
+    private static final double LEFT_POS        = 0.8;
+    private static final double RIGHT_POS       = 0.2;
 
     private ShelbyBot robot = new ShelbyBot();
 }

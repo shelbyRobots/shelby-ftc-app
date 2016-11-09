@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.RobotLog;
 
 import java.util.Vector;
 
@@ -106,6 +107,15 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
         doMenus();
 
+        if(team == Team.SNOWMAN)
+        {
+            DEF_SHT_PWR = SHT_PWR_SNOWMAN;
+        }
+        else
+        {
+            DEF_SHT_PWR = SHT_PWR_SONIC;
+        }
+
         if (robot.leftMotor  != null &&
             robot.rightMotor != null &&
             robot.gyro       != null)
@@ -167,6 +177,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         timer.reset();
         Point2d pt = seg.getTgtPt();
         drvTrn.driveToPointLinear(pt, speed, ddir);
+        RobotLog.ii("ABC", "SJH LOGTEST %s", seg.getName());
         DbgLog.msg("SJH Completed move %s. Time: %6.3f", seg.getName(), timer.time());
     }
 
@@ -192,7 +203,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         DbgLog.msg("SJH Completed turnHdg %5.2f. Time: %6.3f", hdg, timer.time());
     }
 
-    private boolean findSensedLoc() throws InterruptedException
+    private boolean findSensedLoc()
     {
         DbgLog.msg("SJH findSensedLoc");
         dashboard.displayPrintf(2, "STATE: %s", "FIND IMG LOC");
@@ -212,7 +223,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                 sensedFldHdg = tracker.getSensedFldHeading();
                 curHdg = sensedFldHdg;
             }
-            Thread.sleep(50);
+            sleep(50);
         }
 
         tracker.setActive(false);
@@ -231,8 +242,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         return (curPos != null);
     }
 
-    @SuppressWarnings("ConstantConditions")
-    private void do_findBeaconOrder(boolean push) throws InterruptedException
+    private void do_findBeaconOrder(boolean push)
     {
         DbgLog.msg("SJH: FIND BEACON ORDER!!!");
         dashboard.displayPrintf(2, "STATE: %s", "BEACON FIND");
@@ -286,11 +296,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             }
         }
 
-        //TESTING ONLY - remove when beacon finder is working
-//        if(bSide == ButtonSide.UNKNOWN)
-//            bSide = ButtonSide.LEFT;
-//        else if (bSide == ButtonSide.LEFT)
-//            bSide = ButtonSide.RIGHT;
         DbgLog.msg("SJH: Gonna push button " + bSide);
         dashboard.displayPrintf(5, "BUTTON: %s", bSide);
 
@@ -372,6 +377,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         //
         FtcChoiceMenu strategyMenu = new FtcChoiceMenu("Auto Strategies:", null, this);
         FtcChoiceMenu allianceMenu = new FtcChoiceMenu("Alliance:", strategyMenu, this);
+        FtcChoiceMenu teamMenu     = new FtcChoiceMenu("Team:", allianceMenu, this);
 
         strategyMenu.addChoice("Shoot_Push_ParkCenter",      Field.AutoStrategy.SHOOT_PUSH_PARKCNTR,    allianceMenu);
         strategyMenu.addChoice("Shoot_Push_ParkCorner",      Field.AutoStrategy.SHOOT_PUSH_PARKCRNR,    allianceMenu);
@@ -385,6 +391,9 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         allianceMenu.addChoice("Red",  Field.Alliance.RED);
         allianceMenu.addChoice("Blue", Field.Alliance.BLUE);
 
+        teamMenu.addChoice("Sonic", Team.SONIC);
+        teamMenu.addChoice("Snowman", Team.SNOWMAN);
+
         //
         // Walk the menu tree starting with the strategy menu as the root
         // menu and get user choices.
@@ -395,6 +404,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         //
         autoStrategy = (Field.AutoStrategy)strategyMenu.getCurrentChoiceObject();
         alliance = (Field.Alliance)allianceMenu.getCurrentChoiceObject();
+        team = (Team)teamMenu.getCurrentChoiceObject();
 
         dashboard.displayPrintf(0, "Auto Strategy: %s", autoStrategy);
         dashboard.displayPrintf(1, "Alliance: %s", alliance);
@@ -407,6 +417,12 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         RIGHT
     }
 
+    private enum Team
+    {
+        SONIC,
+        SNOWMAN
+    }
+
     private final static double RGT_PUSH_POS = 0.2;
     private final static double LFT_PUSH_POS = 0.8;
     private final static double CTR_PUSH_POS = 0.5;
@@ -414,7 +430,9 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     //private final static double DEF_DRV_PWR  = 0.7;
     private final static double DEF_TRN_PWR  = 0.3;
 
-    private final static double DEF_SHT_PWR = 0.75;
+    private final static double SHT_PWR_SONIC = 0.75;
+    private final static double SHT_PWR_SNOWMAN = 0.65;
+    private static double DEF_SHT_PWR = SHT_PWR_SONIC;
     private final static double DEF_SWP_PWR = 1.0;
     private final static double DEF_ELV_PWR = 0.5;
 
@@ -442,4 +460,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private HalDashboard dashboard;
 
     private boolean firstPass;
+
+    private Team team = Team.SONIC;
 }

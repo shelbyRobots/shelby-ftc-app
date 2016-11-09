@@ -96,6 +96,96 @@ public class ImageAuton extends LinearOpMode {
     private ImageTracker tracker = new ImageTracker();
 
     private ElapsedTime timer = new ElapsedTime();
+    private Point2d curPos;
+    private double curHdg;
+
+    private boolean findSensedLoc()
+    {
+        DbgLog.msg("SJH findSensedLoc");
+        telemetry.addData("2", "STATE: %s", "FIND IMG LOC");
+        curPos = null;
+        ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
+        tracker.setActive(true);
+        Point2d sensedBotPos = null;
+        double  sensedFldHdg = 90.0;
+        OpenGLMatrix robotLocationTransform;
+        while(sensedBotPos == null && itimer.milliseconds() < 1000)
+        {
+            tracker.updateRobotLocationInfo();
+            sensedBotPos = tracker.getSensedPosition();
+
+            if(sensedBotPos != null)
+            {
+                curPos = sensedBotPos;
+                sensedFldHdg = tracker.getSensedFldHeading();
+                curHdg = sensedFldHdg;
+            }
+            sleep(50);
+        }
+
+        tracker.setActive(false);
+
+        if ( sensedBotPos != null )
+        {
+            double t = itimer.seconds();
+            DbgLog.msg("SJH Senesed Pos: %s %5.2f %2.3f", sensedBotPos, sensedFldHdg, t);
+            telemetry.addData("SLOC", "SLOC: %s %4.1f", sensedBotPos, sensedFldHdg);
+        }
+        else
+        {
+            telemetry.addData("4", "SENSLOC: %s", "NO VALUE");
+        }
+
+        robotLocationTransform = tracker.getRobotLocation();
+        if (robotLocationTransform != null)
+        {
+            lastLocation = robotLocationTransform;
+            currPos = lastLocation.getTranslation();
+            String locStr = tracker.getLocString();
+            telemetry.addData("LOC2", locStr);
+            DbgLog.msg("SJH " + locStr);
+        }
+
+        return (curPos != null);
+    }
+
+    private void do_findBeaconOrder(boolean push)
+    {
+        DbgLog.msg("SJH: FIND BEACON ORDER!!!");
+        telemetry.addData("2", "STATE: %s", "BEACON FIND");
+        int timeout = 1000;
+        BeaconFinder.LightOrder ord = BeaconFinder.LightOrder.UNKNOWN;
+        ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
+
+        tracker.setFrameQueueSize(10);
+        tracker.setActive(true);
+        while ((ord == BeaconFinder.LightOrder.UNKNOWN ||
+                ord == BeaconFinder.LightOrder.RED_RED ||
+                ord == BeaconFinder.LightOrder.BLUE_BLUE) &&
+                itimer.milliseconds() < timeout)
+        {
+            Bitmap bmap = tracker.getImage();
+            if (bmap != null)
+            {
+                bd.setBitmap(bmap);
+                ord = bd.getLightOrder();
+                if(ord == BeaconFinder.LightOrder.BLUE_RED ||
+                   ord == BeaconFinder.LightOrder.RED_BLUE)
+                    break;
+            }
+            sleep(50);
+        }
+        tracker.setActive(false);
+        tracker.setFrameQueueSize(0);
+
+        if (ord != BeaconFinder.LightOrder.UNKNOWN)
+        {
+            double t = itimer.seconds();
+            DbgLog.msg("SJH: Found Beacon!!! %s %3.3f", ord, t);
+            telemetry.addData("BORD", "SJH LightOrder = %s", ord);
+        }
+        telemetry.update();
+    }
 
     @Override
     public void runOpMode()
@@ -109,49 +199,21 @@ public class ImageAuton extends LinearOpMode {
         telemetry.addData(">", "Starting ...");
         telemetry.update();
 
-        tracker.setFrameQueueSize(10);
-
-        /** Start tracking */
-        tracker.setActive(true);
-        timer.reset();
+        //tracker.setFrameQueueSize(10);
 
         telemetry.addData(":", "Visual Cortex activated!");
         DbgLog.msg("SJH: Visual Cortex activated!");
         telemetry.update();
 
-        OpenGLMatrix robotLocationTransform;
+        /** Start tracking */
+        tracker.setActive(true);
+        timer.reset();
 
         while (opModeIsActive())
         {
-            tracker.updateRobotLocationInfo();
-            Point2d sensedBotPos = tracker.getSensedPosition();
-            if(sensedBotPos != null)
-            {
-                double sensedFldHdg = tracker.getSensedFldHeading();
-                //DbgLog.msg("SJH SensedPos %s %4.1f", sensedBotPos, sensedFldHdg);
-                telemetry.addData("SLOC", "SLOC: %s %4.1f", sensedBotPos, sensedFldHdg);
-            }
-
-            robotLocationTransform = tracker.getRobotLocation();
-            if (robotLocationTransform != null)
-            {
-                lastLocation = robotLocationTransform;
-                currPos = lastLocation.getTranslation();
-                String locStr = tracker.getLocString();
-                telemetry.addData("LOC", locStr);
-                DbgLog.msg("SJH " + locStr);
-            }
-
-            BeaconFinder.LightOrder ord = BeaconFinder.LightOrder.UNKNOWN;
-            Bitmap bmap = tracker.getImage();
-            if(bmap != null)
-            {
-                bd.setBitmap(bmap);
-                ord = bd.getLightOrder();
-                telemetry.addData("BORD", "SJH LightOrder = %s", ord);
-                DbgLog.msg("SJH LightOrder = %s", ord);
-            }
-            telemetry.update();
+            boolean locFound = findSensedLoc();
+            do_findBeaconOrder(false);
+            sleep(1000);
             idle();
         }
         tracker.setActive(false);
