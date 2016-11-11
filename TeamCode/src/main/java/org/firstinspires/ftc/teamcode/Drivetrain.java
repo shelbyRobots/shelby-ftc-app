@@ -118,18 +118,17 @@ class Drivetrain
         if (tgtPt == null)  DbgLog.error("SJH tgtPt null in driveToPoint");
         if (currPt == null) DbgLog.error("SJH currPt null in driveToPoint");
         double dist = currPt.distance(tgtPt);
-        if(dist < 6) pwr *= 0.2;
         driveDistance(dist, pwr, dir);
     }
 
-    void driveToPointLinear(Point2d tgtPt, double pwr, Direction dir) throws InterruptedException
+    void driveToPointLinear(Point2d tgtPt, double pwr, Direction dir)
     {
         if (tgtPt == null)  DbgLog.error("SJH tgtPt null in driveToPoint");
         if (currPt == null) DbgLog.error("SJH currPt null in driveToPoint");
         driveToPoint(tgtPt, pwr, dir);
 
         ptmr.reset();
-        while(isBusy())
+        while(isBusy() && op.opModeIsActive())
         {
             if(ptmr.seconds() > 0.2)
             {
@@ -211,14 +210,14 @@ class Drivetrain
         return onTarget;
     }
 
-    void ctrTurnLinear(double angle, double pwr) throws InterruptedException
+    void ctrTurnLinear(double angle, double pwr)
     {
         ctrTurn(angle, pwr);
         Direction tdir = Direction.FORWARD;
-        while(isBusy())
+        while(isBusy() && op.opModeIsActive())
         {
             makeCorrections(pwr, tdir);
-            waitForTick(20);
+            waitForTick(10);
         }
 
         DbgLog.msg("SJH: ldc %6d rdc %6d",
@@ -331,13 +330,13 @@ class Drivetrain
         right_drive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
-    private void waitForTick(long periodMs) throws InterruptedException
+    private void waitForTick(long periodMs)
     {
         long  remaining = periodMs - (long)period.milliseconds();
 
         // sleep for the remaining portion of the regular cycle period.
         if (remaining > 0)
-            Thread.sleep(remaining);
+            op.sleep(remaining);
 
         // Reset the cycle clock for the next pass.
         period.reset();
@@ -451,7 +450,7 @@ class Drivetrain
         //return (left_drive.isBusy() || right_drive.isBusy()); //true if 1 is busy
     }
 
-    private final static double DRV_TUNER = 1.15;
+    private final static double DRV_TUNER = 1.19;
     private final static double TRN_TUNER = 1.0;
     private final static double TURN_TOLERANCE = 1.0;
 

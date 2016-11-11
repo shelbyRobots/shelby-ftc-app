@@ -151,6 +151,20 @@ public class ImageTracker
         return robotLocationTransform;
     }
 
+//    public void getImagePose()
+//    {
+//        OpenGLMatrix pose = vuforia.getTargetPose(target);
+//        if (pose != null)
+//        {
+//            VectorF translation = pose.getTranslation();
+//            dashboard.displayPrintf(
+//                    i + 1, LABEL_WIDTH, target.getName() + " = ", "%6.2f,%6.2f,%6.2f",
+//                    translation.get(0) / MM_PER_INCH,
+//                    translation.get(1) / MM_PER_INCH,
+//                    -translation.get(2) / MM_PER_INCH);
+//        }
+//    }
+
     //public OpenGLMatrix getRobotLocation()
     public void updateRobotLocationInfo()
     {

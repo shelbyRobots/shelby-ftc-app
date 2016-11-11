@@ -120,15 +120,15 @@ class ShelbyBot
     //NOTE:  Notes reference center of bot on ground as bot coord frame origin.
     //However, it seems logical to use the center of the rear axis (pivot point)
     private static final float MM_PER_INCH     = 25.4f;
-    static final float BOT_WIDTH               = 15.5f; //Vehicle width at rear wheels
+    static final float BOT_WIDTH               = 16.5f; //Vehicle width at rear wheels
     private static final float BOT_LENGTH      = 18.0f;
 
     //Distance from ctr of rear wheel to tail
     static final float REAR_OFFSET             = 3.5f;
     static final float FRNT_OFFSET             = BOT_LENGTH - REAR_OFFSET;
-    private static final float CAMERA_X_IN_BOT = 0.0f  * MM_PER_INCH;
-    private static final float CAMERA_Y_IN_BOT = 0.0f; //FRONT_OFFSET * MM_PER_INCH;
-    private static final float CAMERA_Z_IN_BOT = 15.2f * MM_PER_INCH;
+    private static final float CAMERA_X_IN_BOT = -1.0f  * MM_PER_INCH;
+    private static final float CAMERA_Y_IN_BOT = 12.5f * MM_PER_INCH;
+    private static final float CAMERA_Z_IN_BOT = 15.5f * MM_PER_INCH;
 
     //With phone laid flat in portrait mode with screen up:
     //The phone axis is 0,0,0 at Camera (using front camera)
@@ -136,7 +136,7 @@ class ShelbyBot
     //Y pts to top of phone (head phone jack edge)
     //Z pts out of camera - initially toward bot up
     //to mount camera on front of bot looking bot fwd,
-    //rotate 90 about z, then -90 about x
+    //rotate -90 about z, then -90 about x
     //translate 0 in bot x, half bot length in bot y, and ~11" in bot z
     static final OpenGLMatrix phoneLocationOnRobot = OpenGLMatrix
             .translation(CAMERA_X_IN_BOT, CAMERA_Y_IN_BOT, CAMERA_Z_IN_BOT)

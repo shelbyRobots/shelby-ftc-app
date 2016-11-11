@@ -2,13 +2,14 @@
 package org.firstinspires.ftc.teamcode;
 
 import android.graphics.Bitmap;
+import android.widget.TextView;
 
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.RobotLog;
 
-import java.util.Vector;
+import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
 
 import ftclib.FtcChoiceMenu;
 import ftclib.FtcMenu;
@@ -30,11 +31,20 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     @Override
     public void initRobot()
     {
+        telemetry.addData("_","PLEASE WAIT - STARTING");
+        telemetry.update();
         dashboard = getDashboard();
-        dashboard.displayPrintf(2, "STATE: %s", "INITIALIZING");
-
+        FtcRobotControllerActivity act = (FtcRobotControllerActivity)(hardwareMap.appContext);
+        dashboard.setTextView((TextView)act.findViewById(R.id.textOpMode));
         setup();
-        firstPass = true;
+    }
+
+    @Override
+    public void startMode()
+    {
+        dashboard.clearDisplay();
+        robot.gyro.resetZAxisIntegrator();
+        do_main_loop();
     }
 
     @Override
@@ -42,57 +52,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     {
         dashboard.displayPrintf(6, "GHDG: %d",
                 robot.gyro.getIntegratedZValue());
-
-        if(firstPass)
-        {
-            try
-            {
-                for (int i = 0; i < pathSegs.length; ++i)
-                {
-                    doMove(pathSegs[i], speeds.get(i), dirs.get(i));
-                    if (i < turns.length)
-                    {
-                        doTurn(turns[i]); //quick but rough
-                        doTurn(pathSegs[i+1]); //fine tune using gyro
-                        DbgLog.msg("SJH Planned pos: %s %s",
-                                pathSegs[i].getTgtPt(),
-                                pathSegs[i + 1].getFieldHeading());
-                    }
-                    switch (actions.get(i))
-                    {
-                        case SHOOT:
-                            do_shoot();
-                            break;
-                        case SCAN_IMAGE:
-                            if (findSensedLoc())
-                            {
-                                DbgLog.msg("SJH Sensed pos: %s %s",
-                                        curPos, curHdg);
-                            }
-                            //if (curPos != null) drvTrn.setCurrPt(curPos);
-                            break;
-                        case FIND_BEACON:
-                            do_findBeaconOrder(true);
-                            break;
-                        case RST_PUSHER:
-                            robot.pusher.setPosition(RGT_PUSH_POS);
-                            break;
-                        case NOTHING:
-                            break;
-                    }
-                }
-            } catch (InterruptedException e)
-            {
-                DbgLog.error("SJH Interruped");
-            }
-        }
-        firstPass = false;
-    }
-
-    @Override
-    public void startMode()
-    {
-        robot.gyro.resetZAxisIntegrator();
     }
 
     @Override
@@ -103,6 +62,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void setup()
     {
+        dashboard.displayPrintf(2, "STATE: %s", "INITIALIZING - PLEASE WAIT FOR MENU");
+        hardwareMap.logDevices();
         robot.init(hardwareMap);
 
         doMenus();
@@ -134,12 +95,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
         Points pts = new Points(autoStrategy);
         pathSegs = pts.getSegments(alliance);
-        turns    = pts.getTurns(alliance);
-        actions  = pts.getActions();
-        dirs     = pts.getSegDirs();
-        speeds   = pts.getSegSpeeds();
 
-        double initHdg = pathSegs[0].getFieldHeading();
+        initHdg = pathSegs[0].getFieldHeading();
 
         DbgLog.msg("SJH ROUTE: \n" + pts.toString());
 
@@ -159,30 +116,89 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                 robot.gyro.getIntegratedZValue());
     }
 
-    private void doMove(Segment seg, double speed, Segment.SegDir dir)
-            throws InterruptedException
+    private void do_main_loop()
+    {
+        for (int i = 0; i < pathSegs.length; ++i)
+        {
+            if(!opModeIsActive()) break;
+
+            Segment curSeg;
+            if(curPos == null)
+            {
+                curSeg = pathSegs[i];
+            }
+            else
+            {
+                curSeg = new Segment("CURSEG", curPos, pathSegs[i].getTgtPt());
+            }
+
+            doEncoderTurn(curSeg); //quick but rough
+            doTurn(curSeg); //fine tune using gyro
+            doMove(curSeg);
+
+            DbgLog.msg("SJH Planned pos: %s %s",
+                    pathSegs[i].getTgtPt(),
+                    pathSegs[i].getFieldHeading());
+
+            switch (pathSegs[i].getAction())
+            {
+                case SHOOT:
+                    do_shoot();
+                    break;
+                case SCAN_IMAGE:
+                    if (findSensedLoc())
+                    {
+                        DbgLog.msg("SJH Sensed pos: %s %s",
+                                curPos, curHdg);
+                    }
+                    if (curPos != null) drvTrn.setCurrPt(curPos);
+                    break;
+                case FIND_BEACON:
+                    do_findBeaconOrder(true);
+                    break;
+                case RST_PUSHER:
+                    robot.pusher.setPosition(RGT_PUSH_POS);
+                    break;
+                case NOTHING:
+                    break;
+            }
+        }
+    }
+
+    private void doMove(Segment seg)
     {
         String  snm = seg.getName();
         Point2d spt = seg.getStrtPt();
         Point2d ept = seg.getTgtPt();
         double  fhd = seg.getFieldHeading();
-        DbgLog.msg("SJH: Drive %s %s %s %6.2f %s",
-                snm, spt, ept, fhd, dir);
+        Segment.SegDir dir = seg.getDir();
+        double speed = seg.getSpeed();
 
-        dashboard.displayPrintf(2, "STATE: %s %s %s - %s %6.2f %s",
-                "DRIVE", snm, spt, ept, fhd, dir);
+        RobotLog.ii("SJH", "Drive %s %s %s %6.2f %3.2f %s",
+                snm, spt, ept, fhd, speed, dir);
+
+        dashboard.displayPrintf(2, "STATE: %s %s %s - %s %6.2f %3.2f %s",
+                "DRIVE", snm, spt, ept, fhd, speed, dir);
 
         Drivetrain.Direction ddir = Drivetrain.Direction.FORWARD;
         if (dir == Segment.SegDir.REVERSE) ddir = Drivetrain.Direction.REVERSE;
         timer.reset();
         Point2d pt = seg.getTgtPt();
         drvTrn.driveToPointLinear(pt, speed, ddir);
-        RobotLog.ii("ABC", "SJH LOGTEST %s", seg.getName());
-        DbgLog.msg("SJH Completed move %s. Time: %6.3f", seg.getName(), timer.time());
+        RobotLog.ii("SJH", "Completed move %s. Time: %6.3f", seg.getName(), timer.time());
     }
 
-    private void doTurn(double angle) throws InterruptedException
+    private void doEncoderTurn(Segment seg)
     {
+        if (seg.getDir() == Segment.SegDir.REVERSE) return;
+        double cHdg = robot.gyro.getHeading();
+        double tHdg = seg.getFieldHeading();
+        double angle = tHdg - cHdg;
+        angle -= initHdg;
+        while (angle <= -180.0) angle += 360.0;
+        while (angle >   180.0) angle -= 360.0;
+        if(Math.abs(angle) <= 1.0) return;
+
         DbgLog.msg("SJH: Turn %5.2f", angle);
         dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
         timer.reset();
@@ -193,14 +209,18 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void doTurn(Segment seg)
     {
-        double hdg = seg.getFieldHeading();
+        double tHdg = seg.getFieldHeading();
         if(seg.getDir() == Segment.SegDir.REVERSE)
-            hdg += 180;
-        DbgLog.msg("SJH: TurnToHdg %5.2f", hdg);
-        dashboard.displayPrintf(2, "STATE: %s %5.2f", "HDG", hdg);
+            return; //hdg += 180;
+        double cHdg = robot.gyro.getHeading();
+        if(Math.abs(tHdg-robot.gyro.getHeading()) <= 1.0)
+            return;
+
+        DbgLog.msg("SJH: TurnToHdg %5.2f", tHdg);
+        dashboard.displayPrintf(2, "STATE: %s %5.2f", "HDG", tHdg);
         timer.reset();
-        drvTrn.ctrTurnToHeading(hdg, DEF_TRN_PWR);
-        DbgLog.msg("SJH Completed turnHdg %5.2f. Time: %6.3f", hdg, timer.time());
+        drvTrn.ctrTurnToHeading(tHdg, DEF_TRN_PWR);
+        DbgLog.msg("SJH Completed turnHdg %5.2f. Time: %6.3f", tHdg, timer.time());
     }
 
     private boolean findSensedLoc()
@@ -240,6 +260,13 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         }
 
         return (curPos != null);
+    }
+
+    private void do_beacon_push_integrated()
+    {
+        RobotLog.ii("SJH", "FIND/PUSH");
+        dashboard.displayPrintf(2, "STATE: %s", "BEACON FIND/PUSH");
+        do_findBeaconOrder(true);
     }
 
     private void do_findBeaconOrder(boolean push)
@@ -385,11 +412,11 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         strategyMenu.addChoice("Shoot_ParkCorner",           Field.AutoStrategy.SHOOT_PARKCRNR,         allianceMenu);
         strategyMenu.addChoice("AngleShoot_Push_ParkCenter", Field.AutoStrategy.ANGSHOOT_PUSH_PARKCNTR, allianceMenu);
         strategyMenu.addChoice("AngleShoot_Push_ParkCorner", Field.AutoStrategy.ANGSHOOT_PUSH_PARKCRNR, allianceMenu);
-        strategyMenu.addChoice("AngleShoot_ParkCenter",      Field.AutoStrategy.ANGSHOOT_PARKCNTR,         allianceMenu);
-        strategyMenu.addChoice("AngleShoot_ParkCorner",      Field.AutoStrategy.ANGSHOOT_PARKCRNR,         allianceMenu);
+        strategyMenu.addChoice("AngleShoot_ParkCenter",      Field.AutoStrategy.ANGSHOOT_PARKCNTR,      allianceMenu);
+        strategyMenu.addChoice("AngleShoot_ParkCorner",      Field.AutoStrategy.ANGSHOOT_PARKCRNR,      allianceMenu);
 
-        allianceMenu.addChoice("Red",  Field.Alliance.RED);
-        allianceMenu.addChoice("Blue", Field.Alliance.BLUE);
+        allianceMenu.addChoice("Red",  Field.Alliance.RED, teamMenu);
+        allianceMenu.addChoice("Blue", Field.Alliance.BLUE, teamMenu);
 
         teamMenu.addChoice("Sonic", Team.SONIC);
         teamMenu.addChoice("Snowman", Team.SNOWMAN);
@@ -406,8 +433,9 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         alliance = (Field.Alliance)allianceMenu.getCurrentChoiceObject();
         team = (Team)teamMenu.getCurrentChoiceObject();
 
-        dashboard.displayPrintf(0, "Auto Strategy: %s", autoStrategy);
-        dashboard.displayPrintf(1, "Alliance: %s", alliance);
+        dashboard.displayPrintf(0, "STRATEGY: %s", autoStrategy);
+        dashboard.displayPrintf(1, "ALLIANCE: %s", alliance);
+        dashboard.displayPrintf(2, "TEAM: %s", team);
     }
 
     private enum ButtonSide
@@ -428,19 +456,15 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private final static double CTR_PUSH_POS = 0.5;
 
     //private final static double DEF_DRV_PWR  = 0.7;
-    private final static double DEF_TRN_PWR  = 0.3;
+    private final static double DEF_TRN_PWR  = 0.45;
 
-    private final static double SHT_PWR_SONIC = 0.75;
+    private final static double SHT_PWR_SONIC = 0.65;
     private final static double SHT_PWR_SNOWMAN = 0.65;
     private static double DEF_SHT_PWR = SHT_PWR_SONIC;
     private final static double DEF_SWP_PWR = 1.0;
     private final static double DEF_ELV_PWR = 0.5;
 
     private Segment[] pathSegs;
-    private double[]  turns;
-    private Vector<Points.Action> actions;
-    private Vector<Segment.SegDir> dirs;
-    private Vector<Double> speeds;
 
     private ShelbyBot   robot = new ShelbyBot();
     private ElapsedTime timer = new ElapsedTime();
@@ -459,7 +483,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private HalDashboard dashboard;
 
-    private boolean firstPass;
-
     private Team team = Team.SONIC;
+    private double initHdg = 0.0;
 }

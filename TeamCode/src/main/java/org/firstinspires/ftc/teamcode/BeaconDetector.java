@@ -31,7 +31,7 @@ public class BeaconDetector implements BeaconFinder
     private double red_light_box = -1;
     private LightOrder light_order;
 
-    private final static boolean DEBUG = false;
+    private final static boolean DEBUG = true;
     private final static boolean POS_IS_Y = false;
 
     static
