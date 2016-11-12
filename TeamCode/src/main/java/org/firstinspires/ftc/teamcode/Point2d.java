@@ -4,10 +4,16 @@ import java.util.Locale;
 
 class Point2d
 {
-    Point2d(double x, double y)
+    Point2d(String name, double x, double y)
     {
+        this.name = name;
         this.x = x;
         this.y = y;
+    }
+
+    Point2d(double x, double y)
+    {
+        this(new String("PT" + numpts++), x, y);
     }
 
     double distance(Point2d tgtPt)
@@ -24,6 +30,8 @@ class Point2d
         return Math.toDegrees(seg2FldHdg - seg1FldHdg);
     }
 
+    public String getName() { return name; };
+
     public double getX()
     {
         return x;
@@ -36,9 +44,12 @@ class Point2d
 
     public String toString()
     {
-        return String.format(Locale.US, "(%5.2f, %5.2f)", x, y);
+        return String.format(Locale.US, "%s(%5.2f, %5.2f)",
+                name, x, y);
     }
 
+    private String name;
     private double x;
     private double y;
+    private static int numpts = 0;
 }

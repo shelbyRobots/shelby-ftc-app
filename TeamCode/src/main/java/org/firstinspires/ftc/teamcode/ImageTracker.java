@@ -86,7 +86,7 @@ public class ImageTracker
         redTools.setLocation(Field.redToolsLocationOnField);
         RobotLog.ii(TAG, "Red Tools=%s", getLocString(Field.redToolsLocationOnField));
 
-        redGears.setLocation(Field.redToolsLocationOnField);
+        redGears.setLocation(Field.redGearsLocationOnField);
         RobotLog.ii(TAG, "Red Gears=%s", getLocString(Field.redGearsLocationOnField));
 
         blueWheels.setLocation(Field.blueWheelsLocationOnField);

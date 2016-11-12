@@ -140,13 +140,18 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             }
 
             doEncoderTurn(curSeg); //quick but rough
-            doTurn(curSeg); //fine tune using gyro
+            //doTurn(curSeg); //fine tune using gyro
             doMove(curSeg);
 
             DbgLog.msg("SJH Planned pos: %s %s",
                     pathSegs[i].getTgtPt(),
                     pathSegs[i].getFieldHeading());
 
+            switch(pathSegs[i].getName())
+            {
+                case "START_PT":
+                    break;
+            }
             switch (pathSegs[i].getAction())
             {
                 case SHOOT:
@@ -468,8 +473,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     //private final static double DEF_DRV_PWR  = 0.7;
     private final static double DEF_TRN_PWR  = 0.45;
 
-    private final static double SHT_PWR_SONIC = 0.65;
-    private final static double SHT_PWR_SNOWMAN = 0.65;
+    private final static double SHT_PWR_SONIC = 0.50;
+    private final static double SHT_PWR_SNOWMAN = 0.50;
     private static double DEF_SHT_PWR = SHT_PWR_SONIC;
     private final static double DEF_SWP_PWR = 1.0;
     private final static double DEF_ELV_PWR = 0.5;

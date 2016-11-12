@@ -182,7 +182,8 @@ class Points
         Segment seg;
         for(int s = 0; s < numSegs; ++s)
         {
-            seg = new Segment("DRV" + s, pts.get(s), pts.get(s+1));
+            seg = new Segment(pts.get(s).getName(),
+                              pts.get(s), pts.get(s+1));
             seg.setDir(segDirs.get(s));
             seg.setSpeed(segSpeeds.get(s));
             seg.setAction(actions.get(s));
@@ -264,6 +265,18 @@ class Points
         return sbldr.toString();
     }
 
+    private enum STATES
+    {
+        TURN_START,
+        MOVE_PRSHT,
+        TURN_PRSHT,
+        MOVE_SHOOT,
+        SCAN1,
+        BECN1,
+        PRSS1,
+        REVS1
+    }
+
     private final static double REAR_OFFSET = ShelbyBot.REAR_OFFSET;
     private final static double FRNT_OFFSET = ShelbyBot.FRNT_OFFSET;
 
@@ -295,25 +308,25 @@ class Points
     private static final double BECN_X  = -48.0;
     private static final double TOUCHX  = W_WALL + FRNT_OFFSET + SAFETY;
 
-    private Point2d START_PT = new Point2d(STARTX, STARTY);
-    private Point2d PRSHT_PT = new Point2d(STARTX, PRSHTY);
-    private Point2d SHOOT_PT = new Point2d(STARTX, SHOOTY);
-    private Point2d AIMTO_PT = new Point2d(AIMTOX, AIMTOY);
+    private Point2d START_PT = new Point2d("START", STARTX, STARTY);
+    private Point2d PRSHT_PT = new Point2d("PRSHT", STARTX, PRSHTY);
+    private Point2d SHOOT_PT = new Point2d("SHOOT", STARTX, SHOOTY);
+    private Point2d AIMTO_PT = new Point2d("AIMTO", AIMTOX, AIMTOY);
 
-    private Point2d ASTART_PT = new Point2d(ASTARTX, STARTY);
-    private Point2d APRSHT_PT = new Point2d(ASTARTX, PRSHTY);
-    private Point2d ASHOOT_PT = new Point2d(ASHOOTX, ASHOOTY);
-    private Point2d AAIMTO_PT = new Point2d(AAIMTOX, AAIMTOY);
+    private Point2d ASTART_PT = new Point2d("ASTART", ASTARTX, STARTY);
+    private Point2d APRSHT_PT = new Point2d("APRSHT", ASTARTX, PRSHTY);
+    private Point2d ASHOOT_PT = new Point2d("ASHOOT", ASHOOTX, ASHOOTY);
+    private Point2d AAIMTO_PT = new Point2d("AAIMTO", AAIMTOX, AAIMTOY);
 
-    private Point2d SCAN1_PT = new Point2d(SCAN_X, TRGT1_Y);
-    private Point2d BECN1_PT = new Point2d(BECN_X, TRGT1_Y);
-    private Point2d PRSS1_PT = new Point2d(TOUCHX, TRGT1_Y);
-    private Point2d SCAN2_PT = new Point2d(SCAN_X, TRGT2_Y);
-    private Point2d BECN2_PT = new Point2d(BECN_X, TRGT2_Y);
-    private Point2d PRSS2_PT = new Point2d(TOUCHX, TRGT2_Y);
+    private Point2d SCAN1_PT = new Point2d("SCAN1", SCAN_X, TRGT1_Y);
+    private Point2d BECN1_PT = new Point2d("BECN1", BECN_X, TRGT1_Y);
+    private Point2d PRSS1_PT = new Point2d("PRSS1", TOUCHX, TRGT1_Y);
+    private Point2d SCAN2_PT = new Point2d("SCAN2", SCAN_X, TRGT2_Y);
+    private Point2d BECN2_PT = new Point2d("BECN2", BECN_X, TRGT2_Y);
+    private Point2d PRSS2_PT = new Point2d("PRSS2", TOUCHX, TRGT2_Y);
 
-    private Point2d CTRPRKPT = new Point2d(CTRPRKX, CTRPRKY);
-    private Point2d CRNPRKPT = new Point2d(CRNPRKX, CRNPRKY);
+    private Point2d CTRPRKPT = new Point2d("CTRPRK", CTRPRKX, CTRPRKY);
+    private Point2d CRNPRKPT = new Point2d("CRNPRK", CRNPRKX, CRNPRKY);
 
     private final static int    MAX_SEGMENTS = 16;
 
