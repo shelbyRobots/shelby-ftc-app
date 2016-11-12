@@ -80,7 +80,7 @@ public class FtcAutoK9 extends FtcOpMode implements TrcPidController.PidInput,
     //
     // PID drive constants.
     //
-    private static final double DRIVE_KP                = 0.04;
+    private static final double DRIVE_KP                = 0.35;
     private static final double DRIVE_KI                = 0.0;
     private static final double DRIVE_KD                = 0.0;
     private static final double DRIVE_KF                = 0.0;
@@ -151,29 +151,32 @@ public class FtcAutoK9 extends FtcOpMode implements TrcPidController.PidInput,
         //
         // Create the menus.
         //
-        FtcValueMenu pwrMenu = new FtcValueMenu("Pwr:", null, this, 0.05, 0.5, 0.05, 0.5, "%3.1f");
-        FtcValueMenu delayMenu = new FtcValueMenu("Delay time:", pwrMenu, this,
+        FtcValueMenu delayMenu = new FtcValueMenu("Delay time:", null, this,
                                                          0.0, 10.0, 1.0, 0.0, "%.0f sec");
         FtcChoiceMenu allianceMenu = new FtcChoiceMenu("Alliance:", delayMenu, this);
         FtcChoiceMenu strategyMenu = new FtcChoiceMenu("Auto Strategies:", allianceMenu, this);
         FtcValueMenu driveTimeMenu = new FtcValueMenu("Drive time:", strategyMenu, this,
                                                       0.0, 10.0, 1.0, 4.0, "%.0f sec");
+        FtcValueMenu pwrMenu = new FtcValueMenu("Pwr:", driveTimeMenu,
+                                                       this, 0.05, 0.5, 0.05, 0.5, "%3.1f");
         FtcValueMenu distanceMenu = new FtcValueMenu("Drive distance:", strategyMenu, this,
                                                      1.0, 8.0, 1.0, 1.0, "%.0f ft");
-        FtcValueMenu degreesMenu = new FtcValueMenu("Turn degrees", strategyMenu, this,
+        FtcValueMenu degreesMenu = new FtcValueMenu("Turn degrees", distanceMenu, this,
                                                     -360.0, 360.0, 90.0, 360.0, "%.0f deg");
 
+        delayMenu.setChildMenu(allianceMenu);
         allianceMenu.addChoice("Red", Alliance.RED_ALLIANCE, strategyMenu);
         allianceMenu.addChoice("Blue", Alliance.BLUE_ALLIANCE, strategyMenu);
         //strategyMenu.addChoice("Do Nothing", AutoStrategy.DO_NOTHING);
         strategyMenu.addChoice("Timed drive", AutoStrategy.TIMED_DRIVE, driveTimeMenu);
         strategyMenu.addChoice("Drive forward", AutoStrategy.DRIVE_AND_TURN, distanceMenu);
+        distanceMenu.setChildMenu(degreesMenu);
 
         //
         // Walk the menu tree starting with the delay menu as the root
         // menu and get user choices.
         //
-        FtcMenu.walkMenuTree(pwrMenu);
+        FtcMenu.walkMenuTree(delayMenu);
         //
         // Set choices variables.
         //
@@ -181,7 +184,7 @@ public class FtcAutoK9 extends FtcOpMode implements TrcPidController.PidInput,
         delay = delayMenu.getCurrentValue();
         autoStrategy = (AutoStrategy)strategyMenu.getCurrentChoiceObject();
         driveTime = driveTimeMenu.getCurrentValue();
-        driveDistance = distanceMenu.getCurrentValue();
+        driveDistance = distanceMenu.getCurrentValue() * 12.0;
         turnDegrees = degreesMenu.getCurrentValue();
         alliance = (Alliance)allianceMenu.getCurrentChoiceObject();
 
@@ -233,14 +236,14 @@ public class FtcAutoK9 extends FtcOpMode implements TrcPidController.PidInput,
         // Choice menus.
         //
         //gamepad = new FtcGamepad("Gamepad", gamepad1, this);
-        //doMenus();
-        delay = 0.0;
-        dpwr = 0.15;
-        driveTime = 1.4;
-        driveDistance = 3.0*12.0;
-        turnDegrees = 90.0;
-        alliance = Alliance.RED_ALLIANCE;
-        autoStrategy = AutoStrategy.DRIVE_AND_TURN;
+        doMenus();
+//        delay = 0.0;
+//        dpwr = 0.15;
+//        driveTime = 1.4;
+//        driveDistance = 3.0*12.0;
+//        turnDegrees = 90.0;
+//        alliance = Alliance.RED_ALLIANCE;
+//        autoStrategy = AutoStrategy.DRIVE_AND_TURN;
     }   //initRobot
 
     //
