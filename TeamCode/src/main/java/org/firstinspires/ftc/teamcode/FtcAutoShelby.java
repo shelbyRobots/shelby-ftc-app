@@ -18,7 +18,7 @@ import hallib.HalDashboard;
 
 //import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "ForLoopReplaceableByForEach"})
 @Autonomous(name="AutonShelby", group="Auton")
 //@Disabled
 public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
@@ -118,9 +118,15 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void do_main_loop()
     {
+        boolean SkipNextSegment = false;
         for (int i = 0; i < pathSegs.length; ++i)
         {
             if(!opModeIsActive()) break;
+            if (SkipNextSegment)
+            {
+                SkipNextSegment = false;
+                continue;
+            }
 
             Segment curSeg;
             if(curPos == null)
@@ -130,6 +136,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             else
             {
                 curSeg = new Segment("CURSEG", curPos, pathSegs[i].getTgtPt());
+                curPos = null;
             }
 
             doEncoderTurn(curSeg); //quick but rough
@@ -154,7 +161,9 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                     if (curPos != null) drvTrn.setCurrPt(curPos);
                     break;
                 case FIND_BEACON:
-                    do_findBeaconOrder(true);
+
+                    SkipNextSegment = !do_findBeaconOrder(true);
+
                     break;
                 case RST_PUSHER:
                     robot.pusher.setPosition(RGT_PUSH_POS);
@@ -269,7 +278,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         do_findBeaconOrder(true);
     }
 
-    private void do_findBeaconOrder(boolean push)
+    private boolean do_findBeaconOrder(boolean push)
     {
         DbgLog.msg("SJH: FIND BEACON ORDER!!!");
         dashboard.displayPrintf(2, "STATE: %s", "BEACON FIND");
@@ -330,6 +339,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         {
             do_pushButton(bSide);
         }
+        return bSide != ButtonSide.UNKNOWN;
     }
 
     private void do_pushButton(ButtonSide bside)
@@ -471,7 +481,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private Drivetrain drvTrn = new Drivetrain();
 
     private ImageTracker tracker = new ImageTracker();
-    BeaconDetector bd = new BeaconDetector();
+    private BeaconDetector bd = new BeaconDetector();
     private ButtonSide bSide = ButtonSide.UNKNOWN;
 
     private static Point2d curPos;
