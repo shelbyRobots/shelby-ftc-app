@@ -18,7 +18,7 @@ import hallib.HalDashboard;
 
 //import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "ForLoopReplaceableByForEach"})
 @Autonomous(name="AutonShelby", group="Auton")
 //@Disabled
 public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
@@ -120,14 +120,14 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void do_main_loop()
     {
-        boolean drive_to_beacon = false;
-
+        boolean SkipNextSegment = false;
         for (int i = 0; i < pathSegs.length; ++i)
         {
-            if(!opModeIsActive() || isStopRequested())
+            if(!opModeIsActive()) break;
+            if (SkipNextSegment)
             {
-                drvTrn.stopAndReset();
-                break;
+                SkipNextSegment = false;
+                continue;
             }
 
             Segment curSeg;
@@ -138,16 +138,12 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             else
             {
                 curSeg = new Segment("CURSEG", curPos, pathSegs[i].getTgtPt());
+                curPos = null;
             }
-            curPos = null;
 
             doEncoderTurn(curSeg); //quick but rough
             doTurn(curSeg); //fine tune using gyro
-            if(curSeg.getAction() != Segment.Action.PUSH ||
-               drive_to_beacon)
-            {
-                doMove(curSeg);
-            }
+            doMove(curSeg);
 
             DbgLog.msg("SJH Planned pos: %s %s",
                     pathSegs[i].getTgtPt(),
@@ -172,10 +168,11 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                     if (curPos != null) drvTrn.setCurrPt(curPos);
                     break;
                 case FIND_BEACON:
-                    drive_to_beacon = do_findBeaconOrder(true);
+
+                    SkipNextSegment = !do_findBeaconOrder(true);
+
                     break;
                 case RST_PUSHER:
-                    drive_to_beacon = false;
                     robot.pusher.setPosition(RGT_PUSH_POS);
                     break;
                 case NOTHING:
@@ -313,7 +310,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private boolean do_findBeaconOrder(boolean push)
     {
         DbgLog.msg("SJH: FIND BEACON ORDER!!!");
-        boolean ready_to_push = false;
         dashboard.displayPrintf(2, "STATE: %s", "BEACON FIND");
         int timeout = 1000;
         BeaconFinder.LightOrder ord = BeaconFinder.LightOrder.UNKNOWN;
@@ -344,7 +340,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
         if (ord == BeaconFinder.LightOrder.BLUE_RED)
         {
-            ready_to_push = true;
             if (alliance == Field.Alliance.BLUE)
             {
                 bSide = ButtonSide.LEFT;
@@ -356,7 +351,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         }
         else if (ord == BeaconFinder.LightOrder.RED_BLUE)
         {
-            ready_to_push = true;
             if (alliance == Field.Alliance.BLUE)
             {
                 bSide = ButtonSide.RIGHT;
@@ -374,8 +368,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         {
             do_pushButton(bSide);
         }
-
-        return ready_to_push;
+        return bSide != ButtonSide.UNKNOWN;
     }
 
     private void do_pushButton(ButtonSide bside)
@@ -517,7 +510,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private Drivetrain drvTrn = new Drivetrain();
 
     private ImageTracker tracker;
-    BeaconDetector bd = new BeaconDetector();
+    private BeaconDetector bd = new BeaconDetector();
     private ButtonSide bSide = ButtonSide.UNKNOWN;
 
     private static Point2d curPos;

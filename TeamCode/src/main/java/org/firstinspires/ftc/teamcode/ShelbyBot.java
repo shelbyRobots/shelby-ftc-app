@@ -1,13 +1,9 @@
 
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.ftccommon.DbgLog;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
-import com.qualcomm.robotcore.hardware.GyroSensor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.I2cDevice;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -126,9 +122,9 @@ class ShelbyBot
     //Distance from ctr of rear wheel to tail
     static final float REAR_OFFSET             = 3.5f;
     static final float FRNT_OFFSET             = BOT_LENGTH - REAR_OFFSET;
-    private static final float CAMERA_X_IN_BOT = -1.0f  * MM_PER_INCH;
-    private static final float CAMERA_Y_IN_BOT = 12.5f * MM_PER_INCH;
-    private static final float CAMERA_Z_IN_BOT = 15.5f * MM_PER_INCH;
+    private static final float CAMERA_X_IN_BOT = 12.5f  * MM_PER_INCH;
+    private static final float CAMERA_Y_IN_BOT = 0f; //12.5f * MM_PER_INCH;
+    private static final float CAMERA_Z_IN_BOT = 0f; //15.5f * MM_PER_INCH;
 
     //With phone laid flat in portrait mode with screen up:
     //The phone axis is 0,0,0 at Camera (using front camera)
@@ -138,9 +134,11 @@ class ShelbyBot
     //to mount camera on front of bot looking bot fwd,
     //rotate -90 about z, then -90 about x
     //translate 0 in bot x, half bot length in bot y, and ~11" in bot z
+    static final OpenGLMatrix phoneOrientation = Orientation.getRotationMatrix(
+            AxesReference.EXTRINSIC, AxesOrder.XYZ, //ZXY
+            AngleUnit.DEGREES, 0, 90, 0);
+
     static final OpenGLMatrix phoneLocationOnRobot = OpenGLMatrix
             .translation(CAMERA_X_IN_BOT, CAMERA_Y_IN_BOT, CAMERA_Z_IN_BOT)
-            .multiplied(Orientation.getRotationMatrix(
-                    AxesReference.EXTRINSIC, AxesOrder.ZXY,
-                    AngleUnit.DEGREES, -90, -90, 0));
+            .multiplied(phoneOrientation);
 }
