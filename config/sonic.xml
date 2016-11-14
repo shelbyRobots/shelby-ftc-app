@@ -1,0 +1,21 @@
+﻿<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<Robot type="FirstInspires-FTC">
+    <MotorController name="elevcontrol" serialNumber="AI049O05">
+        <Motor name="sweepmotor" port="1" />
+        <Motor name="elevmotor" port="2" />
+    </MotorController>
+    <MotorController name="drivecontrol" serialNumber="AH03ELIY">
+        <Motor name="rightdrive" port="1" />
+        <Motor name="leftdrive" port="2" />
+    </MotorController>
+    <DeviceInterfaceModule name="sensormod" serialNumber="AL00VBFT">
+        <Gyro name="gyro" port="0" />
+    </DeviceInterfaceModule>
+    <MotorController name="shootcontrol" serialNumber="AL00VX0K">
+        <Motor name="leftshooter" port="1" />
+        <Motor name="rightshooter" port="2" />
+    </MotorController>
+    <ServoController name="Servo Controller 1" serialNumber="AL00XP8R">
+        <Servo name="pusher" port="1" />
+    </ServoController>
+</Robot>
