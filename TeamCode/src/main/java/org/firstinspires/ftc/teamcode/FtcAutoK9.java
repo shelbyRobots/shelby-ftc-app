@@ -434,9 +434,9 @@ public class FtcAutoK9 extends FtcOpMode implements TrcPidController.PidInput,
                             dtim);
                     drvTimer.reset();
                     drivePidCtrl.printPidInfo();
-                    pidDrive.setTarget(distance, 0.0, false, event, 2.0);
+                    pidDrive.setTarget(distance, 90.0, false, event, 2.0);
                     sm.addEvent(event);
-                    sm.waitForEvents(DriveAndTurnState.TURN);
+                    sm.waitForEvents(DriveAndTurnState.DONE);
                     break;
 
                 case TURN:

@@ -10,43 +10,6 @@ import ftclib.FtcOpMode;
 
 class Drivetrain
 {
-    double TRNPWR = 0.5;
-    void turnDelta(int angle)
-    {
-        int currentHdg = gyro.getHeading();
-        int targetHdg = currentHdg + angle;
-        while(Math.abs(getGyroError(targetHdg)) > TURN_TOLERANCE)
-        {
-            if(targetHdg > currentHdg)
-            {
-                move(TRNPWR, -TRNPWR);
-            }
-            else if(targetHdg < currentHdg)
-            {
-                move(-TRNPWR, TRNPWR);
-            }
-            currentHdg = gyro.getHeading();
-        }
-    }
-
-    void turnToHeading(int heading)
-    {
-        int currentHdg = gyro.getHeading();
-        int targetHdg = heading;
-        while(Math.abs(getGyroError(targetHdg)) > TURN_TOLERANCE)
-        {
-            if(targetHdg > currentHdg)
-            {
-                move(TRNPWR, -TRNPWR);
-            }
-            else if(targetHdg < currentHdg)
-            {
-                move(-TRNPWR, TRNPWR);
-            }
-            currentHdg = gyro.getHeading();
-        }
-    }
-
     Drivetrain()
     {
         rt.reset();
@@ -128,7 +91,7 @@ class Drivetrain
         driveToPoint(tgtPt, pwr, dir);
 
         ptmr.reset();
-        while(isBusy() && op.opModeIsActive())
+        while(isBusy() && op.opModeIsActive() && !op.isStopRequested())
         {
             if(ptmr.seconds() > 0.2)
             {
@@ -214,7 +177,7 @@ class Drivetrain
     {
         ctrTurn(angle, pwr);
         Direction tdir = Direction.FORWARD;
-        while(isBusy() && op.opModeIsActive())
+        while(isBusy() && op.opModeIsActive() && !op.isStopRequested())
         {
             makeCorrections(pwr, tdir);
             waitForTick(10);
@@ -227,16 +190,29 @@ class Drivetrain
         stopAndReset();
     }
 
+    private int getGryoFhdg()
+    {
+        int cHdg = gyro.getIntegratedZValue() +
+                           (int)Math.round(initHdg);
+
+        while (cHdg <= -180) cHdg += 360;
+        while (cHdg >   180) cHdg -= 360;
+
+        return cHdg;
+    }
+
     void ctrTurnToHeading(double tgtHdg, double pwr)
     {
         left_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         right_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        tgtHdg = Math.round(tgtHdg - initHdg);
+        tgtHdg = Math.round(tgtHdg);
 
         DbgLog.msg("SJH: GYRO TURN to HDG %d", (int)tgtHdg);
 
         ptmr.reset();
-        while(!ctrTurnGyro(tgtHdg, pwr))
+        while(!ctrTurnGyro(tgtHdg, pwr) &&
+              op.opModeIsActive()       &&
+              !op.isStopRequested())
         {
             op.idle();
             frame++;
@@ -247,7 +223,7 @@ class Drivetrain
     void ctrTurnLinearGyro(double angle, double pwr)
     {
         angle = Math.round(angle);
-        int tgtHdg = (int)angle + gyro.getIntegratedZValue();
+        int tgtHdg = (int)angle + getGryoFhdg();
         while(tgtHdg > 180)   tgtHdg -= 360;
         while(tgtHdg <= -180) tgtHdg += 360;
         DbgLog.msg("SJH: GYRO TURN %d to HDG %d", (int)angle, tgtHdg);
@@ -415,10 +391,9 @@ class Drivetrain
 
     private int getGyroError(int tgtHdg)
     {
-        //int curHdg = gyro.getHeading();
-
         int robotError;
-        robotError = tgtHdg - gyro.getIntegratedZValue();
+        int gHdg = getGryoFhdg();
+        robotError = tgtHdg - gHdg;
         while (robotError > 180)  robotError -= 360;
         while (robotError <= -180) robotError += 360;
         return robotError;
@@ -446,13 +421,24 @@ class Drivetrain
 
     boolean isBusy()
     {
+        if(!op.opModeIsActive() || op.isStopRequested())
+        {
+            return false;
+        }
+
+        if(left_drive.getPower()  < minPwr ||
+           right_drive.getPower() < minPwr)
+        {
+
+        }
+
         return (left_drive.isBusy() && right_drive.isBusy());   //true if both are busy
         //return (left_drive.isBusy() || right_drive.isBusy()); //true if 1 is busy
     }
 
-    private final static double DRV_TUNER = 1.19;
+    private final static double DRV_TUNER = 1.20; //1.15;
     private final static double TRN_TUNER = 1.0;
-    private final static double TURN_TOLERANCE = 1.0;
+    private final static double TURN_TOLERANCE = 2.0;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
     private final static double WHL_DIAMETER = 6.6 * DRV_TUNER; //Diameter of the wheel (inches)
@@ -463,7 +449,7 @@ class Drivetrain
     private final static double CPI = ENCODER_CPR * GEAR_RATIO / CIRCUMFERENCE;
 
     private static final double PADJ = 4.0;
-    private static final double PADJ_TURN = 0.0333;
+    private static final double PADJ_TURN = 0.025;
     private static final double THRESH = Math.toRadians(0.004);
 
     public enum Direction {FORWARD, REVERSE}
@@ -480,6 +466,12 @@ class Drivetrain
     private ElapsedTime period  = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
     private ElapsedTime rt = new ElapsedTime();
     private ElapsedTime ptmr = new ElapsedTime();
+
+    private double minPwr = 0.1;
+    private double minPwrTime = 0.1;
+    private ElapsedTime mptimer = new ElapsedTime();
+    private double lpwrLast = 1.0;
+    private double rpwrLast = 1.0;
 
     private FtcOpMode op = null;
 }

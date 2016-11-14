@@ -66,6 +66,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         hardwareMap.logDevices();
         robot.init(hardwareMap);
 
+        tracker = new ImageTracker();
+
         doMenus();
 
         if(team == Team.SNOWMAN)
@@ -118,9 +120,15 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void do_main_loop()
     {
+        boolean drive_to_beacon = false;
+
         for (int i = 0; i < pathSegs.length; ++i)
         {
-            if(!opModeIsActive()) break;
+            if(!opModeIsActive() || isStopRequested())
+            {
+                drvTrn.stopAndReset();
+                break;
+            }
 
             Segment curSeg;
             if(curPos == null)
@@ -131,10 +139,15 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             {
                 curSeg = new Segment("CURSEG", curPos, pathSegs[i].getTgtPt());
             }
+            curPos = null;
 
             doEncoderTurn(curSeg); //quick but rough
-            //doTurn(curSeg); //fine tune using gyro
-            doMove(curSeg);
+            doTurn(curSeg); //fine tune using gyro
+            if(curSeg.getAction() != Segment.Action.PUSH ||
+               drive_to_beacon)
+            {
+                doMove(curSeg);
+            }
 
             DbgLog.msg("SJH Planned pos: %s %s",
                     pathSegs[i].getTgtPt(),
@@ -159,9 +172,10 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                     if (curPos != null) drvTrn.setCurrPt(curPos);
                     break;
                 case FIND_BEACON:
-                    do_findBeaconOrder(true);
+                    drive_to_beacon = do_findBeaconOrder(true);
                     break;
                 case RST_PUSHER:
+                    drive_to_beacon = false;
                     robot.pusher.setPosition(RGT_PUSH_POS);
                     break;
                 case NOTHING:
@@ -193,13 +207,27 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         RobotLog.ii("SJH", "Completed move %s. Time: %6.3f", seg.getName(), timer.time());
     }
 
+    private double getGryoFhdg()
+    {
+        double cHdg = robot.gyro.getIntegratedZValue() + initHdg;
+
+        while (cHdg <= -180.0) cHdg += 360.0;
+        while (cHdg >   180.0) cHdg -= 360.0;
+
+        return cHdg;
+    }
+
     private void doEncoderTurn(Segment seg)
     {
         if (seg.getDir() == Segment.SegDir.REVERSE) return;
-        double cHdg = robot.gyro.getHeading();
+        double cHdg = getGryoFhdg();
         double tHdg = seg.getFieldHeading();
         double angle = tHdg - cHdg;
-        angle -= initHdg;
+        DbgLog.msg("SJH: doEncoderTurn %s CHDG %4.1f THDG %4.1f",
+                seg.getName(),
+                cHdg,
+                tHdg);
+
         while (angle <= -180.0) angle += 360.0;
         while (angle >   180.0) angle -= 360.0;
         if(Math.abs(angle) <= 1.0) return;
@@ -209,23 +237,31 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         timer.reset();
         drvTrn.ctrTurnLinear(angle,DEF_TRN_PWR);
         //drvTrn.ctrTurnLinearGyro(angle,DEF_TRN_PWR);
-        DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f", angle, timer.time());
+        cHdg = getGryoFhdg();
+        DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f CHDG: %5.2f",
+                angle, timer.time(), cHdg);
     }
 
     private void doTurn(Segment seg)
     {
         double tHdg = seg.getFieldHeading();
         if(seg.getDir() == Segment.SegDir.REVERSE)
-            return; //hdg += 180;
-        double cHdg = robot.gyro.getHeading();
-        if(Math.abs(tHdg-robot.gyro.getHeading()) <= 1.0)
+            return;
+        double cHdg = getGryoFhdg();
+
+        DbgLog.msg("SJH: doGyroTurn %s CHDG %4.1f THDG %4.1f",
+                seg.getName(),
+                cHdg,
+                tHdg);
+
+        if(Math.abs(tHdg-cHdg) <= 1.0)
             return;
 
-        DbgLog.msg("SJH: TurnToHdg %5.2f", tHdg);
-        dashboard.displayPrintf(2, "STATE: %s %5.2f", "HDG", tHdg);
         timer.reset();
         drvTrn.ctrTurnToHeading(tHdg, DEF_TRN_PWR);
-        DbgLog.msg("SJH Completed turnHdg %5.2f. Time: %6.3f", tHdg, timer.time());
+        cHdg = getGryoFhdg();
+        DbgLog.msg("SJH Completed turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
+                tHdg, timer.time(), cHdg);
     }
 
     private boolean findSensedLoc()
@@ -274,9 +310,10 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         do_findBeaconOrder(true);
     }
 
-    private void do_findBeaconOrder(boolean push)
+    private boolean do_findBeaconOrder(boolean push)
     {
         DbgLog.msg("SJH: FIND BEACON ORDER!!!");
+        boolean ready_to_push = false;
         dashboard.displayPrintf(2, "STATE: %s", "BEACON FIND");
         int timeout = 1000;
         BeaconFinder.LightOrder ord = BeaconFinder.LightOrder.UNKNOWN;
@@ -307,6 +344,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
         if (ord == BeaconFinder.LightOrder.BLUE_RED)
         {
+            ready_to_push = true;
             if (alliance == Field.Alliance.BLUE)
             {
                 bSide = ButtonSide.LEFT;
@@ -318,6 +356,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         }
         else if (ord == BeaconFinder.LightOrder.RED_BLUE)
         {
+            ready_to_push = true;
             if (alliance == Field.Alliance.BLUE)
             {
                 bSide = ButtonSide.RIGHT;
@@ -335,6 +374,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         {
             do_pushButton(bSide);
         }
+
+        return ready_to_push;
     }
 
     private void do_pushButton(ButtonSide bside)
@@ -475,7 +516,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private ElapsedTime timer = new ElapsedTime();
     private Drivetrain drvTrn = new Drivetrain();
 
-    private ImageTracker tracker = new ImageTracker();
+    private ImageTracker tracker;
     BeaconDetector bd = new BeaconDetector();
     private ButtonSide bSide = ButtonSide.UNKNOWN;
 

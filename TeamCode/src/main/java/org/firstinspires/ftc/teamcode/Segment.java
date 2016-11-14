@@ -61,7 +61,7 @@ class Segment
     }
 
     enum SegDir {FORWARD, REVERSE}
-    enum Action {NOTHING, SHOOT, SCAN_IMAGE, FIND_BEACON, RST_PUSHER}
+    enum Action {NOTHING, SHOOT, SCAN_IMAGE, FIND_BEACON, PUSH, RST_PUSHER}
     private static final double DEF_SEG_SPD = 0.5;
     private double  fldHdg = 0.0;
     private Point2d strtPt;
