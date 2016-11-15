@@ -90,6 +90,8 @@ class Drivetrain
         if (currPt == null) DbgLog.error("SJH currPt null in driveToPoint");
         driveToPoint(tgtPt, pwr, dir);
 
+        int tHdg = getGryoFhdg();
+
         ptmr.reset();
         while(isBusy() && op.opModeIsActive() && !op.isStopRequested())
         {
@@ -100,7 +102,7 @@ class Drivetrain
                         right_drive.getCurrentPosition());
                 ptmr.reset();
             }
-            //makeCorrections(pwr, dir);
+            makeGyroCorrections(pwr, tHdg);
             op.idle();
         }
 
@@ -318,6 +320,36 @@ class Drivetrain
         period.reset();
     }
 
+    void makeGyroCorrections(double pwr, int thdg)
+    {
+        double ldp; // = Math.abs(left_drive.getPower());
+        double rdp; // = Math.abs(right_drive.getPower());
+
+        double err = getGyroError(thdg);
+
+        if (Math.abs(err) < TURN_TOLERANCE)
+            return;
+
+        double steer = getSteer(err, PADJ_TURN);
+        //if (dir == Direction.REVERSE) steer *= -1;
+
+        rdp = pwr - steer;
+        ldp = pwr + steer;
+
+        double max = Math.max(Math.abs(rdp), Math.abs(ldp));
+        if (max > 1.0)
+        {
+            rdp = rdp / max;
+            ldp = ldp / max;
+        }
+
+        if (ptmr.seconds() > 0.2)
+        {
+            DbgLog.msg("SJH %4d lpwr: %5.3f rpwr: %5.3f err: %5.3f str %5.3f rt %5.3f",
+                    frame, ldp, rdp, err, steer, rt.seconds());
+        }
+    }
+
     void makeCorrections(double pwr, Direction dir)
     {
         double ldp; // = Math.abs(left_drive.getPower());
@@ -436,9 +468,9 @@ class Drivetrain
         //return (left_drive.isBusy() || right_drive.isBusy()); //true if 1 is busy
     }
 
-    private final static double DRV_TUNER = 1.20; //1.15;
+    private final static double DRV_TUNER = 1.12; //1.15;
     private final static double TRN_TUNER = 1.0;
-    private final static double TURN_TOLERANCE = 2.0;
+    private final static double TURN_TOLERANCE = 1.5;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
     private final static double WHL_DIAMETER = 6.6 * DRV_TUNER; //Diameter of the wheel (inches)

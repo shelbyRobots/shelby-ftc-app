@@ -22,6 +22,26 @@ public class Field
         ANGSHOOT_PARKCNTR
     }
 
+    static enum StartPos
+    {
+        START_A,
+        START_B
+    }
+
+    static enum BeaconChoice
+    {
+        BOTH,
+        NEAR,
+        FAR,
+        NONE
+    }
+
+    static enum ParkChoice
+    {
+        CENTER_PARK,
+        CORNER_PARK
+    }
+
     //  X axis parallel to red  alliance wall point toward    blue alliance
     //  Y axis parallel to blue alliance wall point away from red  alliance
 

@@ -95,7 +95,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             }
         }
 
-        Points pts = new Points(autoStrategy);
+        //Points pts = new Points(autoStrategy);
+        Points pts = new Points(startPos, beaconChoice, parkChoice);
         pathSegs = pts.getSegments(alliance);
 
         initHdg = pathSegs[0].getFieldHeading();
@@ -106,7 +107,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         drvTrn.setCurrPt(currPoint);
         drvTrn.setInitHdg(initHdg);
 
-        robot.pusher.setPosition(RGT_PUSH_POS);
+        robot.pusher.setPosition(ZER_PUSH_POS);
 
         timer.reset();
         DbgLog.msg("SJH Start %s. Time: %6.3f", currPoint, timer.time());
@@ -131,12 +132,14 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             }
 
             Segment curSeg;
+            curPos = null; //SBH REMOVE
             if(curPos == null)
             {
                 curSeg = pathSegs[i];
             }
             else
             {
+                drvTrn.setCurrPt(curPos);
                 curSeg = new Segment("CURSEG", curPos, pathSegs[i].getTgtPt());
                 curPos = null;
             }
@@ -165,7 +168,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                         DbgLog.msg("SJH Sensed pos: %s %s",
                                 curPos, curHdg);
                     }
-                    if (curPos != null) drvTrn.setCurrPt(curPos);
                     break;
                 case FIND_BEACON:
 
@@ -173,7 +175,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
                     break;
                 case RST_PUSHER:
-                    robot.pusher.setPosition(RGT_PUSH_POS);
+                    robot.pusher.setPosition(ZER_PUSH_POS);
                     break;
                 case NOTHING:
                     break;
@@ -201,7 +203,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         timer.reset();
         Point2d pt = seg.getTgtPt();
         drvTrn.driveToPointLinear(pt, speed, ddir);
-        RobotLog.ii("SJH", "Completed move %s. Time: %6.3f", seg.getName(), timer.time());
+        RobotLog.ii("SJH", "Completed move %s. Time: %6.3f HDG: %5.2f",
+                seg.getName(), timer.time(), getGryoFhdg());
     }
 
     private double getGryoFhdg()
@@ -441,21 +444,34 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         //
         // Create the menus.
         //
-        FtcChoiceMenu strategyMenu = new FtcChoiceMenu("Auto Strategies:", null, this);
-        FtcChoiceMenu allianceMenu = new FtcChoiceMenu("Alliance:", strategyMenu, this);
-        FtcChoiceMenu teamMenu     = new FtcChoiceMenu("Team:", allianceMenu, this);
+        //FtcChoiceMenu strategyMenu = new FtcChoiceMenu("STRATEGY:", null, this);
+        FtcChoiceMenu startPosMenu = new FtcChoiceMenu("START:", null, this);
+        FtcChoiceMenu pushMenu     = new FtcChoiceMenu("PUSH:", startPosMenu, this);
+        FtcChoiceMenu parkMenu     = new FtcChoiceMenu("PARK:", pushMenu, this);
+        FtcChoiceMenu allianceMenu = new FtcChoiceMenu("ALLIANCE:", parkMenu, this);
+        FtcChoiceMenu teamMenu     = new FtcChoiceMenu("TEAM:", allianceMenu, this);
 
-        strategyMenu.addChoice("Shoot_Push_ParkCenter",      Field.AutoStrategy.SHOOT_PUSH_PARKCNTR,    allianceMenu);
-        strategyMenu.addChoice("Shoot_Push_ParkCorner",      Field.AutoStrategy.SHOOT_PUSH_PARKCRNR,    allianceMenu);
-        strategyMenu.addChoice("Shoot_ParkCenter",           Field.AutoStrategy.SHOOT_PARKCNTR,         allianceMenu);
-        strategyMenu.addChoice("Shoot_ParkCorner",           Field.AutoStrategy.SHOOT_PARKCRNR,         allianceMenu);
-        strategyMenu.addChoice("AngleShoot_Push_ParkCenter", Field.AutoStrategy.ANGSHOOT_PUSH_PARKCNTR, allianceMenu);
-        strategyMenu.addChoice("AngleShoot_Push_ParkCorner", Field.AutoStrategy.ANGSHOOT_PUSH_PARKCRNR, allianceMenu);
-        strategyMenu.addChoice("AngleShoot_ParkCenter",      Field.AutoStrategy.ANGSHOOT_PARKCNTR,      allianceMenu);
-        strategyMenu.addChoice("AngleShoot_ParkCorner",      Field.AutoStrategy.ANGSHOOT_PARKCRNR,      allianceMenu);
+//        strategyMenu.addChoice("Shoot_Push_ParkCenter",      Field.AutoStrategy.SHOOT_PUSH_PARKCNTR,    allianceMenu);
+//        strategyMenu.addChoice("Shoot_Push_ParkCorner",      Field.AutoStrategy.SHOOT_PUSH_PARKCRNR,    allianceMenu);
+//        strategyMenu.addChoice("Shoot_ParkCenter",           Field.AutoStrategy.SHOOT_PARKCNTR,         allianceMenu);
+//        strategyMenu.addChoice("Shoot_ParkCorner",           Field.AutoStrategy.SHOOT_PARKCRNR,         allianceMenu);
+//        strategyMenu.addChoice("AngleShoot_Push_ParkCenter", Field.AutoStrategy.ANGSHOOT_PUSH_PARKCNTR, allianceMenu);
+//        strategyMenu.addChoice("AngleShoot_Push_ParkCorner", Field.AutoStrategy.ANGSHOOT_PUSH_PARKCRNR, allianceMenu);
+//        strategyMenu.addChoice("AngleShoot_ParkCenter",      Field.AutoStrategy.ANGSHOOT_PARKCNTR,      allianceMenu);
+//        strategyMenu.addChoice("AngleShoot_ParkCorner",      Field.AutoStrategy.ANGSHOOT_PARKCRNR,      allianceMenu);
 
-        allianceMenu.addChoice("Red",  Field.Alliance.RED, teamMenu);
-        allianceMenu.addChoice("Blue", Field.Alliance.BLUE, teamMenu);
+        startPosMenu.addChoice("Start_A", Field.StartPos.START_A, pushMenu);
+        startPosMenu.addChoice("Start_B", Field.StartPos.START_B, pushMenu);
+        pushMenu.addChoice("BOTH", Field.BeaconChoice.BOTH, parkMenu);
+        pushMenu.addChoice("NEAR", Field.BeaconChoice.NEAR, parkMenu);
+        pushMenu.addChoice("FAR", Field.BeaconChoice.FAR, parkMenu);
+        pushMenu.addChoice("NONE", Field.BeaconChoice.NONE, parkMenu);
+
+        parkMenu.addChoice("CENTER", Field.ParkChoice.CENTER_PARK, allianceMenu);
+        parkMenu.addChoice("CORNER", Field.ParkChoice.CORNER_PARK, allianceMenu);
+
+        allianceMenu.addChoice("RED",  Field.Alliance.RED, teamMenu);
+        allianceMenu.addChoice("BLUE", Field.Alliance.BLUE, teamMenu);
 
         teamMenu.addChoice("Sonic", Team.SONIC);
         teamMenu.addChoice("Snowman", Team.SNOWMAN);
@@ -464,17 +480,24 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         // Walk the menu tree starting with the strategy menu as the root
         // menu and get user choices.
         //
-        FtcMenu.walkMenuTree(strategyMenu);
+        FtcMenu.walkMenuTree(startPosMenu);
         //
         // Set choices variables.
         //
-        autoStrategy = (Field.AutoStrategy)strategyMenu.getCurrentChoiceObject();
+        //autoStrategy = (Field.AutoStrategy)strategyMenu.getCurrentChoiceObject();
+
+        startPos = (Field.StartPos)startPosMenu.getCurrentChoiceObject();
+        beaconChoice = (Field.BeaconChoice)pushMenu.getCurrentChoiceObject();
+        parkChoice = (Field.ParkChoice)parkMenu.getCurrentChoiceObject();
         alliance = (Field.Alliance)allianceMenu.getCurrentChoiceObject();
         team = (Team)teamMenu.getCurrentChoiceObject();
 
-        dashboard.displayPrintf(0, "STRATEGY: %s", autoStrategy);
-        dashboard.displayPrintf(1, "ALLIANCE: %s", alliance);
-        dashboard.displayPrintf(2, "TEAM: %s", team);
+        //dashboard.displayPrintf(0, "STRATEGY: %s", autoStrategy);
+        dashboard.displayPrintf(0, "START: %s", startPos);
+        dashboard.displayPrintf(1, "PUSH: %s", beaconChoice);
+        dashboard.displayPrintf(2, "PARK: %s", parkChoice);
+        dashboard.displayPrintf(3, "ALLIANCE: %s", alliance);
+        dashboard.displayPrintf(4, "TEAM: %s", team);
     }
 
     private enum ButtonSide
@@ -490,6 +513,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         SNOWMAN
     }
 
+    private final static double ZER_PUSH_POS = 0.0;
     private final static double RGT_PUSH_POS = 0.2;
     private final static double LFT_PUSH_POS = 0.8;
     private final static double CTR_PUSH_POS = 0.5;
@@ -518,10 +542,15 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private static Field.AutoStrategy autoStrategy =
             Field.AutoStrategy.SHOOT_PARKCNTR;
-    private static Field.Alliance alliance;
+
+    private static Field.StartPos startPos = Field.StartPos.START_A;
+    private static Field.BeaconChoice beaconChoice = Field.BeaconChoice.NEAR;
+    private static Field.ParkChoice parkChoice = Field.ParkChoice.CENTER_PARK;
+    private static Field.Alliance alliance = Field.Alliance.RED;
+    private static Team team = Team.SONIC;
 
     private HalDashboard dashboard;
 
-    private Team team = Team.SONIC;
+
     private double initHdg = 0.0;
 }
