@@ -455,7 +455,7 @@ class Drivetrain
 
     boolean isBusy()
     {
-        if(!op.opModeIsActive() || op.isStopRequested())
+        if(op != null && (!op.opModeIsActive() || op.isStopRequested()))
         {
             return false;
         }

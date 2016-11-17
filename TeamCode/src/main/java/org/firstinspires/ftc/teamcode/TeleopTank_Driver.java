@@ -196,7 +196,7 @@ public class TeleopTank_Driver extends LinearOpMode
             if(lbump && !lbump_last)
             {
                 dtrn.driveDistance(48.0, 0.5, Drivetrain.Direction.REVERSE);
-                while(dtrn.isBusy())
+                while(opModeIsActive() && dtrn.isBusy())
                 {
                     idle();
                 }
