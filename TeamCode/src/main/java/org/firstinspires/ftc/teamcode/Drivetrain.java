@@ -54,7 +54,7 @@ class Drivetrain
         //time.reset();
     }
 
-    private void driveDistance(double dst, double pwr, Direction dir)
+    public void driveDistance(double dst, double pwr, Direction dir)
     {
         int counts = distanceToCounts(dst);
         DbgLog.msg("SJH driveDistance: %6.2f Counts %d", dst, counts);
@@ -93,6 +93,8 @@ class Drivetrain
         int tHdg = getGryoFhdg();
 
         ptmr.reset();
+        mptimer.reset();
+        noMoveTimer.reset();
         while(isBusy() && op.opModeIsActive() && !op.isStopRequested())
         {
             if(ptmr.seconds() > 0.2)
@@ -458,19 +460,61 @@ class Drivetrain
             return false;
         }
 
-        if(left_drive.getPower()  < minPwr ||
-           right_drive.getPower() < minPwr)
+        if(usePwrStop)
         {
+            double lp = Math.abs(left_drive.getPower());
+            double rp = Math.abs(right_drive.getPower());
 
+            DbgLog.msg("SJH " +
+                           " lp:" + lp + " rp:" + rp +
+                           " mptimer:" + mptimer.seconds());
+
+            //If power is too low to turn wheels, stop after minPwrTimeout
+            if ((lp > 0 && lp <= minPwr) &&
+                        (rp > 0 && rp <= minPwr) &&
+                        mptimer.seconds() > minPwrTimeout)
+            {
+                return false;
+            } else
+            {
+                mptimer.reset();
+            }
+        }
+
+        if(usePosStop)
+        {
+            int lc = left_drive.getCurrentPosition();
+            int rc = right_drive.getCurrentPosition();
+            double lp = Math.abs(left_drive.getPower());
+            double rp = Math.abs(right_drive.getPower());
+
+            DbgLog.msg("SJH " +
+                               " lp:" + lp + " rp:" + rp +
+                               " lc:" + lc + " rc:" + rc +
+                               " mptimer:" + mptimer.seconds());
+
+            //If power is above threshold and encoders aren't changing,
+            //stop after noMoveTimeout
+            if (lp >= noMoveThresh && rp >= noMoveThresh &&
+                lc == lposLast && rc == rposLast &&
+                noMoveTimer.seconds() > noMoveTimeout)
+            {
+                return false;
+            } else
+            {
+                noMoveTimer.reset();
+            }
+            lposLast = lc;
+            rposLast = rc;
         }
 
         return (left_drive.isBusy() && right_drive.isBusy());   //true if both are busy
         //return (left_drive.isBusy() || right_drive.isBusy()); //true if 1 is busy
     }
 
-    private final static double DRV_TUNER = 1.12; //1.15;
+    private static double DRV_TUNER = 1.12; //1.15;
     private final static double TRN_TUNER = 1.0;
-    private final static double TURN_TOLERANCE = 1.5;
+    private final static double TURN_TOLERANCE = 2.0;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
     private final static double WHL_DIAMETER = 6.6 * DRV_TUNER; //Diameter of the wheel (inches)
@@ -500,10 +544,18 @@ class Drivetrain
     private ElapsedTime ptmr = new ElapsedTime();
 
     private double minPwr = 0.1;
-    private double minPwrTime = 0.1;
+    private double minPwrTimeout = 0.1;
     private ElapsedTime mptimer = new ElapsedTime();
-    private double lpwrLast = 1.0;
-    private double rpwrLast = 1.0;
+    private double lposLast;
+    private double rposLast;
+
+    private double noMoveThresh = 0.2;
+    private double noMoveTimeout = 0.25;
+    private ElapsedTime noMoveTimer = new ElapsedTime();
 
     private FtcOpMode op = null;
+
+    private boolean usePwrStop = true;
+    private boolean usePosStop = true;
+
 }

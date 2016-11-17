@@ -66,11 +66,15 @@ class Points
            pushChoice == Field.BeaconChoice.BOTH)
         {
             segDirs.add(Segment.SegDir.FORWARD);
-            segSpeeds.add(DEF_SPEED);
+            segSpeeds.add(0.5);
+            actions.add(Segment.Action.NOTHING);
+            points.add(TURN2_PT); //Turn to image/beacon 2
+            segDirs.add(Segment.SegDir.FORWARD);
+            segSpeeds.add(0.3);
             actions.add(Segment.Action.SCAN_IMAGE);
             points.add(SCAN2_PT); //scan for images
             segDirs.add(Segment.SegDir.FORWARD);
-            segSpeeds.add(0.5);
+            segSpeeds.add(0.3);
             actions.add(Segment.Action.FIND_BEACON);
             points.add(BECN2_PT); //find beacon
             segDirs.add(Segment.SegDir.FORWARD);
@@ -84,10 +88,10 @@ class Points
         }
 
         //PARK PTS
-//        segDirs.add(Segment.SegDir.FORWARD);
-//        segSpeeds.add(DEF_SPEED);
-//        actions.add(Segment.Action.NOTHING);
-//        points.add(park_pt);
+        segDirs.add(Segment.SegDir.FORWARD);
+        segSpeeds.add(DEF_SPEED);
+        actions.add(Segment.Action.NOTHING);
+        points.add(park_pt);
 
         return points;
     }

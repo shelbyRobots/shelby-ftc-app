@@ -36,6 +36,7 @@ import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 /**
@@ -76,10 +77,13 @@ public class TeleopTank_Driver extends LinearOpMode
         boolean b_pressed;
         boolean b_pressed_last = false;
 
-        boolean lpush = false;
-        boolean rpush = false;
+        boolean lpush;
+        boolean rpush;
         boolean lpush_last = false;
         boolean rpush_last = false;
+
+        boolean lbump;
+        boolean lbump_last = false;
 
         Input_Shaper ishaper = new Input_Shaper();
 
@@ -94,6 +98,13 @@ public class TeleopTank_Driver extends LinearOpMode
          * The init() method of the hardware class does all the work here
          */
         robot.init(hardwareMap);
+
+        if (robot.leftMotor  != null &&
+            robot.rightMotor != null &&
+            robot.gyro       != null)
+        {
+            dtrn.init(robot.leftMotor, robot.rightMotor, robot.gyro);
+        }
 
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Say", "Hello Driver");    //
@@ -123,8 +134,8 @@ public class TeleopTank_Driver extends LinearOpMode
 
             b_pressed = gamepad1.b;
 
-            //left  = ishaper.shape(left);
-            //right = ishaper.shape(right);
+            left  = ishaper.shape(left);
+            right = ishaper.shape(right);
             robot.leftMotor.setPower(left);
             robot.rightMotor.setPower(right);
             elev  = gamepad2.left_stick_y;
@@ -181,6 +192,28 @@ public class TeleopTank_Driver extends LinearOpMode
             }
             b_pressed_last = b_pressed;
 
+            lbump = gamepad2.left_bumper;
+            if(lbump && !lbump_last)
+            {
+                dtrn.driveDistance(48.0, 0.5, Drivetrain.Direction.REVERSE);
+                while(dtrn.isBusy())
+                {
+                    idle();
+                }
+                ElapsedTime stimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
+                robot.shotmotor1.setPower(shoot_scale);
+                robot.shotmotor2.setPower(shoot_scale);
+                sleep(500);
+                robot.sweepMotor.setPower(-1.0);
+                robot.elevMotor.setPower(-1.0);
+                sleep(1500);
+                robot.shotmotor1.setPower(0);
+                robot.shotmotor2.setPower(0);
+                robot.sweepMotor.setPower(0);
+                robot.elevMotor.setPower(0);
+            }
+            lbump_last = lbump;
+
             telemetry.addData("left : ",  "%.2f", left);
             telemetry.addData("right : ", "%.2f", right);
             telemetry.addData("elev : ", elev);
@@ -231,4 +264,5 @@ public class TeleopTank_Driver extends LinearOpMode
     private static final double RIGHT_POS       = 0.2;
 
     private ShelbyBot robot = new ShelbyBot();
+    private Drivetrain dtrn = new Drivetrain();
 }

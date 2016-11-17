@@ -14,6 +14,7 @@ import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity
 import ftclib.FtcChoiceMenu;
 import ftclib.FtcMenu;
 import ftclib.FtcOpMode;
+import ftclib.FtcValueMenu;
 import hallib.HalDashboard;
 
 //import com.qualcomm.robotcore.eventloop.opmode.Disabled;
@@ -70,15 +71,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
         doMenus();
 
-        if(team == Team.SNOWMAN)
-        {
-            DEF_SHT_PWR = SHT_PWR_SNOWMAN;
-        }
-        else
-        {
-            DEF_SHT_PWR = SHT_PWR_SONIC;
-        }
-
         if (robot.leftMotor  != null &&
             robot.rightMotor != null &&
             robot.gyro       != null)
@@ -124,7 +116,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         boolean SkipNextSegment = false;
         for (int i = 0; i < pathSegs.length; ++i)
         {
-            if(!opModeIsActive()) break;
+            if(!opModeIsActive() || isStopRequested()) break;
+
             if (SkipNextSegment)
             {
                 SkipNextSegment = false;
@@ -152,11 +145,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                     pathSegs[i].getTgtPt(),
                     pathSegs[i].getFieldHeading());
 
-            switch(pathSegs[i].getName())
-            {
-                case "START_PT":
-                    break;
-            }
             switch (pathSegs[i].getAction())
             {
                 case SHOOT:
@@ -221,7 +209,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     {
         if (seg.getDir() == Segment.SegDir.REVERSE) return;
         double cHdg = getGryoFhdg();
-        double tHdg = seg.getFieldHeading();
+        double tHdg = Math.round(seg.getFieldHeading());
         double angle = tHdg - cHdg;
         DbgLog.msg("SJH: doEncoderTurn %s CHDG %4.1f THDG %4.1f",
                 seg.getName(),
@@ -230,7 +218,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
         while (angle <= -180.0) angle += 360.0;
         while (angle >   180.0) angle -= 360.0;
-        if(Math.abs(angle) <= 1.0) return;
+        if(Math.abs(angle) <= 2.0) return;
 
         DbgLog.msg("SJH: Turn %5.2f", angle);
         dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
@@ -244,7 +232,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void doTurn(Segment seg)
     {
-        double tHdg = seg.getFieldHeading();
+        double tHdg = Math.round(seg.getFieldHeading());
         if(seg.getDir() == Segment.SegDir.REVERSE)
             return;
         double cHdg = getGryoFhdg();
@@ -254,12 +242,12 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                 cHdg,
                 tHdg);
 
-        if(Math.abs(tHdg-cHdg) <= 1.0)
+        if(Math.abs(tHdg-cHdg) <= 2.0)
             return;
 
         timer.reset();
         drvTrn.ctrTurnToHeading(tHdg, DEF_TRN_PWR);
-        cHdg = getGryoFhdg();
+
         DbgLog.msg("SJH Completed turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
                 tHdg, timer.time(), cHdg);
     }
@@ -273,7 +261,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         tracker.setActive(true);
         Point2d sensedBotPos = null;
         double  sensedFldHdg = pathSegs[0].getFieldHeading();
-        while(sensedBotPos == null && itimer.milliseconds() < 1000)
+        while(opModeIsActive() && sensedBotPos == null && itimer.milliseconds() < 1000)
         {
             tracker.updateRobotLocationInfo();
             sensedBotPos = tracker.getSensedPosition();
@@ -283,6 +271,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                 curPos = sensedBotPos;
                 sensedFldHdg = tracker.getSensedFldHeading();
                 curHdg = sensedFldHdg;
+                break;
             }
             sleep(50);
         }
@@ -320,7 +309,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
         tracker.setFrameQueueSize(10);
         tracker.setActive(true);
-        while  ((ord == BeaconFinder.LightOrder.UNKNOWN ||
+        while (opModeIsActive() &&
+               (ord == BeaconFinder.LightOrder.UNKNOWN ||
                 ord == BeaconFinder.LightOrder.RED_RED ||
                 ord == BeaconFinder.LightOrder.BLUE_BLUE) &&
                itimer.milliseconds() < timeout)
@@ -450,6 +440,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         FtcChoiceMenu parkMenu     = new FtcChoiceMenu("PARK:", pushMenu, this);
         FtcChoiceMenu allianceMenu = new FtcChoiceMenu("ALLIANCE:", parkMenu, this);
         FtcChoiceMenu teamMenu     = new FtcChoiceMenu("TEAM:", allianceMenu, this);
+        FtcValueMenu powerMenu     = new FtcValueMenu("SHOOTPOWER:", teamMenu, this,
+                                                            0.0, 1.0, 0.05, 0.55, "%5.2f");
 
 //        strategyMenu.addChoice("Shoot_Push_ParkCenter",      Field.AutoStrategy.SHOOT_PUSH_PARKCNTR,    allianceMenu);
 //        strategyMenu.addChoice("Shoot_Push_ParkCorner",      Field.AutoStrategy.SHOOT_PUSH_PARKCRNR,    allianceMenu);
@@ -473,8 +465,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         allianceMenu.addChoice("RED",  Field.Alliance.RED, teamMenu);
         allianceMenu.addChoice("BLUE", Field.Alliance.BLUE, teamMenu);
 
-        teamMenu.addChoice("Sonic", Team.SONIC);
-        teamMenu.addChoice("Snowman", Team.SNOWMAN);
+        teamMenu.addChoice("Sonic", Team.SONIC, powerMenu);
+        teamMenu.addChoice("Snowman", Team.SNOWMAN, powerMenu);
 
         //
         // Walk the menu tree starting with the strategy menu as the root
@@ -491,6 +483,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         parkChoice = (Field.ParkChoice)parkMenu.getCurrentChoiceObject();
         alliance = (Field.Alliance)allianceMenu.getCurrentChoiceObject();
         team = (Team)teamMenu.getCurrentChoiceObject();
+        DEF_SHT_PWR = powerMenu.getCurrentValue();
 
         //dashboard.displayPrintf(0, "STRATEGY: %s", autoStrategy);
         dashboard.displayPrintf(0, "START: %s", startPos);
@@ -521,9 +514,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     //private final static double DEF_DRV_PWR  = 0.7;
     private final static double DEF_TRN_PWR  = 0.45;
 
-    private final static double SHT_PWR_SONIC = 0.50;
-    private final static double SHT_PWR_SNOWMAN = 0.50;
-    private static double DEF_SHT_PWR = SHT_PWR_SONIC;
     private final static double DEF_SWP_PWR = 1.0;
     private final static double DEF_ELV_PWR = 0.5;
 
@@ -548,6 +538,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private static Field.ParkChoice parkChoice = Field.ParkChoice.CENTER_PARK;
     private static Field.Alliance alliance = Field.Alliance.RED;
     private static Team team = Team.SONIC;
+    private static double DEF_SHT_PWR = 0.55;
 
     private HalDashboard dashboard;
 

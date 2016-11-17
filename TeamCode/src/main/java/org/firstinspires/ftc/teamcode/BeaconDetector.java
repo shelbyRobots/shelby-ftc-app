@@ -137,7 +137,7 @@ public class BeaconDetector implements BeaconFinder
         red_light_box = -1;
 
         Core.inRange( image, new Scalar( 0,100,100 ), new Scalar( 10,255,255 ), red1);
-        Core.inRange( image, new Scalar( 160,100,100 ), new Scalar( 179,255,255 ), red2);
+        Core.inRange( image, new Scalar( 140,100,100 ), new Scalar( 179,255,255 ), red2);
         Core.bitwise_or(red1, red2, red_areas);
 
         if(DEBUG) DbgLog.msg("SJH: RED");
