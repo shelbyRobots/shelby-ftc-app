@@ -51,14 +51,17 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     @Override
     public void runPeriodic(double elapsedTime)
     {
-        dashboard.displayPrintf(6, "GHDG: %d",
-                robot.gyro.getIntegratedZValue());
+        if(robot.gyro != null)
+        {
+            dashboard.displayPrintf(6, "GHDG: %d",
+                    robot.gyro.getIntegratedZValue());
+        }
     }
 
     @Override
     public void stopMode()
     {
-        drvTrn.stopAndReset();
+        if(drvTrn != null) drvTrn.stopAndReset();
     }
 
     private void setup()
@@ -151,7 +154,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                     do_shoot();
                     break;
                 case SCAN_IMAGE:
-                    if (findSensedLoc())
+                    if (false && findSensedLoc())
                     {
                         DbgLog.msg("SJH Sensed pos: %s %s",
                                 curPos, curHdg);
@@ -164,6 +167,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                     break;
                 case RST_PUSHER:
                     robot.pusher.setPosition(ZER_PUSH_POS);
+                    drvTrn.setDrvTuner(1.09);
                     break;
                 case NOTHING:
                     break;

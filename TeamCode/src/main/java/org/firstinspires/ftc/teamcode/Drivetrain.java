@@ -465,9 +465,13 @@ class Drivetrain
             double lp = Math.abs(left_drive.getPower());
             double rp = Math.abs(right_drive.getPower());
 
-            DbgLog.msg("SJH " +
-                           " lp:" + lp + " rp:" + rp +
-                           " mptimer:" + mptimer.seconds());
+            if (ptmr.seconds() > 0.1)
+            {
+                DbgLog.msg("SJH " +
+                                   " lp:" + lp + " rp:" + rp +
+                                   " mptimer:" + mptimer.seconds());
+                ptmr.reset();
+            }
 
             //If power is too low to turn wheels, stop after minPwrTimeout
             if ((lp > 0 && lp <= minPwr) &&
@@ -488,14 +492,18 @@ class Drivetrain
             double lp = Math.abs(left_drive.getPower());
             double rp = Math.abs(right_drive.getPower());
 
-            DbgLog.msg("SJH " +
-                               " lp:" + lp + " rp:" + rp +
-                               " lc:" + lc + " rc:" + rc +
-                               " mptimer:" + mptimer.seconds());
+            if (ptmr.seconds() > 0.1)
+            {
+                DbgLog.msg("SJH " +
+                                   " lp:" + lp + " rp:" + rp +
+                                   " lc:" + lc + " rc:" + rc +
+                                   " mptimer:" + mptimer.seconds());
+                ptmr.reset();
+            }
 
             //If power is above threshold and encoders aren't changing,
             //stop after noMoveTimeout
-            if (lp >= noMoveThresh && rp >= noMoveThresh &&
+            if ((lp >= noMoveThresh || rp >= noMoveThresh) &&
                 lc == lposLast && rc == rposLast &&
                 noMoveTimer.seconds() > noMoveTimeout)
             {
@@ -512,7 +520,12 @@ class Drivetrain
         //return (left_drive.isBusy() || right_drive.isBusy()); //true if 1 is busy
     }
 
-    private static double DRV_TUNER = 1.12; //1.15;
+    public void setDrvTuner(double dtnr)
+    {
+        DRV_TUNER = dtnr;
+    }
+
+    private static double DRV_TUNER = 1.10;
     private final static double TRN_TUNER = 1.0;
     private final static double TURN_TOLERANCE = 2.0;
 
