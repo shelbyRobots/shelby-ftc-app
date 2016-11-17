@@ -25,7 +25,8 @@ public class Field
     static enum StartPos
     {
         START_A,
-        START_B
+        START_B,
+        START_TEST
     }
 
     static enum BeaconChoice
