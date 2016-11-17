@@ -128,8 +128,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             }
 
             Segment curSeg;
-            curPos = null; //SBH REMOVE
-            if(curPos == null)
+
+            if(curPos == null || !useImageLoc)
             {
                 curSeg = pathSegs[i];
             }
@@ -137,8 +137,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             {
                 drvTrn.setCurrPt(curPos);
                 curSeg = new Segment("CURSEG", curPos, pathSegs[i].getTgtPt());
-                curPos = null;
             }
+            curPos = null;
 
             doEncoderTurn(curSeg); //quick but rough
             doTurn(curSeg); //fine tune using gyro
@@ -154,7 +154,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                     do_shoot();
                     break;
                 case SCAN_IMAGE:
-                    if (false && findSensedLoc())
+                    if (scanImage && findSensedLoc())
                     {
                         DbgLog.msg("SJH Sensed pos: %s %s",
                                 curPos, curHdg);
@@ -546,6 +546,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private HalDashboard dashboard;
 
-
     private double initHdg = 0.0;
+
+    private boolean scanImage = false;
+    private boolean useImageLoc = false;
 }

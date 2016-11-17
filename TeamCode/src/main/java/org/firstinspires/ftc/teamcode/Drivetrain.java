@@ -465,20 +465,19 @@ class Drivetrain
             double lp = Math.abs(left_drive.getPower());
             double rp = Math.abs(right_drive.getPower());
 
-            if (ptmr.seconds() > 0.1)
+            //If power is too low to turn wheels, stop after minPwrTimeout
+            if ((lp > 0 && lp <= minPwr) &&
+                (rp > 0 && rp <= minPwr))
             {
                 DbgLog.msg("SJH " +
                                    " lp:" + lp + " rp:" + rp +
                                    " mptimer:" + mptimer.seconds());
                 ptmr.reset();
-            }
 
-            //If power is too low to turn wheels, stop after minPwrTimeout
-            if ((lp > 0 && lp <= minPwr) &&
-                        (rp > 0 && rp <= minPwr) &&
-                        mptimer.seconds() > minPwrTimeout)
-            {
-                return false;
+                if(mptimer.seconds() > minPwrTimeout)
+                {
+                    return false;
+                }
             } else
             {
                 mptimer.reset();
@@ -562,7 +561,7 @@ class Drivetrain
     private double lposLast;
     private double rposLast;
 
-    private double noMoveThresh = 0.2;
+    private double noMoveThresh = 0.1;
     private double noMoveTimeout = 0.25;
     private ElapsedTime noMoveTimer = new ElapsedTime();
 
