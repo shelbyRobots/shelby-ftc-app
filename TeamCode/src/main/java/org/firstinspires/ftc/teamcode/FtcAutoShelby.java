@@ -140,15 +140,22 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             }
             curPos = null;
 
+            drvTrn.setDrvTuner(curSeg.getDrvTuner());
             doEncoderTurn(curSeg); //quick but rough
             doTurn(curSeg); //fine tune using gyro
             doMove(curSeg);
+            if(curSeg.getPostTurn() != null)
+            {
+                DbgLog.msg("SJH POST TURN %s", curSeg.getName());
+                doEncoderTurn(pathSegs[i+1]);
+                doTurn(pathSegs[i+1]);
+            }
 
             DbgLog.msg("SJH Planned pos: %s %s",
                     pathSegs[i].getTgtPt(),
                     pathSegs[i].getFieldHeading());
 
-            switch (pathSegs[i].getAction())
+            switch (curSeg.getAction())
             {
                 case SHOOT:
                     do_shoot();
@@ -167,7 +174,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                     break;
                 case RST_PUSHER:
                     robot.pusher.setPosition(ZER_PUSH_POS);
-                    drvTrn.setDrvTuner(1.09);
                     break;
                 case NOTHING:
                     break;
@@ -183,9 +189,10 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         double  fhd = seg.getFieldHeading();
         Segment.SegDir dir = seg.getDir();
         double speed = seg.getSpeed();
+        double fudge = seg.getDrvTuner();
 
-        RobotLog.ii("SJH", "Drive %s %s %s %6.2f %3.2f %s",
-                snm, spt, ept, fhd, speed, dir);
+        RobotLog.ii("SJH", "Drive %s %s %s %6.2f %3.2f %s %4.2f",
+                snm, spt, ept, fhd, speed, dir, fudge);
 
         dashboard.displayPrintf(2, "STATE: %s %s %s - %s %6.2f %3.2f %s",
                 "DRIVE", snm, spt, ept, fhd, speed, dir);
@@ -246,12 +253,13 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                 cHdg,
                 tHdg);
 
-        if(Math.abs(tHdg-cHdg) <= 2.0)
+        if(Math.abs(tHdg-cHdg) <= 1.0)
             return;
 
         timer.reset();
         drvTrn.ctrTurnToHeading(tHdg, DEF_TRN_PWR);
 
+        cHdg = getGryoFhdg();
         DbgLog.msg("SJH Completed turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
                 tHdg, timer.time(), cHdg);
     }
@@ -265,7 +273,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         tracker.setActive(true);
         Point2d sensedBotPos = null;
         double  sensedFldHdg = pathSegs[0].getFieldHeading();
-        while(opModeIsActive() && sensedBotPos == null && itimer.milliseconds() < 1000)
+        while(opModeIsActive() && sensedBotPos == null && itimer.milliseconds() < 2000)
         {
             tracker.updateRobotLocationInfo();
             sensedBotPos = tracker.getSensedPosition();
@@ -307,7 +315,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     {
         DbgLog.msg("SJH: FIND BEACON ORDER!!!");
         dashboard.displayPrintf(2, "STATE: %s", "BEACON FIND");
-        int timeout = 1000;
+        int timeout = 2000;
         BeaconFinder.LightOrder ord = BeaconFinder.LightOrder.UNKNOWN;
         ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
 

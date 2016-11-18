@@ -116,8 +116,8 @@ public class TeleopTank_Driver extends LinearOpMode
         boolean toggle = false;
         boolean bkwtoggle = false;
         // run until the end of the match (driver presses STOP)
-        while (opModeIsActive()) {
-
+        while (opModeIsActive())
+        {
             // Run wheels in tank mode
             // (note: The joystick goes negative when pushed forwards, so negate it)
             if(gamepad2.dpad_down && !d_down_last)   shoot_scale -= 0.05;
@@ -195,14 +195,17 @@ public class TeleopTank_Driver extends LinearOpMode
             lbump = gamepad2.left_bumper;
             if(lbump && !lbump_last)
             {
-                dtrn.driveDistance(48.0, 0.5, Drivetrain.Direction.REVERSE);
+                DbgLog.msg("SJH AUTOSHOOT");
+                robot.shotmotor1.setPower(shoot_scale);
+                robot.shotmotor2.setPower(shoot_scale);
+                dtrn.driveDistance(35.0, 0.5, Drivetrain.Direction.REVERSE);
                 while(opModeIsActive() && dtrn.isBusy())
                 {
                     idle();
                 }
+                dtrn.stopAndReset();
+                DbgLog.msg("SJH DONE AUTOSHOOT MOVE");
                 ElapsedTime stimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
-                robot.shotmotor1.setPower(shoot_scale);
-                robot.shotmotor2.setPower(shoot_scale);
                 sleep(500);
                 robot.sweepMotor.setPower(-1.0);
                 robot.elevMotor.setPower(-1.0);
@@ -211,6 +214,7 @@ public class TeleopTank_Driver extends LinearOpMode
                 robot.shotmotor2.setPower(0);
                 robot.sweepMotor.setPower(0);
                 robot.elevMotor.setPower(0);
+                DbgLog.msg("SJH DONE AUTOSHOOT");
             }
             lbump_last = lbump;
 
@@ -224,9 +228,8 @@ public class TeleopTank_Driver extends LinearOpMode
             telemetry.addData("zmode", "%s", robot.leftMotor.getZeroPowerBehavior());
             telemetry.update();
 
-            // Pause for metronome tick.  40 mS each cycle = update 25 times a second.
-            robot.waitForTick(40);
-            idle(); // Always call idle() at the bottom of your while(opModeIsActive()) loop
+            // Pause for metronome tick.
+            robot.waitForTick(10);
         }
     }
 

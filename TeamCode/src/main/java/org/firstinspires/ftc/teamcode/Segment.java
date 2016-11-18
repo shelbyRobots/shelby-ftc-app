@@ -15,6 +15,7 @@ class Segment
         this.dir = SegDir.FORWARD;
         this.speed = DEF_SEG_SPD;
         this.act = Action.NOTHING;
+        this.drvTuner = 1.0;
     }
 
     SegDir getDir()
@@ -40,6 +41,8 @@ class Segment
     double getSpeed() { return speed; }
     Action getAction() { return act; }
     double getLength() { return len; }
+    double getDrvTuner() { return drvTuner; }
+    Double getPostTurn() { return postTurn; }
 
     void setAction(Action act) { this.act = act; }
     void setDir(SegDir dir)
@@ -47,6 +50,8 @@ class Segment
         this.dir = dir;
     }
     void setSpeed(double spd) { this.speed = spd; }
+    void setDrvTuner(double drvTuner) { this.drvTuner = drvTuner; }
+    void setPostTurn(double postTurn) { this.postTurn = Double.valueOf(postTurn); }
 
     double angle()
     {
@@ -71,6 +76,8 @@ class Segment
     private double speed;
     private double len = 0;
     private Action act = Action.NOTHING;
+    private double drvTuner = 1.0;
+    private Double postTurn = null;
 
     public static void main(String[] args)
     {

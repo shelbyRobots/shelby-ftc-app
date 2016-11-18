@@ -93,19 +93,18 @@ class Drivetrain
         int tHdg = getGryoFhdg();
 
         ptmr.reset();
-        mptimer.reset();
         noMoveTimer.reset();
-        while(isBusy() && op.opModeIsActive() && !op.isStopRequested())
+        lposLast = left_drive.getCurrentPosition();
+        rposLast = right_drive.getCurrentPosition();
+        while(isBusy() &&
+              !areMotorsStuck() &&
+              op.opModeIsActive() &&
+              !op.isStopRequested())
         {
-            if(ptmr.seconds() > 0.2)
-            {
-                DbgLog.msg("SJH: ldc %6d rdc %6d",
-                        left_drive.getCurrentPosition(),
-                        right_drive.getCurrentPosition());
-                ptmr.reset();
-            }
             makeGyroCorrections(pwr, tHdg);
             op.idle();
+
+            if(ptmr.seconds() > 0.2) ptmr.reset();
         }
 
         left_drive.setPower(0.0);
@@ -181,10 +180,18 @@ class Drivetrain
     {
         ctrTurn(angle, pwr);
         Direction tdir = Direction.FORWARD;
-        while(isBusy() && op.opModeIsActive() && !op.isStopRequested())
+        ptmr.reset();
+        noMoveTimer.reset();
+        lposLast = left_drive.getCurrentPosition();
+        rposLast = right_drive.getCurrentPosition();
+        while(isBusy() &&
+              !areMotorsStuck() &&
+              op.opModeIsActive() &&
+              !op.isStopRequested())
         {
             makeCorrections(pwr, tdir);
             waitForTick(10);
+            if(ptmr.seconds() > 0.2) ptmr.reset();
         }
 
         DbgLog.msg("SJH: ldc %6d rdc %6d",
@@ -215,11 +222,13 @@ class Drivetrain
 
         ptmr.reset();
         while(!ctrTurnGyro(tgtHdg, pwr) &&
+              !areMotorsStuck()         &&
               op.opModeIsActive()       &&
               !op.isStopRequested())
         {
             op.idle();
             frame++;
+            if(ptmr.seconds() > 0.2) ptmr.reset();
         }
         stopAndReset();
     }
@@ -453,6 +462,33 @@ class Drivetrain
                 " ldp:" + ldp + " rdp:" + rdp);
     }
 
+    boolean areMotorsStuck()
+    {
+        if(usePosStop)
+        {
+            int lc = Math.abs(left_drive.getCurrentPosition());
+            int rc = Math.abs(right_drive.getCurrentPosition());
+            double lp = Math.abs(left_drive.getPower());
+            double rp = Math.abs(right_drive.getPower());
+
+            //If power is above threshold and encoders aren't changing,
+            //stop after noMoveTimeout
+            if(noMoveTimer.seconds() > noMoveTimeout)
+            {
+                if ((lp >= 0.0 && Math.abs(lposLast - lc) < noMoveThresh) ||
+                    (rp >= 0.0 && Math.abs(rposLast - rc) < noMoveThresh))
+                {
+                    DbgLog.msg("SJH: MOTORS HAVE POWER BUT AREN'T MOVING - STOPPING");
+                    return true;
+                }
+                lposLast = lc;
+                rposLast = rc;
+                noMoveTimer.reset();
+            }
+        }
+        return false;
+    }
+
     boolean isBusy()
     {
         if(op != null && (!op.opModeIsActive() || op.isStopRequested()))
@@ -460,59 +496,12 @@ class Drivetrain
             return false;
         }
 
-        if(usePwrStop)
+        if(ptmr.seconds() > 0.2)
         {
-            double lp = Math.abs(left_drive.getPower());
-            double rp = Math.abs(right_drive.getPower());
-
-            //If power is too low to turn wheels, stop after minPwrTimeout
-            if ((lp > 0 && lp <= minPwr) &&
-                (rp > 0 && rp <= minPwr))
-            {
-                DbgLog.msg("SJH " +
-                                   " lp:" + lp + " rp:" + rp +
-                                   " mptimer:" + mptimer.seconds());
-                ptmr.reset();
-
-                if(mptimer.seconds() > minPwrTimeout)
-                {
-                    return false;
-                }
-            } else
-            {
-                mptimer.reset();
-            }
-        }
-
-        if(usePosStop)
-        {
-            int lc = left_drive.getCurrentPosition();
-            int rc = right_drive.getCurrentPosition();
-            double lp = Math.abs(left_drive.getPower());
-            double rp = Math.abs(right_drive.getPower());
-
-            if (ptmr.seconds() > 0.1)
-            {
-                DbgLog.msg("SJH " +
-                                   " lp:" + lp + " rp:" + rp +
-                                   " lc:" + lc + " rc:" + rc +
-                                   " mptimer:" + mptimer.seconds());
-                ptmr.reset();
-            }
-
-            //If power is above threshold and encoders aren't changing,
-            //stop after noMoveTimeout
-            if ((lp >= noMoveThresh || rp >= noMoveThresh) &&
-                lc == lposLast && rc == rposLast &&
-                noMoveTimer.seconds() > noMoveTimeout)
-            {
-                return false;
-            } else
-            {
-                noMoveTimer.reset();
-            }
-            lposLast = lc;
-            rposLast = rc;
+            DbgLog.msg("SJH: ldc %6d rdc %6d  mptimer: %4.2f",
+                    left_drive.getCurrentPosition(),
+                    right_drive.getCurrentPosition(),
+                    noMoveTimer.seconds());
         }
 
         return (left_drive.isBusy() && right_drive.isBusy());   //true if both are busy
@@ -526,7 +515,7 @@ class Drivetrain
 
     private static double DRV_TUNER = 1.10;
     private final static double TRN_TUNER = 1.0;
-    private final static double TURN_TOLERANCE = 2.0;
+    private final static double TURN_TOLERANCE = 1.0;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
     private final static double WHL_DIAMETER = 6.6 * DRV_TUNER; //Diameter of the wheel (inches)
@@ -555,19 +544,15 @@ class Drivetrain
     private ElapsedTime rt = new ElapsedTime();
     private ElapsedTime ptmr = new ElapsedTime();
 
-    private double minPwr = 0.1;
-    private double minPwrTimeout = 0.1;
-    private ElapsedTime mptimer = new ElapsedTime();
     private double lposLast;
     private double rposLast;
 
-    private double noMoveThresh = 0.1;
-    private double noMoveTimeout = 0.25;
+    private double noMoveTimeout = 0.50;
+    private int noMoveThresh = 10;
     private ElapsedTime noMoveTimer = new ElapsedTime();
 
     private FtcOpMode op = null;
 
-    private boolean usePwrStop = true;
     private boolean usePosStop = true;
 
 }

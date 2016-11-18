@@ -40,14 +40,18 @@ class Points
         if(pushChoice == Field.BeaconChoice.NEAR ||
            pushChoice == Field.BeaconChoice.BOTH)
         {
-            segDirs.add(Segment.SegDir.FORWARD);
-            segSpeeds.add(0.5);
-            actions.add(Segment.Action.NOTHING);
-            points.add(TURN1_PT); //Turn to image/beacon 1
+//            segDirs.add(Segment.SegDir.FORWARD);
+//            segSpeeds.add(0.5);
+//            actions.add(Segment.Action.NOTHING);
+//            points.add(TURN1_PT); //Turn to image/beacon 1
             segDirs.add(Segment.SegDir.FORWARD);
             segSpeeds.add(0.3);
             actions.add(Segment.Action.SCAN_IMAGE);
             points.add(SCAN1_PT); //scan images
+//            segDirs.add(Segment.SegDir.FORWARD);
+//            segSpeeds.add(0.3);
+//            actions.add(Segment.Action.NOTHING);
+//            points.add(ALGN1_PT);
             segDirs.add(Segment.SegDir.FORWARD);
             segSpeeds.add(0.3);
             actions.add(Segment.Action.FIND_BEACON);
@@ -65,14 +69,18 @@ class Points
         if(pushChoice == Field.BeaconChoice.FAR ||
            pushChoice == Field.BeaconChoice.BOTH)
         {
-            segDirs.add(Segment.SegDir.FORWARD);
-            segSpeeds.add(0.5);
-            actions.add(Segment.Action.NOTHING);
-            points.add(TURN2_PT); //Turn to image/beacon 2
+//            segDirs.add(Segment.SegDir.FORWARD);
+//            segSpeeds.add(0.5);
+//            actions.add(Segment.Action.NOTHING);
+//            points.add(TURN2_PT); //Turn to image/beacon 2
             segDirs.add(Segment.SegDir.FORWARD);
             segSpeeds.add(0.3);
             actions.add(Segment.Action.SCAN_IMAGE);
             points.add(SCAN2_PT); //scan for images
+//            segDirs.add(Segment.SegDir.FORWARD);
+//            segSpeeds.add(0.3);
+//            actions.add(Segment.Action.NOTHING);
+//            points.add(ALGN2_PT);
             segDirs.add(Segment.SegDir.FORWARD);
             segSpeeds.add(0.3);
             actions.add(Segment.Action.FIND_BEACON);
@@ -192,6 +200,19 @@ class Points
             seg.setDir(segDirs.get(s));
             seg.setSpeed(segSpeeds.get(s));
             seg.setAction(actions.get(s));
+            if(sname == "SCAN1")
+            {
+                seg.setDrvTuner(1.07);
+            }
+            if(sname == "SCAN2")
+            {
+                seg.setDrvTuner(1.14);
+            }
+            if(sname == "BECN1" || sname == "BECN2" ||
+               sname == "PRSS1" || sname == "PRSS2")
+            {
+                pathSegs[s-1].setDrvTuner(seg.getFieldHeading());
+            }
             pathSegs[s] = seg;
         }
 
@@ -282,6 +303,8 @@ class Points
         REVS1
     }
 
+    private final static double DEF_DRV_TUNER = 1.0;
+
     private final static double REAR_OFFSET = ShelbyBot.REAR_OFFSET;
     private final static double FRNT_OFFSET = 13.5;
 
@@ -305,14 +328,15 @@ class Points
     private static final double TRGT2_Y =  36.0;
     private static final double CTRPRKX = -12.0;
     private static final double CTRPRKY = -12.0;
-    private static final double CRNPRKX = -48.0;
-    private static final double CRNPRKY = -48.0;
+    private static final double CRNPRKX = -44.0;
+    private static final double CRNPRKY = -44.0;
 
     private static final double SAFETY  = 0.0;
     private static final double TURN_X  = -30.0;
-    private static final double SCAN_X  = -40.0;
-    private static final double BECN_X  = -48.0;
-    private static final double TOUCHX  = -57.5;
+    private static final double SCAN_X  = -42.0;
+    private static final double ALGN_X  = -45.0;
+    private static final double BECN_X  = -50.0;
+    private static final double TOUCHX  = -58.5;//-57.5;
 
     private Point2d START_PT = new Point2d("START", STARTX, STARTY);
     private Point2d AIMER_PT = new Point2d("AIMER", STARTX, AIMERY);
@@ -324,10 +348,12 @@ class Points
 
     private Point2d TURN1_PT = new Point2d("TURN1", TURN_X, TRGT1_Y);
     private Point2d SCAN1_PT = new Point2d("SCAN1", SCAN_X, TRGT1_Y);
+    private Point2d ALGN1_PT = new Point2d("ALGN1", ALGN_X, TRGT1_Y);
     private Point2d BECN1_PT = new Point2d("BECN1", BECN_X, TRGT1_Y);
     private Point2d PRSS1_PT = new Point2d("PRSS1", TOUCHX, TRGT1_Y);
     private Point2d TURN2_PT = new Point2d("TURN2", TURN_X, TRGT2_Y);
     private Point2d SCAN2_PT = new Point2d("SCAN2", SCAN_X, TRGT2_Y);
+    private Point2d ALGN2_PT = new Point2d("ALGN2", ALGN_X, TRGT2_Y);
     private Point2d BECN2_PT = new Point2d("BECN2", BECN_X, TRGT2_Y);
     private Point2d PRSS2_PT = new Point2d("PRSS2", TOUCHX, TRGT2_Y);
 

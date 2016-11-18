@@ -151,6 +151,12 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
             doTurn(curSeg); //fine tune using gyro
             doMove(curSeg);
 
+            if(curSeg.getPostTurn() != null)
+            {
+                doEncoderTurn(pathSegs[i+1]);
+                doTurn(pathSegs[i+1]);
+            }
+
             DbgLog.msg("SJH Planned pos: %s %s",
                     pathSegs[i].getTgtPt(),
                     pathSegs[i].getFieldHeading());
@@ -452,9 +458,9 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         FtcChoiceMenu parkMenu     = new FtcChoiceMenu("PARK:", pushMenu, this);
         FtcChoiceMenu allianceMenu = new FtcChoiceMenu("ALLIANCE:", parkMenu, this);
         FtcChoiceMenu teamMenu     = new FtcChoiceMenu("TEAM:", allianceMenu, this);
-        FtcValueMenu  testDistMenu = new FtcValueMenu("DIST:",  startPosMenu, this, 0.0, 5.0, 3.0, 0.2,  "%.1f");
-        FtcValueMenu  testSpdMenu  = new FtcValueMenu("SPEED:", testDistMenu, this, 0.0, 1.0, 0.5, 0.1,  "%.1f");
-        FtcValueMenu  testKMenu    = new FtcValueMenu("K:",     testSpdMenu,  this, 0.5, 1.5, 1.0, 0.01, "%.2f");
+        FtcValueMenu  testDistMenu = new FtcValueMenu("DIST:",  startPosMenu, this, 0.0, 60.0, 1.0, 48.0,  "%4.1f");
+        FtcValueMenu  testSpdMenu  = new FtcValueMenu("SPEED:", testDistMenu, this, 0.0, 1.0, 0.1, 0.5,  "%4.1f");
+        FtcValueMenu  testKMenu    = new FtcValueMenu("K:",     testSpdMenu,  this, 0.5, 1.5, 0.01, 1.0, "%4.2f");
 
         startPosMenu.addChoice("Start_A", Field.StartPos.START_A, pushMenu);
         startPosMenu.addChoice("Start_B", Field.StartPos.START_B, pushMenu);
@@ -501,6 +507,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         dashboard.displayPrintf(2, "PARK: %s", parkChoice);
         dashboard.displayPrintf(3, "ALLIANCE: %s", alliance);
         dashboard.displayPrintf(4, "TEAM: %s", team);
+        dashboard.displayPrintf(5, "TestK:", "4.2f", testK);
     }
 
     private enum ButtonSide

@@ -8,9 +8,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 public class Field
 {
-    static enum Alliance {BLUE, RED};
+    enum Alliance {BLUE, RED}
 
-    static enum AutoStrategy
+    enum AutoStrategy
     {
         SHOOT_PUSH_PARKCRNR,
         SHOOT_PUSH_PARKCNTR,
@@ -22,14 +22,14 @@ public class Field
         ANGSHOOT_PARKCNTR
     }
 
-    static enum StartPos
+    enum StartPos
     {
         START_A,
         START_B,
         START_TEST
     }
 
-    static enum BeaconChoice
+    enum BeaconChoice
     {
         BOTH,
         NEAR,
@@ -37,7 +37,7 @@ public class Field
         NONE
     }
 
-    static enum ParkChoice
+    enum ParkChoice
     {
         CENTER_PARK,
         CORNER_PARK
