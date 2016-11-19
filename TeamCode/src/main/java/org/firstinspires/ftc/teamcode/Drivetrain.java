@@ -21,7 +21,7 @@ class Drivetrain
         right_drive.setPower(rPwr);
     }
 
-    private void move(double pwr)
+    public void move(double pwr)
     {
         move(pwr, pwr);
     }
@@ -96,12 +96,20 @@ class Drivetrain
         noMoveTimer.reset();
         lposLast = left_drive.getCurrentPosition();
         rposLast = right_drive.getCurrentPosition();
+        DbgLog.msg("SJH: Starting drive corrections");
         while(isBusy() &&
               !areMotorsStuck() &&
               op.opModeIsActive() &&
               !op.isStopRequested())
         {
-            makeGyroCorrections(pwr, tHdg);
+            if(gyroReady)
+            {
+                makeGyroCorrections(pwr, tHdg);
+            }
+            else
+            {
+                DbgLog.msg("SJH: GYRO NOT READY");
+            }
             op.idle();
 
             if(ptmr.seconds() > 0.2) ptmr.reset();
@@ -184,6 +192,7 @@ class Drivetrain
         noMoveTimer.reset();
         lposLast = left_drive.getCurrentPosition();
         rposLast = right_drive.getCurrentPosition();
+        DbgLog.msg("SJH: Starting turn corrections");
         while(isBusy() &&
               !areMotorsStuck() &&
               op.opModeIsActive() &&
@@ -221,6 +230,10 @@ class Drivetrain
         DbgLog.msg("SJH: GYRO TURN to HDG %d", (int)tgtHdg);
 
         ptmr.reset();
+        noMoveTimer.reset();
+        lposLast = left_drive.getCurrentPosition();
+        rposLast = right_drive.getCurrentPosition();
+        DbgLog.msg("SJH: Starting gyro turn corrections");
         while(!ctrTurnGyro(tgtHdg, pwr) &&
               !areMotorsStuck()         &&
               op.opModeIsActive()       &&
@@ -305,6 +318,11 @@ class Drivetrain
     void setOpMode(FtcOpMode op)
     {
         this.op = op;
+    }
+
+    void setGryoReady(boolean gryoReady)
+    {
+        this.gyroReady = gryoReady;
     }
 
     public void init(DcMotor lft_drv, DcMotor rgt_drv, ModernRoboticsI2cGyro gyro)
@@ -478,7 +496,8 @@ class Drivetrain
                 if ((lp >= 0.0 && Math.abs(lposLast - lc) < noMoveThresh) ||
                     (rp >= 0.0 && Math.abs(rposLast - rc) < noMoveThresh))
                 {
-                    DbgLog.msg("SJH: MOTORS HAVE POWER BUT AREN'T MOVING - STOPPING");
+                    DbgLog.msg("SJH: MOTORS HAVE POWER BUT AREN'T MOVING - STOPPING %4.2f %4.2f",
+                            lp, rp);
                     return true;
                 }
                 lposLast = lc;
@@ -511,19 +530,22 @@ class Drivetrain
     public void setDrvTuner(double dtnr)
     {
         DRV_TUNER = dtnr;
+        WHL_DIAMETER = 6.6 * DRV_TUNER;
+        CIRCUMFERENCE = Math.PI * WHL_DIAMETER;
+        CPI = ENCODER_CPR * GEAR_RATIO / CIRCUMFERENCE;
     }
 
-    private static double DRV_TUNER = 1.10;
+    private static double DRV_TUNER = 1.12;
     private final static double TRN_TUNER = 1.0;
     private final static double TURN_TOLERANCE = 1.0;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
-    private final static double WHL_DIAMETER = 6.6 * DRV_TUNER; //Diameter of the wheel (inches)
+    private static double WHL_DIAMETER = 6.6 * DRV_TUNER; //Diameter of the wheel (inches)
     private final static int    ENCODER_CPR = ShelbyBot.ENCODER_CPR;
     private final static double GEAR_RATIO  = 1;                   //Gear ratio
 
-    private final static double CIRCUMFERENCE = Math.PI * WHL_DIAMETER;
-    private final static double CPI = ENCODER_CPR * GEAR_RATIO / CIRCUMFERENCE;
+    private static double CIRCUMFERENCE = Math.PI * WHL_DIAMETER;
+    private static double CPI = ENCODER_CPR * GEAR_RATIO / CIRCUMFERENCE;
 
     private static final double PADJ = 4.0;
     private static final double PADJ_TURN = 0.025;
@@ -554,5 +576,7 @@ class Drivetrain
     private FtcOpMode op = null;
 
     private boolean usePosStop = true;
+
+    private boolean gyroReady = false;
 
 }

@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.ftccommon.DbgLog;
+
 import java.util.Locale;
 import java.util.Vector;
 
@@ -200,19 +202,29 @@ class Points
             seg.setDir(segDirs.get(s));
             seg.setSpeed(segSpeeds.get(s));
             seg.setAction(actions.get(s));
-            if(sname == "SCAN1")
+
+            if(sname.equals("SCAN1") || sname.equals("BSCAN1"))
             {
-                seg.setDrvTuner(1.07);
+                seg.setDrvTuner(1.23);
             }
-            if(sname == "SCAN2")
+            if(sname.equals("SCAN2") || sname.equals("BSCAN2"))
             {
-                seg.setDrvTuner(1.14);
+                seg.setDrvTuner(1.15);
             }
-            if(sname == "BECN1" || sname == "BECN2" ||
-               sname == "PRSS1" || sname == "PRSS2")
+            if(sname.equals("BECN1")  || sname.equals("BECN2")  ||
+               sname.equals("BBECN1") || sname.equals("BBECN2") ||
+               sname.equals("PRSS1")  || sname.equals("PRSS2")  ||
+               sname.equals("BPRSS1")  || sname.equals("BPRSS2"))
             {
-                pathSegs[s-1].setDrvTuner(seg.getFieldHeading());
+                pathSegs[s-1].setPostTurn(seg.getFieldHeading());
             }
+
+            Double pt = seg.getPostTurn();
+
+            DbgLog.msg("SJH: setting up segment %s %s %s %4.1f tune: %4.2f",
+                    seg.getName(), seg.getStrtPt(), seg.getTgtPt(),
+                    seg.getFieldHeading(), seg.getDrvTuner());
+            if(pt != null) DbgLog.msg("SJH: postTurn %4.2f", pt);
             pathSegs[s] = seg;
         }
 
@@ -271,7 +283,7 @@ class Points
     {
         double bx = -rpt.getY();
         double by = -rpt.getX();
-        return new Point2d(bx,by);
+        return new Point2d("B"+rpt.getName(), bx, by);
     }
     
     public String toString()
@@ -336,7 +348,7 @@ class Points
     private static final double SCAN_X  = -42.0;
     private static final double ALGN_X  = -45.0;
     private static final double BECN_X  = -50.0;
-    private static final double TOUCHX  = -58.5;//-57.5;
+    private static final double TOUCHX  = -58.0;//-57.5;
 
     private Point2d START_PT = new Point2d("START", STARTX, STARTY);
     private Point2d AIMER_PT = new Point2d("AIMER", STARTX, AIMERY);
@@ -373,6 +385,7 @@ class Points
     private Vector<Segment.Action> actions = new Vector<>(MAX_SEGMENTS);
     private Vector<Double> segSpeeds = new Vector<>(MAX_SEGMENTS);
     private Vector<Segment.SegDir> segDirs = new Vector<>(MAX_SEGMENTS);
+    private Vector<Double> tuners = new Vector<>(MAX_SEGMENTS);
 
     private Field.AutoStrategy autoStrategy =
             Field.AutoStrategy.SHOOT_PUSH_PARKCNTR;

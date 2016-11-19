@@ -16,6 +16,7 @@ class Segment
         this.speed = DEF_SEG_SPD;
         this.act = Action.NOTHING;
         this.drvTuner = 1.0;
+        this.tgtType = TargetType.ENCODER;
     }
 
     SegDir getDir()
@@ -43,6 +44,7 @@ class Segment
     double getLength() { return len; }
     double getDrvTuner() { return drvTuner; }
     Double getPostTurn() { return postTurn; }
+    TargetType getTgtType() { return tgtType; }
 
     void setAction(Action act) { this.act = act; }
     void setDir(SegDir dir)
@@ -52,6 +54,22 @@ class Segment
     void setSpeed(double spd) { this.speed = spd; }
     void setDrvTuner(double drvTuner) { this.drvTuner = drvTuner; }
     void setPostTurn(double postTurn) { this.postTurn = Double.valueOf(postTurn); }
+    void setStrtPt(Point2d spt)
+    {
+        this.strtPt = spt;
+        this.fldHdg = angle();
+        len = strtPt.distance(tgtPt);
+    }
+    void setEndPt(Point2d ept)
+    {
+        this.tgtPt = ept;
+        this.fldHdg = angle();
+        len = strtPt.distance(tgtPt);
+    }
+    void setTgtType(TargetType tgtType)
+    {
+        this.tgtType = tgtType;
+    }
 
     double angle()
     {
@@ -67,6 +85,7 @@ class Segment
 
     enum SegDir {FORWARD, REVERSE}
     enum Action {NOTHING, SHOOT, SCAN_IMAGE, FIND_BEACON, PUSH, RST_PUSHER}
+    enum TargetType{ENCODER, TIME, COLOR};
     private static final double DEF_SEG_SPD = 0.5;
     private double  fldHdg = 0.0;
     private Point2d strtPt;
@@ -78,6 +97,7 @@ class Segment
     private Action act = Action.NOTHING;
     private double drvTuner = 1.0;
     private Double postTurn = null;
+    private TargetType tgtType = TargetType.ENCODER;
 
     public static void main(String[] args)
     {
