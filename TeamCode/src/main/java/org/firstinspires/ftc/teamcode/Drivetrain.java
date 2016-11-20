@@ -569,7 +569,7 @@ class Drivetrain
     private double lposLast;
     private double rposLast;
 
-    private double noMoveTimeout = 0.50;
+    private double noMoveTimeout = 0.75;
     private int noMoveThresh = 10;
     private ElapsedTime noMoveTimer = new ElapsedTime();
 

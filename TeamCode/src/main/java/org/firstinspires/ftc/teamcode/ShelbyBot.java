@@ -120,7 +120,7 @@ class ShelbyBot
     private static final float BOT_LENGTH      = 18.0f;
 
     //Distance from ctr of rear wheel to tail
-    static final float REAR_OFFSET             = 3.5f;
+    static final float REAR_OFFSET             = 3.0f;
     static final float FRNT_OFFSET             = BOT_LENGTH - REAR_OFFSET;
     private static final float CAMERA_X_IN_BOT = 12.5f  * MM_PER_INCH;
     private static final float CAMERA_Y_IN_BOT = 0f; //12.5f * MM_PER_INCH;

@@ -140,6 +140,15 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void do_main_loop()
     {
+        DbgLog.msg("SJH: Delaying for %4.2f seconds", delay);
+        ElapsedTime delayTimer = new ElapsedTime();
+        while (delayTimer.seconds() < delay)
+        {
+            idle();
+        }
+
+        DbgLog.msg("SJH: Done delay");
+
         boolean SkipNextSegment = false;
         for (int i = 0; i < pathSegs.length; ++i)
         {
@@ -502,6 +511,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         FtcChoiceMenu teamMenu     = new FtcChoiceMenu("TEAM:", allianceMenu, this);
         FtcValueMenu powerMenu     = new FtcValueMenu("SHOOTPOWER:", teamMenu, this,
                                                             0.0, 1.0, 0.05, 0.55, "%5.2f");
+        FtcValueMenu delayMenu     = new FtcValueMenu("DELAY:", powerMenu, this,
+                                                             0.0, 20.0, 1.0, 0.0, "%5.2f");
 
 //        strategyMenu.addChoice("Shoot_Push_ParkCenter",      Field.AutoStrategy.SHOOT_PUSH_PARKCNTR,    allianceMenu);
 //        strategyMenu.addChoice("Shoot_Push_ParkCorner",      Field.AutoStrategy.SHOOT_PUSH_PARKCRNR,    allianceMenu);
@@ -528,6 +539,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         teamMenu.addChoice("Sonic", Team.SONIC, powerMenu);
         teamMenu.addChoice("Snowman", Team.SNOWMAN, powerMenu);
 
+        powerMenu.setChildMenu(delayMenu);
+
         //
         // Walk the menu tree starting with the strategy menu as the root
         // menu and get user choices.
@@ -544,6 +557,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         alliance = (Field.Alliance)allianceMenu.getCurrentChoiceObject();
         team = (Team)teamMenu.getCurrentChoiceObject();
         DEF_SHT_PWR = powerMenu.getCurrentValue();
+        delay = delayMenu.getCurrentValue();
 
         //dashboard.displayPrintf(0, "STRATEGY: %s", autoStrategy);
         dashboard.displayPrintf(0, "START: %s", startPos);
@@ -608,4 +622,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private boolean useImageLoc = false;
 
     private boolean gyroReady;
+
+    private double delay = 0.0;
 }

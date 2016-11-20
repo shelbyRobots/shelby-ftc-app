@@ -205,11 +205,11 @@ class Points
 
             if(sname.equals("SCAN1") || sname.equals("BSCAN1"))
             {
-                seg.setDrvTuner(1.23);
+                seg.setDrvTuner(1.04);
             }
             if(sname.equals("SCAN2") || sname.equals("BSCAN2"))
             {
-                seg.setDrvTuner(1.15);
+                seg.setDrvTuner(1.06);
             }
             if(sname.equals("BECN1")  || sname.equals("BECN2")  ||
                sname.equals("BBECN1") || sname.equals("BBECN2") ||
@@ -324,8 +324,8 @@ class Points
     private static final double W_WALL = Field.W_WALL_X;
 
     private static final double STARTX  = -1*12;
-    private static final double STARTY  =  S_WALL + REAR_OFFSET;
-    private static final double AIMERY =  -64.0;
+    private static final double STARTY  =  -66.5;
+    private static final double AIMERY  =  -64.0;
     private static final double SHOOTY  =  -60.5;
     private static final double AIMTOX  =  -1*12;
     private static final double AIMTOY  =  -4*12;
@@ -345,10 +345,10 @@ class Points
 
     private static final double SAFETY  = 0.0;
     private static final double TURN_X  = -30.0;
-    private static final double SCAN_X  = -42.0;
+    private static final double SCAN_X  = -40.0;
     private static final double ALGN_X  = -45.0;
-    private static final double BECN_X  = -50.0;
-    private static final double TOUCHX  = -58.0;//-57.5;
+    private static final double BECN_X  = -48.0;
+    private static final double TOUCHX  = -58.5; //-57.5;
 
     private Point2d START_PT = new Point2d("START", STARTX, STARTY);
     private Point2d AIMER_PT = new Point2d("AIMER", STARTX, AIMERY);
