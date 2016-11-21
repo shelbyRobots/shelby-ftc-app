@@ -2,6 +2,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
+import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -36,6 +37,7 @@ class ShelbyBot
     DcMotor  shotmotor2  = null;
     Servo    pusher      = null;
     ModernRoboticsI2cGyro gyro       = null;
+    ColorSensor colorSensor = null;
 
     final static int    ENCODER_CPR = 1120;     //Encoder Counts per Revolution
 
@@ -59,6 +61,7 @@ class ShelbyBot
         shotmotor2  = hwMap.dcMotor.get("rightshooter");
         pusher      = hwMap.servo.get("pusher");
         gyro        = (ModernRoboticsI2cGyro)hwMap.gyroSensor.get("gyro");
+        colorSensor = hwMap.colorSensor.get("color");
 
         // FORWARD for CCW drive shaft rotation if using AndyMark motors
         // REVERSE for  CW drive shaft rotation if using AndyMark motors

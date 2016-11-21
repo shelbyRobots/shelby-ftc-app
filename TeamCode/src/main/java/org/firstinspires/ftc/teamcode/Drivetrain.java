@@ -290,7 +290,7 @@ class Drivetrain
 //        }
 //    }
 
-    private int distanceToCounts(double distance)
+    int distanceToCounts(double distance)
     {
         return (int)(distance * CPI);
     }

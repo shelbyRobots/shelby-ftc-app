@@ -2,11 +2,11 @@
 package org.firstinspires.ftc.teamcode;
 
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.widget.TextView;
 
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.RobotLog;
 
@@ -100,23 +100,15 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                     break;
                 }
             }
+            DbgLog.msg("SJH: Gyro callibrated in %4.2f seconds", gyroTimer.seconds());
 
-            if(gyroCalibTimedout)
-            {
-                gyroReady = false;
-            }
-            else
-            {
-                gyroReady = true;
-            }
+            gyroReady = !gyroCalibTimedout;
 
             drvTrn.setGryoReady(gyroReady);
-
         }
 
-        //Points pts = new Points(autoStrategy);
-        Points pts = new Points(startPos, beaconChoice, parkChoice);
-        pathSegs = pts.getSegments(alliance);
+        Points pts = new Points(startPos, alliance, beaconChoice, parkChoice);
+        pathSegs = pts.getSegments();
 
         initHdg = pathSegs[0].getFieldHeading();
 
@@ -183,12 +175,12 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             if(gyroReady) doTurn(curSeg); //fine tune using gyro
             drvTrn.setDrvTuner(curSeg.getDrvTuner());
             doMove(curSeg);
-//            if(curSeg.getPostTurn() != null)
-//            {
-//                DbgLog.msg("SJH POST TURN %s", curSeg.getName());
-//                doEncoderTurn(pathSegs[i+1]);
-//                if(gyroReady) doTurn(pathSegs[i+1]);
-//            }
+            if(usePostTurn && curSeg.getPostTurn() != null)
+            {
+                DbgLog.msg("SJH POST TURN %s", curSeg.getName());
+                doEncoderTurn(pathSegs[i+1]);
+                if(gyroReady) doTurn(pathSegs[i+1]);
+            }
 
             DbgLog.msg("SJH Planned pos: %s %s",
                     pathSegs[i].getTgtPt(),
@@ -229,9 +221,10 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         Segment.SegDir dir = seg.getDir();
         double speed = seg.getSpeed();
         double fudge = seg.getDrvTuner();
+        Segment.TargetType ttype = seg.getTgtType();
 
-        RobotLog.ii("SJH", "Drive %s %s %s %6.2f %3.2f %s tune: %4.2f",
-                snm, spt, ept, fhd, speed, dir, fudge);
+        RobotLog.ii("SJH", "Drive %s %s %s %6.2f %3.2f %s tune: %4.2f %s",
+                snm, spt, ept, fhd, speed, dir, fudge, ttype);
 
         dashboard.displayPrintf(2, "STATE: %s %s %s - %s %6.2f %3.2f %s",
                 "DRIVE", snm, spt, ept, fhd, speed, dir);
@@ -240,18 +233,28 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         if (dir == Segment.SegDir.REVERSE) ddir = Drivetrain.Direction.REVERSE;
         timer.reset();
         Point2d pt = seg.getTgtPt();
-        if(seg.getTgtType() == Segment.TargetType.COLOR)
+        if(robot.colorSensor != null && seg.getTgtType() == Segment.TargetType.COLOR)
         {
-            //colorSensor.setActive(true);
+            robot.colorSensor.enableLed(true);
+            DcMotor.RunMode lRunMode = robot.leftMotor.getMode();
+            DcMotor.RunMode rRunMode = robot.rightMotor.getMode();
+            robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            int lpos = robot.leftMotor.getCurrentPosition();
+            int rpos = robot.rightMotor.getCurrentPosition();
+            int segCounts = drvTrn.distanceToCounts(seg.getLength());
+
             drvTrn.move(seg.getSpeed());
-            //Color.RGBToHSV(colorSensor.red() * 8, colorSensor.green() * 8, colorSensor.blue() * 8, hsvValues);
-            //Add colorSensor to robot and configs.  Compare against threshold value
-            //Set targetType in Points
-//            if(color > colThresh)
-//            {
-//                drvTrn.stopAndReset();
-//            }
-            //colorSensor.setActive(false);
+
+            if((robot.colorSensor.red()   > RED_THRESH &&
+                robot.colorSensor.green() > GRN_THRESH &&
+                robot.colorSensor.blue()  > BLU_THRESH) ||
+               (robot.leftMotor.getCurrentPosition() + lpos > segCounts * 2 ||
+                robot.rightMotor.getCurrentPosition() + rpos > segCounts *2))
+            {
+                drvTrn.stopAndReset();
+            }
+            robot.colorSensor.enableLed(false);
 
         }
         else
@@ -330,7 +333,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         tracker.setActive(true);
         Point2d sensedBotPos = null;
         double  sensedFldHdg = pathSegs[0].getFieldHeading();
-        while(opModeIsActive() && sensedBotPos == null && itimer.milliseconds() < 2000)
+        while(opModeIsActive() && itimer.milliseconds() < 2000)
         {
             tracker.updateRobotLocationInfo();
             sensedBotPos = tracker.getSensedPosition();
@@ -620,8 +623,13 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private boolean scanImage = false;
     private boolean useImageLoc = false;
+    private boolean usePostTurn = true;
 
     private boolean gyroReady;
+
+    private int RED_THRESH = 160;
+    private int GRN_THRESH = 160;
+    private int BLU_THRESH = 160;
 
     private double delay = 0.0;
 }

@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.ftccommon.DbgLog;
 
-import java.util.Locale;
 import java.util.Vector;
 
 class Points
@@ -28,124 +27,101 @@ class Points
 
         Vector<Point2d> points = new Vector<>(MAX_SEGMENTS);
 
+        //convenience declarations to make call params shorter
+        Segment.SegDir fwd = Segment.SegDir.FORWARD;
+        Segment.SegDir rev = Segment.SegDir.REVERSE;
+        Segment.Action none   = Segment.Action.NOTHING;
+        Segment.Action shoot  = Segment.Action.SHOOT;
+        Segment.Action scan   = Segment.Action.SCAN_IMAGE;
+        Segment.Action beacon = Segment.Action.FIND_BEACON;
+        Segment.Action push   = Segment.Action.PUSH;
+        Segment.Action reset  = Segment.Action.RST_PUSHER;
+
         //SHOOT PTS
         points.add(start_pt);
-        segDirs.add(Segment.SegDir.FORWARD);
-        segSpeeds.add(0.3);
-        actions.add(Segment.Action.NOTHING);
-        points.add(presh_pt);
-        segDirs.add(Segment.SegDir.FORWARD);
-        segSpeeds.add(0.3);
-        actions.add(Segment.Action.SHOOT);
-        points.add(shoot_pt);
+        addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,  none, presh_pt);
+        addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,  shoot, shoot_pt);
 
         if(pushChoice == Field.BeaconChoice.NEAR ||
            pushChoice == Field.BeaconChoice.BOTH)
         {
-//            segDirs.add(Segment.SegDir.FORWARD);
-//            segSpeeds.add(0.5);
-//            actions.add(Segment.Action.NOTHING);
-//            points.add(TURN1_PT); //Turn to image/beacon 1
-            segDirs.add(Segment.SegDir.FORWARD);
-            segSpeeds.add(0.3);
-            actions.add(Segment.Action.SCAN_IMAGE);
-            points.add(SCAN1_PT); //scan images
-//            segDirs.add(Segment.SegDir.FORWARD);
-//            segSpeeds.add(0.3);
-//            actions.add(Segment.Action.NOTHING);
-//            points.add(ALGN1_PT);
-            segDirs.add(Segment.SegDir.FORWARD);
-            segSpeeds.add(0.3);
-            actions.add(Segment.Action.FIND_BEACON);
-            points.add(BECN1_PT); //find beacon order
-            segDirs.add(Segment.SegDir.FORWARD);
-            segSpeeds.add(APP_SPEED);
-            actions.add(Segment.Action.PUSH);
-            points.add(PRSS1_PT); //Push button
-            segDirs.add(Segment.SegDir.REVERSE);
-            segSpeeds.add(REV_SPEED);
-            actions.add(Segment.Action.RST_PUSHER);
-            points.add(SCAN1_PT); //Rev to clear pt for turn
+            if(useColor)
+            {
+                addPoint(points, fwd, 0.2, 1.00, Segment.TargetType.COLOR,     scan, PREP1_PT);
+            }
+            else
+            {
+                addPoint(points, fwd, 0.3, 1.04, Segment.TargetType.ENCODER,   scan, SCAN1_PT);
+            }
+            addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER, beacon, BECN1_PT);
+            addPoint(points, fwd, 0.2, 1.00, Segment.TargetType.ENCODER,   push, PRSS1_PT);
+            addPoint(points, rev, 0.4, 1.00, Segment.TargetType.ENCODER,  reset, RVRS1_PT);
         }
 
         if(pushChoice == Field.BeaconChoice.FAR ||
            pushChoice == Field.BeaconChoice.BOTH)
         {
-//            segDirs.add(Segment.SegDir.FORWARD);
-//            segSpeeds.add(0.5);
-//            actions.add(Segment.Action.NOTHING);
-//            points.add(TURN2_PT); //Turn to image/beacon 2
-            segDirs.add(Segment.SegDir.FORWARD);
-            segSpeeds.add(0.3);
-            actions.add(Segment.Action.SCAN_IMAGE);
-            points.add(SCAN2_PT); //scan for images
-//            segDirs.add(Segment.SegDir.FORWARD);
-//            segSpeeds.add(0.3);
-//            actions.add(Segment.Action.NOTHING);
-//            points.add(ALGN2_PT);
-            segDirs.add(Segment.SegDir.FORWARD);
-            segSpeeds.add(0.3);
-            actions.add(Segment.Action.FIND_BEACON);
-            points.add(BECN2_PT); //find beacon
-            segDirs.add(Segment.SegDir.FORWARD);
-            segSpeeds.add(APP_SPEED);
-            actions.add(Segment.Action.PUSH);
-            points.add(PRSS2_PT); //push button
-            segDirs.add(Segment.SegDir.REVERSE);
-            segSpeeds.add(REV_SPEED);
-            actions.add(Segment.Action.RST_PUSHER);
-            points.add(SCAN2_PT); //Rev to clear for turn
+            if(useColor)
+            {
+                addPoint(points, fwd, 0.2, 1.00, Segment.TargetType.COLOR,     scan, PREP2_PT);
+            }
+            else
+            {
+                addPoint(points, fwd, 0.3, 1.04, Segment.TargetType.ENCODER,   scan, SCAN2_PT);
+            }
+            addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER, beacon, BECN2_PT);
+            addPoint(points, fwd, 0.2, 1.00, Segment.TargetType.ENCODER,   push, PRSS2_PT);
+            addPoint(points, rev, 0.4, 1.00, Segment.TargetType.ENCODER,  reset, RVRS2_PT);
         }
 
         //PARK PTS
-        segDirs.add(Segment.SegDir.FORWARD);
-        segSpeeds.add(DEF_SPEED);
-        actions.add(Segment.Action.NOTHING);
-        points.add(park_pt);
+        addPoint(points, fwd, 0.7, 1.00, Segment.TargetType.ENCODER,   none, park_pt);
 
         return points;
     }
 
-    //Points(Field.AutoStrategy autoStrategy)
     Points(Field.StartPos startPos,
+           Field.Alliance alliance,
            Field.BeaconChoice pushChoice,
            Field.ParkChoice parkChoice)
     {
-        this.autoStrategy = autoStrategy;
-        this.startPos = startPos;
-        this.pushChoice = pushChoice;
-        this.parkChoice = parkChoice;
+        this.startPos     = startPos;
+        this.alliance     = alliance;
+        this.pushChoice   = pushChoice;
+        this.parkChoice   = parkChoice;
 
         Vector<Point2d> pts = initPoints();
-        Vector<Point2d> redPoints  = initRedPoints(pts);
-        Vector<Point2d> bluePoints = initBluePoints(pts);
-
-        redSegs  = initSegments(redPoints);
-        blueSegs = initSegments(bluePoints);
-
-        //redTurns  = initTurns(redSegs);
-        //blueTurns = initTurns(blueSegs);
-    }
-
-    final Segment[] getSegments(Field.Alliance color)
-    {
-        segments = redSegs;
-        if (color == Field.Alliance.BLUE)
+        Vector<Point2d> points;
+        if(alliance == Field.Alliance.RED)
         {
-            segments = blueSegs;
+            points = initRedPoints(pts);
+        }
+        else
+        {
+            points = initBluePoints(pts);
         }
 
+        segments  = initSegments(points);
+    }
+
+    private void addPoint(Vector<Point2d> points,
+                          Segment.SegDir dir,
+                          double speed,
+                          double tune,
+                          Segment.TargetType targetType,
+                          Segment.Action action,
+                          Point2d pt)
+    {
+        segDirs.add(dir);
+        segSpeeds.add(speed);
+        ttypes.add(targetType);
+        actions.add(action);
+        points.add(pt);
+    }
+
+    final Segment[] getSegments()
+    {
         return segments;
-    }
-
-    final double[] getTurns(Field.Alliance color)
-    {
-        turns = redTurns;
-        if (color == Field.Alliance.BLUE)
-        {
-            turns = blueTurns;
-        }
-        return turns;
     }
 
     final Vector<Segment.Action> getActions()
@@ -193,39 +169,32 @@ class Points
         for(int s = 0; s < numSegs; ++s)
         {
             String sname = pts.get(s+1).getName();
-            if(segDirs.get(s) == Segment.SegDir.REVERSE)
-            {
-                sname = "R" + sname;
-            }
-            seg = new Segment(sname,
-                              pts.get(s), pts.get(s+1));
+
+            seg = new Segment(sname, pts.get(s), pts.get(s+1));
             seg.setDir(segDirs.get(s));
             seg.setSpeed(segSpeeds.get(s));
             seg.setAction(actions.get(s));
 
-            if(sname.equals("SCAN1") || sname.equals("BSCAN1"))
-            {
-                seg.setDrvTuner(1.04);
-            }
-            if(sname.equals("SCAN2") || sname.equals("BSCAN2"))
-            {
-                seg.setDrvTuner(1.06);
-            }
-            if(sname.equals("BECN1")  || sname.equals("BECN2")  ||
-               sname.equals("BBECN1") || sname.equals("BBECN2") ||
-               sname.equals("PRSS1")  || sname.equals("PRSS2")  ||
-               sname.equals("BPRSS1")  || sname.equals("BPRSS2"))
-            {
-                pathSegs[s-1].setPostTurn(seg.getFieldHeading());
-            }
-
-            Double pt = seg.getPostTurn();
-
             DbgLog.msg("SJH: setting up segment %s %s %s %4.1f tune: %4.2f",
                     seg.getName(), seg.getStrtPt(), seg.getTgtPt(),
                     seg.getFieldHeading(), seg.getDrvTuner());
-            if(pt != null) DbgLog.msg("SJH: postTurn %4.2f", pt);
+
             pathSegs[s] = seg;
+        }
+
+        for(int s = 0; s < pathSegs.length; s++)
+        {
+            Segment curSeg = pathSegs[s];
+            Segment nxtSeg = pathSegs[s+1];
+            String sname = curSeg.getName();
+
+            if(sname.equals("SCAN1") || sname.equals("SCAN2") ||
+               sname.equals("BECN1") || sname.equals("BECN2"))
+            {
+                double nfhdg = nxtSeg.getFieldHeading();
+                curSeg.setPostTurn(nfhdg);
+                DbgLog.msg("SJH: Segment %s setting postTurn %4.2f", sname, nfhdg);
+            }
         }
 
         return pathSegs;
@@ -242,48 +211,14 @@ class Points
         return null;
     }
 
-    private double[] initTurns(Segment[] segs)
-    {
-        int numTrns = segs.length - 1;
-
-        double inturns[] = new double[numTrns];
-
-        for(int t = 0; t < numTrns; ++t)
-        {
-            Segment s1 = segs[t];
-            Segment s2 = segs[t+1];
-            double h1 = s1.getFieldHeading();
-            if(s1.getDir()   == Segment.SegDir.REVERSE) h1+=180.0;
-            double h2 = s2.getFieldHeading();
-            if(s2.getDir() == Segment.SegDir.REVERSE) h2+=180.0;
-
-            double ang = h2 - h1;
-
-            while(ang >   180.0) ang -= 360.0;
-            while(ang <= -180.0) ang += 360.0;
-            inturns[t] = ang;
-
-            System.out.println(
-                    String.format(Locale.US,
-                            "Seg %2d %s %s %s Fhdg: %6.2f Len: %6.2f %s",
-                               t, s1.getName(), s1.getStrtPt(), s1.getTgtPt(),
-                               h1, s1.getLength(), s1.getDir()));
-
-            System.out.println(
-                    String.format(Locale.US,
-                            "Seg %2d %s %s %s Fhdg: %6.2f Len: %6.2f",
-                            t+1, s1.getName(), s2.getStrtPt(), s2.getTgtPt(),
-                            h2, s2.getLength()));
-            System.out.println(String.format(Locale.US, "%6.2f", ang));
-        }
-        return inturns;
-    }
-
     private Point2d convertRtoB(Point2d rpt)
     {
         double bx = -rpt.getY();
         double by = -rpt.getX();
-        return new Point2d("B"+rpt.getName(), bx, by);
+        rpt.setX(bx);
+        rpt.setY(by);
+        return rpt;
+        //return new Point2d("B"+rpt.getName(), bx, by);
     }
     
     public String toString()
@@ -337,17 +272,17 @@ class Points
     private static final double AAIMTOY =  -48.0;
 
     private static final double TRGT1_Y = -12.0;
+    private static final double PREP1_Y  = TRGT1_Y - 4.0;
     private static final double TRGT2_Y =  36.0;
+    private static final double PREP2_Y  = TRGT2_Y - 4.0;
     private static final double CTRPRKX = -12.0;
     private static final double CTRPRKY = -12.0;
     private static final double CRNPRKX = -44.0;
     private static final double CRNPRKY = -44.0;
 
     private static final double SAFETY  = 0.0;
-    private static final double TURN_X  = -30.0;
     private static final double SCAN_X  = -40.0;
-    private static final double ALGN_X  = -45.0;
-    private static final double BECN_X  = -48.0;
+    private static final double BECN_X  = -50.0;
     private static final double TOUCHX  = -58.5; //-57.5;
 
     private Point2d START_PT = new Point2d("START", STARTX, STARTY);
@@ -358,16 +293,16 @@ class Points
     private Point2d APRSHT_PT = new Point2d("APRSHT", ASTARTX, AIMERY);
     private Point2d ASHOOT_PT = new Point2d("ASHOOT", ASHOOTX, ASHOOTY);
 
-    private Point2d TURN1_PT = new Point2d("TURN1", TURN_X, TRGT1_Y);
     private Point2d SCAN1_PT = new Point2d("SCAN1", SCAN_X, TRGT1_Y);
-    private Point2d ALGN1_PT = new Point2d("ALGN1", ALGN_X, TRGT1_Y);
+    private Point2d PREP1_PT = new Point2d("PREP1", BECN_X, PREP1_Y);
     private Point2d BECN1_PT = new Point2d("BECN1", BECN_X, TRGT1_Y);
     private Point2d PRSS1_PT = new Point2d("PRSS1", TOUCHX, TRGT1_Y);
-    private Point2d TURN2_PT = new Point2d("TURN2", TURN_X, TRGT2_Y);
+    private Point2d RVRS1_PT = new Point2d("RVRS1", SCAN_X, TRGT1_Y);
     private Point2d SCAN2_PT = new Point2d("SCAN2", SCAN_X, TRGT2_Y);
-    private Point2d ALGN2_PT = new Point2d("ALGN2", ALGN_X, TRGT2_Y);
+    private Point2d PREP2_PT = new Point2d("PREP1", BECN_X, PREP2_Y);
     private Point2d BECN2_PT = new Point2d("BECN2", BECN_X, TRGT2_Y);
     private Point2d PRSS2_PT = new Point2d("PRSS2", TOUCHX, TRGT2_Y);
+    private Point2d RVRS2_PT = new Point2d("RVRS2", SCAN_X, TRGT2_Y);
 
     private Point2d CTRPRKPT = new Point2d("CTRPRK", CTRPRKX, CTRPRKY);
     private Point2d CRNPRKPT = new Point2d("CRNPRK", CRNPRKX, CRNPRKY);
@@ -375,40 +310,16 @@ class Points
     private final static int    MAX_SEGMENTS = 16;
 
     private Segment[] segments;
-    private Segment[] redSegs;
-    private Segment[] blueSegs;
-
-    private double[] turns;
-    private double[] redTurns;
-    private double[] blueTurns;
 
     private Vector<Segment.Action> actions = new Vector<>(MAX_SEGMENTS);
     private Vector<Double> segSpeeds = new Vector<>(MAX_SEGMENTS);
     private Vector<Segment.SegDir> segDirs = new Vector<>(MAX_SEGMENTS);
     private Vector<Double> tuners = new Vector<>(MAX_SEGMENTS);
-
-    private Field.AutoStrategy autoStrategy =
-            Field.AutoStrategy.SHOOT_PUSH_PARKCNTR;
+    private Vector<Segment.TargetType> ttypes = new Vector<>(MAX_SEGMENTS);
 
     private Field.StartPos     startPos   = Field.StartPos.START_A;
     private Field.BeaconChoice pushChoice = Field.BeaconChoice.NEAR;
     private Field.ParkChoice   parkChoice = Field.ParkChoice.CENTER_PARK;
-
-    private static double DEF_SPEED = 0.7;
-    @SuppressWarnings("FieldCanBeLocal")
-    private static double REV_SPEED = 0.4;
-    @SuppressWarnings("FieldCanBeLocal")
-    private static double APP_SPEED = 0.2;
-
-//    public static void main(String[] args)
-//    {
-//        Points ps = new Points(Field.AutoStrategy.SHOOT_PUSH_PARKCNTR);
-//
-//        Vector<Segment.Action> acts = ps.getActions();
-//        Vector<Double> spds = ps.getSegSpeeds();
-//        double[] trns = ps.getTurns(Field.Alliance.RED);
-//        Segment[] segs = ps.getSegments(Field.Alliance.RED);
-//
-//        System.out.print(ps.toString());
-//    }
+    private Field.Alliance     alliance   = Field.Alliance.RED;
+    private boolean            useColor   = false;
 }
