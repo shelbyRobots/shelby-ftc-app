@@ -73,8 +73,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
         tracker = new ImageTracker();
 
-        doMenus();
-
         if (robot.leftMotor  != null &&
             robot.rightMotor != null &&
             robot.gyro       != null)
@@ -113,6 +111,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         initHdg = pathSegs[0].getFieldHeading();
 
         DbgLog.msg("SJH ROUTE: \n" + pts.toString());
+
+        doMenus();
 
         Point2d currPoint = pathSegs[0].getStrtPt();
         drvTrn.setCurrPt(currPoint);
@@ -246,16 +246,29 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
             drvTrn.move(seg.getSpeed());
 
-            if((robot.colorSensor.red()   > RED_THRESH &&
-                robot.colorSensor.green() > GRN_THRESH &&
-                robot.colorSensor.blue()  > BLU_THRESH) ||
-               (robot.leftMotor.getCurrentPosition() + lpos > segCounts * 2 ||
-                robot.rightMotor.getCurrentPosition() + rpos > segCounts *2))
+            while(opModeIsActive() &&
+                  !isStopRequested())
             {
-                drvTrn.stopAndReset();
+                if (robot.colorSensor.red()   > RED_THRESH &&
+                    robot.colorSensor.green() > GRN_THRESH &&
+                    robot.colorSensor.blue()  > BLU_THRESH)
+                {
+                    drvTrn.stopAndReset();
+                    robot.colorSensor.enableLed(false);
+                    DbgLog.msg("SJH: FOUND LINE");
+                    break;
+                }
+                else if(robot.leftMotor.getCurrentPosition()  - lpos > (int)(segCounts * 1.2) ||
+                        robot.rightMotor.getCurrentPosition() - rpos > (int)(segCounts * 1.2))
+                {
+                    drvTrn.stopAndReset();
+                    robot.colorSensor.enableLed(false);
+                    DbgLog.msg("SJH: REACHED OVERRUN PT");
+                    break;
+                }
             }
-            robot.colorSensor.enableLed(false);
-
+            DbgLog.msg("SJH: Backing up a bit");
+            drvTrn.driveDistance(2.0, 0.15, Drivetrain.Direction.REVERSE);
         }
         else
         {
@@ -289,7 +302,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
         while (angle <= -180.0) angle += 360.0;
         while (angle >   180.0) angle -= 360.0;
-        if(Math.abs(angle) <= 2.0) return;
+        if(Math.abs(angle) <= 5.0) return;
 
         DbgLog.msg("SJH: Turn %5.2f", angle);
         dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
@@ -627,9 +640,9 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private boolean gyroReady;
 
-    private int RED_THRESH = 160;
-    private int GRN_THRESH = 160;
-    private int BLU_THRESH = 160;
+    private int RED_THRESH = 20;
+    private int GRN_THRESH = 20;
+    private int BLU_THRESH = 20;
 
     private double delay = 0.0;
 }

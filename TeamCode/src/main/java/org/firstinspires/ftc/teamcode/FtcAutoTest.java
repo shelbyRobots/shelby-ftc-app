@@ -5,6 +5,7 @@ import android.widget.TextView;
 
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.RobotLog;
 
@@ -44,6 +45,64 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
     {
         dashboard.clearDisplay();
         robot.gyro.resetZAxisIntegrator();
+
+        //test max speed
+        double lavgspd = 0.0;
+        double ravgspd = 0.0;
+        double s1avgspd = 0.0;
+        double s2avgspd = 0.0;
+        int lcnts = 0;
+        int rcnts = 0;
+        int lcnts_last = 0;
+        int rcnts_last = 0;
+        int s1cnts = 0;
+        int s2cnts = 0;
+        int s1cnts_last = 0;
+        int s2cnts_last = 0;
+        double dur = 0.1;
+        double testTimeout = 5;
+        robot.leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.leftMotor.setPower(1.0);
+        robot.rightMotor.setPower(1.0);
+        robot.shotmotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.shotmotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.shotmotor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.shotmotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.shotmotor1.setPower(1.0);
+        robot.shotmotor2.setPower(1.0);
+        ElapsedTime sTimer = new ElapsedTime();
+        ElapsedTime mspdTimer = new ElapsedTime();
+        while(mspdTimer.seconds() < testTimeout)
+        {
+            double elapsed = sTimer.seconds();
+            if(elapsed >= dur)
+            {
+                lcnts = robot.leftMotor.getCurrentPosition();
+                rcnts = robot.rightMotor.getCurrentPosition();
+                lavgspd = (lcnts - lcnts_last)/elapsed;
+                ravgspd = (rcnts - rcnts_last)/elapsed;
+                lcnts_last = lcnts;
+                rcnts_last = rcnts;
+
+                s1cnts = robot.shotmotor1.getCurrentPosition();
+                s2cnts = robot.shotmotor2.getCurrentPosition();
+                s1avgspd = (s1cnts - s1cnts_last)/elapsed;
+                s2avgspd = (s2cnts - s2cnts_last)/elapsed;
+                s1cnts_last = s1cnts;
+                s2cnts_last = s2cnts;
+
+                DbgLog.msg("SJH: %4.2f LEFT  AVG SPD %4.2f", mspdTimer.seconds(), lavgspd);
+                DbgLog.msg("SJH: %4.2f RIGHT AVG SPD %4.2f", mspdTimer.seconds(), ravgspd);
+                DbgLog.msg("SJH: %4.2f SHOT1 AVG SPD %4.2f", mspdTimer.seconds(), s1avgspd);
+                DbgLog.msg("SJH: %4.2f SHOT2 AVG SPD %4.2f", mspdTimer.seconds(), s2avgspd);
+
+                sTimer.reset();
+            }
+        }
+
         do_main_loop();
     }
 

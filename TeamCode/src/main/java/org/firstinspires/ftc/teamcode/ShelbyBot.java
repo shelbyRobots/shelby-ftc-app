@@ -90,8 +90,12 @@ class ShelbyBot
         if(rightMotor != null) rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         if(elevMotor  != null)  elevMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         if(sweepMotor != null) sweepMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        if(shotmotor1 != null) shotmotor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        if(shotmotor2 != null) shotmotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        if(shotmotor1 != null) shotmotor1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        if(shotmotor2 != null) shotmotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        //SET ACTUAL MAX SPEED AFTER TEST - then set shooter speeds in auton and teleop
+        //ALSO SET MAX SPEED for drive in auton
+        //if(shotmotor1 != null) shotmotor1.setMaxSpeed(1000);
+        //if(shotmotor1 != null) shotmotor2.setMaxSpeed(1000);
     }
 
     /***
@@ -119,7 +123,7 @@ class ShelbyBot
     //NOTE:  Notes reference center of bot on ground as bot coord frame origin.
     //However, it seems logical to use the center of the rear axis (pivot point)
     private static final float MM_PER_INCH     = 25.4f;
-    static final float BOT_WIDTH               = 16.0f; //Vehicle width at rear wheels
+    static final float BOT_WIDTH               = 16.5f; //Vehicle width at rear wheels
     private static final float BOT_LENGTH      = 18.0f;
 
     //Distance from ctr of rear wheel to tail

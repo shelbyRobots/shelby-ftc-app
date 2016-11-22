@@ -45,6 +45,8 @@ class Drivetrain
     {
         left_drive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         right_drive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        left_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        right_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
     void stopAndReset()
@@ -389,6 +391,7 @@ class Drivetrain
         if(Math.abs(err) > THRESH)
         {
             double steer = getSteer(err, PADJ);
+            if(Math.abs(steer) > steer)  steer = Math.signum(steer) * pwr;
             //if (dir == Direction.REVERSE) steer *= -1;
 
             rdp = pwr - steer;
@@ -409,26 +412,31 @@ class Drivetrain
             if(Math.abs(ldc) >= Math.abs(tgtCnts))
             {
                 ldp = 0.0;
-                left_drive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                left_drive.setPower(0.0);
+                left_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 if(Math.abs(diff) < 30)
                 {
                     rdp = 0.0;
-                    right_drive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    right_drive.setPower(0.0);
+                    right_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 }
             }
-
-            if(Math.abs(rdc) >= Math.abs(tgtCnts))
+            else if(Math.abs(rdc) >= Math.abs(tgtCnts))
             {
                 rdp = 0.0;
-                right_drive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                right_drive.setPower(0.0);
+                right_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 if(Math.abs(diff) < 30)
                 {
                     ldp = 0.0;
-                    left_drive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    left_drive.setPower(0.0);
+                    left_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 }
             }
-
-            move(ldp, rdp);
+            else
+            {
+                move(ldp, rdp);
+            }
 
             if (ptmr.seconds() > 0.2)
             {

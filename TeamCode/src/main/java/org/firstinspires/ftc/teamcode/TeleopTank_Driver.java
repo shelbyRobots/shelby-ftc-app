@@ -190,16 +190,16 @@ public class TeleopTank_Driver extends LinearOpMode
                 robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 DbgLog.msg("SJH DONE AUTOSHOOT MOVE");
-                ElapsedTime stimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
-                sleep(500);
-                robot.sweepMotor.setPower(-1.0);
-                robot.elevMotor.setPower(-1.0);
-                sleep(1500);
-                robot.shotmotor1.setPower(0);
-                robot.shotmotor2.setPower(0);
-                robot.sweepMotor.setPower(0);
-                robot.elevMotor.setPower(0);
-                DbgLog.msg("SJH DONE AUTOSHOOT");
+//                ElapsedTime stimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
+//                sleep(500);
+//                robot.sweepMotor.setPower(-1.0);
+//                robot.elevMotor.setPower(-1.0);
+//                sleep(1500);
+//                robot.shotmotor1.setPower(0);
+//                robot.shotmotor2.setPower(0);
+//                robot.sweepMotor.setPower(0);
+//                robot.elevMotor.setPower(0);
+//                DbgLog.msg("SJH DONE AUTOSHOOT");
             }
             lbump_last = lbump;
 
