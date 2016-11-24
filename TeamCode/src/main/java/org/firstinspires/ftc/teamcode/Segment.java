@@ -85,7 +85,7 @@ class Segment
 
     enum SegDir {FORWARD, REVERSE}
     enum Action {NOTHING, SHOOT, SCAN_IMAGE, FIND_BEACON, PUSH, RST_PUSHER}
-    enum TargetType{ENCODER, TIME, COLOR};
+    enum TargetType{ENCODER, TIME, COLOR}
     private static final double DEF_SEG_SPD = 0.5;
     private double  fldHdg = 0.0;
     private Point2d strtPt;
@@ -101,8 +101,8 @@ class Segment
 
     public static void main(String[] args)
     {
-        Point2d ptA = new Point2d(-12.0, -67.0);
-        Point2d ptB = new Point2d(-12.0, -64.0);
+        Point2d ptA = new Point2d(-12.0, -61.0);
+        Point2d ptB = new Point2d(-50.0, -18.0);
         Segment seg = new Segment("SEG", ptA, ptB);
         System.out.print("FLDHDG:" + seg.getFieldHeading() + "\n");
     }

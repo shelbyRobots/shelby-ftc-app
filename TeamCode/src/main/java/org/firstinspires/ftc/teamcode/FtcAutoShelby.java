@@ -45,7 +45,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     public void startMode()
     {
         dashboard.clearDisplay();
-        robot.gyro.resetZAxisIntegrator();
         do_main_loop();
     }
 
@@ -79,6 +78,12 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         {
             drvTrn.init(robot.leftMotor, robot.rightMotor, robot.gyro);
             drvTrn.setOpMode(getInstance());
+
+            int lms = robot.leftMotor.getMaxSpeed();
+            int rms = robot.rightMotor.getMaxSpeed();
+            DbgLog.msg("SJH: MaxSpeeds %d %d", lms, rms);
+
+            DbgLog.msg("SJH: Starting gyro calibration");
             robot.gyro.calibrate();
 
             // make sure the gyro is calibrated before continuing
@@ -90,7 +95,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                    robot.gyro.isCalibrating())
             {
                 sleep(50);
-                idle();
                 if(gyroTimer.seconds() > gyroInitTimout)
                 {
                     DbgLog.msg("SJH: GYRO INIT TIMED OUT!!");
@@ -101,9 +105,13 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             DbgLog.msg("SJH: Gyro callibrated in %4.2f seconds", gyroTimer.seconds());
 
             gyroReady = !gyroCalibTimedout;
+            if(gyroReady) robot.gyro.resetZAxisIntegrator();
 
             drvTrn.setGryoReady(gyroReady);
         }
+
+        doMenus();
+        robot.pusher.setPosition(ZER_PUSH_POS);
 
         Points pts = new Points(startPos, alliance, beaconChoice, parkChoice);
         pathSegs = pts.getSegments();
@@ -112,13 +120,9 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
         DbgLog.msg("SJH ROUTE: \n" + pts.toString());
 
-        doMenus();
-
         Point2d currPoint = pathSegs[0].getStrtPt();
         drvTrn.setCurrPt(currPoint);
         drvTrn.setInitHdg(initHdg);
-
-        robot.pusher.setPosition(ZER_PUSH_POS);
 
         timer.reset();
         DbgLog.msg("SJH Start %s. Time: %6.3f", currPoint, timer.time());
@@ -145,6 +149,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         for (int i = 0; i < pathSegs.length; ++i)
         {
             if(!opModeIsActive() || isStopRequested()) break;
+            DbgLog.msg("SJH: Starting segment %s at %4.2f", pathSegs[i].getName(),
+                    getOpModeElapsedTime());
 
             if (SkipNextSegment)
             {
@@ -308,7 +314,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
         timer.reset();
         drvTrn.ctrTurnLinear(angle,DEF_TRN_PWR);
-        //drvTrn.ctrTurnLinearGyro(angle,DEF_TRN_PWR);
         cHdg = getGryoFhdg();
         DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f CHDG: %5.2f",
                 angle, timer.time(), cHdg);

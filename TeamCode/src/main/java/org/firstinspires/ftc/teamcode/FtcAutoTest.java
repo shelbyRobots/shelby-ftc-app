@@ -125,6 +125,10 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         hardwareMap.logDevices();
         robot.init(hardwareMap);
 
+        int lms = robot.leftMotor.getMaxSpeed();
+        int rms = robot.rightMotor.getMaxSpeed();
+        DbgLog.msg("SJH: MaxSpeeds %d %d", lms, rms);
+
         tracker = new ImageTracker();
 
         doMenus();

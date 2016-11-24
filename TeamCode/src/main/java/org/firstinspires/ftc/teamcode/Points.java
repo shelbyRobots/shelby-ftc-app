@@ -9,7 +9,7 @@ class Points
     private Vector<Point2d> initPoints()
     {
         Point2d start_pt = START_PT;
-        Point2d presh_pt = AIMER_PT;
+        Point2d presh_pt = PRSHT_PT;
         Point2d shoot_pt = SHOOT_PT;
 
         if(startPos == Field.StartPos.START_B)
@@ -39,7 +39,7 @@ class Points
 
         //SHOOT PTS
         points.add(start_pt);
-        addPoint(points, fwd, 0.3, 1.10, Segment.TargetType.ENCODER,   none, presh_pt);
+        //addPoint(points, fwd, 0.3, 1.10, Segment.TargetType.ENCODER,   none, presh_pt);
         addPoint(points, fwd, 0.3, 1.05, Segment.TargetType.ENCODER,  shoot, shoot_pt);
 
         if(pushChoice == Field.BeaconChoice.NEAR ||
@@ -47,15 +47,14 @@ class Points
         {
             if(useColor)
             {
-                //addPoint(points, fwd, 0.3,  1.05, Segment.TargetType.ENCODER, scan, PREP1_PT);
-                addPoint(points, fwd, 0.3,  1.05, Segment.TargetType.ENCODER, scan, TMP1_PT);
-                addPoint(points, fwd, 0.3,  1.05, Segment.TargetType.ENCODER, scan, TMP2_PT);
+                addPoint(points, fwd, 0.3,  1.05, Segment.TargetType.ENCODER, scan, PREP1_PT);
+                //addPoint(points, fwd, 0.3,  1.05, Segment.TargetType.ENCODER, scan, TMP1_PT);
+                //addPoint(points, fwd, 0.3,  1.05, Segment.TargetType.ENCODER, scan, TMP2_PT);
                 addPoint(points, fwd, 0.1,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
             }
             else
             {
-                //addPoint(points, fwd, 0.3, 1.04, Segment.TargetType.ENCODER,   scan, SCAN1_PT);
-                addPoint(points, fwd, 0.3,  1.05, Segment.TargetType.ENCODER, scan, TMP3_PT);
+                addPoint(points, fwd, 0.3, 1.04, Segment.TargetType.ENCODER,   scan, SCAN1_PT);
                 addPoint(points, fwd, 0.15, 1.05, Segment.TargetType.ENCODER, beacon, BECN1_PT);
             }
 
@@ -203,6 +202,13 @@ class Points
                 curSeg.setPostTurn(nfhdg);
                 DbgLog.msg("SJH: Segment %s setting postTurn %4.2f", sname, nfhdg);
             }
+            if(sname.equals("SHOOT") || sname.equals("ASHOOT"))
+            {
+                Segment aim = new Segment("AIM", curSeg.getTgtPt(), BASKET_PT);
+                double nfhdg = aim.getFieldHeading();
+                curSeg.setPostTurn(nfhdg);
+                DbgLog.msg("SJH: Segment %s setting postTurn %4.2f", sname, nfhdg);
+            }
         }
 
         return pathSegs;
@@ -270,14 +276,12 @@ class Points
     private static final double STARTY  =  -66.5;
     private static final double AIMERY  =  -64.0;
     private static final double SHOOTY  =  -60.5;
-    private static final double AIMTOX  =  -1*12;
-    private static final double AIMTOY  =  -4*12;
+    private static final double AIMTOX  =  -12.0;
+    private static final double AIMTOY  =  -10.5;
 
     private static final double ASTARTX =  12.0;
     private static final double ASHOOTX =   8.9;
     private static final double ASHOOTY = -56.6;
-    private static final double AAIMTOX =   9.0;
-    private static final double AAIMTOY = -48.0;
 
     private static final double TRGT1_Y = -12.0;
     private static final double PREP1_Y  = TRGT1_Y - 8.0;
@@ -294,8 +298,10 @@ class Points
     private static final double TOUCHX  = -58.5; //-57.5;
 
     private Point2d START_PT = new Point2d("START", STARTX, STARTY);
-    private Point2d AIMER_PT = new Point2d("AIMER", STARTX, AIMERY);
+    private Point2d PRSHT_PT = new Point2d("PRSHT", STARTX, AIMERY);
     private Point2d SHOOT_PT = new Point2d("SHOOT", STARTX, SHOOTY);
+
+    private Point2d BASKET_PT = new Point2d("BASKET", AIMTOX, AIMTOY);
 
     private Point2d ASTART_PT = new Point2d("ASTART", ASTARTX, STARTY);
     private Point2d APRSHT_PT = new Point2d("APRSHT", ASTARTX, AIMERY);
