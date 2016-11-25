@@ -69,10 +69,10 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         robot.rightMotor.setPower(1.0);
         robot.shotmotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         robot.shotmotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        robot.shotmotor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        robot.shotmotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        robot.shotmotor1.setPower(1.0);
-        robot.shotmotor2.setPower(1.0);
+        robot.shotmotor1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.shotmotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.shotmotor1.setPower(0.5);
+        robot.shotmotor2.setPower(0.5);
         ElapsedTime sTimer = new ElapsedTime();
         ElapsedTime mspdTimer = new ElapsedTime();
         while(mspdTimer.seconds() < testTimeout)
@@ -106,12 +106,12 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         do_main_loop();
     }
 
-    @Override
-    public void runPeriodic(double elapsedTime)
-    {
-        dashboard.displayPrintf(6, "GHDG: %d",
-                robot.gyro.getIntegratedZValue());
-    }
+//    @Override
+//    public void runPeriodic(double elapsedTime)
+//    {
+//        dashboard.displayPrintf(6, "GHDG: %d",
+//                robot.gyro.getIntegratedZValue());
+//    }
 
     @Override
     public void stopMode()
@@ -181,78 +181,78 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         dashboard.displayPrintf(3, "PATH: Start at %s %6.3f", currPoint,
                                                               timer.seconds());
 
-        dashboard.displayPrintf(6, "GHDG: %d",
-                robot.gyro.getIntegratedZValue());
+//        dashboard.displayPrintf(6, "GHDG: %d",
+//                robot.gyro.getIntegratedZValue());
     }
 
     private void do_main_loop()
     {
-        boolean SkipNextSegment = false;
-        for (int i = 0; i < pathSegs.length; ++i)
-        {
-            if(!opModeIsActive()) break;
-            if (SkipNextSegment)
-            {
-                SkipNextSegment = false;
-                continue;
-            }
-
-            Segment curSeg;
-            curPos = null; //SBH REMOVE
-            if(curPos == null)
-            {
-                curSeg = pathSegs[i];
-            }
-            else
-            {
-                drvTrn.setCurrPt(curPos);
-                curSeg = new Segment("CURSEG", curPos, pathSegs[i].getTgtPt());
-                curPos = null;
-            }
-
-            doEncoderTurn(curSeg); //quick but rough
-            doTurn(curSeg); //fine tune using gyro
-            doMove(curSeg);
-
-            if(curSeg.getPostTurn() != null)
-            {
-                doEncoderTurn(pathSegs[i+1]);
-                doTurn(pathSegs[i+1]);
-            }
-
-            DbgLog.msg("SJH Planned pos: %s %s",
-                    pathSegs[i].getTgtPt(),
-                    pathSegs[i].getFieldHeading());
-
-            switch(pathSegs[i].getName())
-            {
-                case "START_PT":
-                    break;
-            }
-            switch (pathSegs[i].getAction())
-            {
-                case SHOOT:
-                    do_shoot();
-                    break;
-                case SCAN_IMAGE:
-                    if (findSensedLoc())
-                    {
-                        DbgLog.msg("SJH Sensed pos: %s %s",
-                                curPos, curHdg);
-                    }
-                    break;
-                case FIND_BEACON:
-
-                    SkipNextSegment = !do_findBeaconOrder(true);
-
-                    break;
-                case RST_PUSHER:
-                    robot.pusher.setPosition(ZER_PUSH_POS);
-                    break;
-                case NOTHING:
-                    break;
-            }
-        }
+//        boolean SkipNextSegment = false;
+//        for (int i = 0; i < pathSegs.length; ++i)
+//        {
+//            if(!opModeIsActive()) break;
+//            if (SkipNextSegment)
+//            {
+//                SkipNextSegment = false;
+//                continue;
+//            }
+//
+//            Segment curSeg;
+//            curPos = null; //SBH REMOVE
+//            if(curPos == null)
+//            {
+//                curSeg = pathSegs[i];
+//            }
+//            else
+//            {
+//                drvTrn.setCurrPt(curPos);
+//                curSeg = new Segment("CURSEG", curPos, pathSegs[i].getTgtPt());
+//                curPos = null;
+//            }
+//
+//            doEncoderTurn(curSeg); //quick but rough
+//            doTurn(curSeg); //fine tune using gyro
+//            doMove(curSeg);
+//
+//            if(curSeg.getPostTurn() != null)
+//            {
+//                doEncoderTurn(pathSegs[i+1]);
+//                doTurn(pathSegs[i+1]);
+//            }
+//
+//            DbgLog.msg("SJH Planned pos: %s %s",
+//                    pathSegs[i].getTgtPt(),
+//                    pathSegs[i].getFieldHeading());
+//
+//            switch(pathSegs[i].getName())
+//            {
+//                case "START_PT":
+//                    break;
+//            }
+//            switch (pathSegs[i].getAction())
+//            {
+//                case SHOOT:
+//                    do_shoot();
+//                    break;
+//                case SCAN_IMAGE:
+//                    if (findSensedLoc())
+//                    {
+//                        DbgLog.msg("SJH Sensed pos: %s %s",
+//                                curPos, curHdg);
+//                    }
+//                    break;
+//                case FIND_BEACON:
+//
+//                    SkipNextSegment = !do_findBeaconOrder(true);
+//
+//                    break;
+//                case RST_PUSHER:
+//                    robot.pusher.setPosition(ZER_PUSH_POS);
+//                    break;
+//                case NOTHING:
+//                    break;
+//            }
+//        }
     }
 
     private void doMove(Segment seg)

@@ -633,7 +633,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private static Field.ParkChoice parkChoice = Field.ParkChoice.CENTER_PARK;
     private static Field.Alliance alliance = Field.Alliance.RED;
     private static Team team = Team.SONIC;
-    private static double DEF_SHT_PWR = 0.55;
+    private static double DEF_SHT_PWR = 0.9;
 
     private HalDashboard dashboard;
 

@@ -69,7 +69,7 @@ class ShelbyBot
         if(rightMotor != null) rightMotor.setDirection(DcMotor.Direction.REVERSE);
         if(elevMotor  != null)  elevMotor.setDirection(DcMotor.Direction.REVERSE);
         if(sweepMotor != null) sweepMotor.setDirection(DcMotor.Direction.REVERSE);
-        if(shotmotor1 != null) shotmotor2.setDirection(DcMotor.Direction.FORWARD);
+        if(shotmotor1 != null) shotmotor1.setDirection(DcMotor.Direction.FORWARD);
         if(shotmotor2 != null) shotmotor2.setDirection(DcMotor.Direction.REVERSE);
 
         // Set all motors to zero power
@@ -94,8 +94,8 @@ class ShelbyBot
         if(shotmotor2 != null) shotmotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         //SET ACTUAL MAX SPEED AFTER TEST - then set shooter speeds in auton and teleop
         //ALSO SET MAX SPEED for drive in auton
-        //if(shotmotor1 != null) shotmotor1.setMaxSpeed(1000);
-        //if(shotmotor1 != null) shotmotor2.setMaxSpeed(1000);
+        if(shotmotor1 != null) shotmotor1.setMaxSpeed(30800);
+        if(shotmotor2 != null) shotmotor2.setMaxSpeed(30800);
     }
 
     /***

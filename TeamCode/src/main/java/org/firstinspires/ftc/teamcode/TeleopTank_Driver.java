@@ -36,7 +36,6 @@ import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 @TeleOp(name="Telop Tank", group="Tele")
@@ -72,7 +71,7 @@ public class TeleopTank_Driver extends LinearOpMode
 
         DcMotor.ZeroPowerBehavior zeroPwr = DcMotor.ZeroPowerBehavior.FLOAT;
 
-        double shoot_scale = 0.55;
+        double shoot_scale = 0.9;
 
         double elev;
         double sweep;
@@ -181,14 +180,14 @@ public class TeleopTank_Driver extends LinearOpMode
                 DbgLog.msg("SJH AUTOSHOOT");
                 robot.shotmotor1.setPower(shoot_scale);
                 robot.shotmotor2.setPower(shoot_scale);
+                robot.sweepMotor.setPower(-1.0);
                 dtrn.driveDistance(35.0, 0.5, Drivetrain.Direction.REVERSE);
                 while(opModeIsActive() && dtrn.isBusy())
                 {
                     idle();
                 }
                 dtrn.stopAndReset();
-                robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
                 DbgLog.msg("SJH DONE AUTOSHOOT MOVE");
 //                ElapsedTime stimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
 //                sleep(500);
