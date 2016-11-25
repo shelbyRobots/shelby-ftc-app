@@ -19,7 +19,7 @@ import hallib.HalDashboard;
 
 //import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
-@SuppressWarnings({"unused", "ForLoopReplaceableByForEach"})
+@SuppressWarnings({"unused", "ForLoopReplaceableByForEach", "UnusedAssignment"})
 @Autonomous(name="AutonTest", group="Auton")
 //@Disabled
 public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
@@ -75,6 +75,11 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         robot.shotmotor2.setPower(0.5);
         ElapsedTime sTimer = new ElapsedTime();
         ElapsedTime mspdTimer = new ElapsedTime();
+
+        DbgLog.msg("SJH: LMAXSPD %d", robot.leftMotor.getMaxSpeed());
+        DbgLog.msg("SJH: RMAXSPD %d", robot.rightMotor.getMaxSpeed());
+        DbgLog.msg("SJH: LSMAXSPD %d", robot.shotmotor1.getMaxSpeed());
+        DbgLog.msg("SJH: RSMAXSPD %d", robot.shotmotor2.getMaxSpeed());
         while(mspdTimer.seconds() < testTimeout)
         {
             double elapsed = sTimer.seconds();
@@ -102,6 +107,11 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
                 sTimer.reset();
             }
         }
+
+        robot.leftMotor.setPower(0.0);
+        robot.rightMotor.setPower(0.0);
+        robot.shotmotor1.setPower(0.0);
+        robot.shotmotor2.setPower(0.0);
 
         do_main_loop();
     }
@@ -572,6 +582,48 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         dashboard.displayPrintf(4, "TEAM: %s", team);
         dashboard.displayPrintf(5, "TestK:", "4.2f", testK);
     }
+
+    public double getMaxSpeedAtCount(int count)
+    {
+        double outSpd = 0.0;
+        //Need real profile - fake steps below
+        outSpd = Math.min(1.0, count*.1);
+        return outSpd;
+    }
+
+    public double calcSlopeSpeed(double begX, double begY, double endX, double endY, double x)
+    {
+        return begY + (x - begX) * (endY - begY)/(endX - begX);
+    }
+
+    public double calcProfileSpeed(int encCnt, int encTgt, double reqSpeed, double maxSpeed)
+    {
+        double outSpd = 0.0;
+        double accMinSpdBegCnt = 0.00;
+        double accMinSpdEndCnt = 0.10;
+        double maxSpdBegCnt    = 0.30;
+        double maxSpdEndCnt    = 0.70;
+        double decMinSpdBegCnt = 0.90;
+        double decMinSpdEndCnt = 0.95;
+
+        double cntScaledSpeed = getMaxSpeedAtCount((int)(encTgt * maxSpdBegCnt));
+        double spdSgn = Math.signum(reqSpeed);
+        double reqSpd = Math.abs(reqSpeed);
+        double minSpd = 0.1;
+        double maxSpd = Math.min(1.0, Math.min(reqSpeed, cntScaledSpeed));
+
+        //min speed segment
+        double encPrgss = encCnt/encTgt;
+        if(encPrgss <= accMinSpdEndCnt)      outSpd = minSpd;
+        else if(encPrgss <= maxSpdBegCnt)    outSpd = calcSlopeSpeed(accMinSpdEndCnt, maxSpdBegCnt, minSpd, maxSpd, encPrgss);
+        else if(encPrgss <= maxSpdEndCnt)    outSpd = maxSpd;
+        else if(encPrgss <= decMinSpdBegCnt) outSpd = calcSlopeSpeed(maxSpdEndCnt, decMinSpdBegCnt, maxSpd, minSpd, encPrgss);
+        else if(encPrgss <= decMinSpdEndCnt) outSpd = minSpd;
+        else                                 outSpd = 0.0;
+
+        return outSpd;
+    }
+
 
     private enum ButtonSide
     {
