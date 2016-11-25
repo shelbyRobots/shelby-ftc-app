@@ -47,15 +47,15 @@ class Points
         {
             if(useColor)
             {
-                addPoint(points, fwd, 0.4,  1.00, Segment.TargetType.ENCODER, scan, PREP1_PT);
+                addPoint(points, fwd, 0.8,  1.00, Segment.TargetType.ENCODER, scan, PREP1_PT);
                 //addPoint(points, fwd, 0.3,  1.00, Segment.TargetType.ENCODER, scan, TMP1_PT);
                 //addPoint(points, fwd, 0.3,  1.00, Segment.TargetType.ENCODER, scan, TMP2_PT);
-                addPoint(points, fwd, 0.2,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
+                addPoint(points, fwd, 0.1,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
             }
             else
             {
-                addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.ENCODER,   scan, SCAN1_PT);
-                addPoint(points, fwd, 0.2, 1.00, Segment.TargetType.ENCODER, beacon, BECN1_PT);
+                addPoint(points, fwd, 0.8, 1.00, Segment.TargetType.ENCODER,   scan, SCAN1_PT);
+                addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER, beacon, BECN1_PT);
             }
 
             addPoint(points, fwd, 0.2, 1.00, Segment.TargetType.ENCODER,   push, PRSS1_PT);
@@ -67,13 +67,13 @@ class Points
         {
             if(useColor)
             {
-                addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,     scan, PREP2_PT);
-                addPoint(points, fwd, 0.2, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
+                addPoint(points, fwd, 0.8, 1.00, Segment.TargetType.ENCODER,     scan, PREP2_PT);
+                addPoint(points, fwd, 0.1, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
             }
             else
             {
-                addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   scan, SCAN2_PT);
-                addPoint(points, fwd, 0.2, 1.00, Segment.TargetType.ENCODER, beacon, BECN2_PT);
+                addPoint(points, fwd, 0.8, 1.00, Segment.TargetType.ENCODER,   scan, SCAN2_PT);
+                addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER, beacon, BECN2_PT);
             }
 
             addPoint(points, fwd, 0.2, 1.00, Segment.TargetType.ENCODER,   push, PRSS2_PT);

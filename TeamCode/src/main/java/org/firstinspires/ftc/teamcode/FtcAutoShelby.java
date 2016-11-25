@@ -280,6 +280,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             }
             DbgLog.msg("SJH: Backing up a bit");
             drvTrn.driveDistance(2.0, 0.15, Drivetrain.Direction.REVERSE);
+            sleep(1500);
         }
         else
         {
@@ -649,8 +650,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     }
 
     private final static double ZER_PUSH_POS = 0.0;
-    private final static double RGT_PUSH_POS = 0.2;
-    private final static double LFT_PUSH_POS = 0.8;
+    private final static double RGT_PUSH_POS = 0.0;
+    private final static double LFT_PUSH_POS = 1.0;
     private final static double CTR_PUSH_POS = 0.5;
 
     //private final static double DEF_DRV_PWR  = 0.7;
