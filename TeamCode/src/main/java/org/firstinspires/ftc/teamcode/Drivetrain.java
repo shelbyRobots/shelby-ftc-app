@@ -543,12 +543,12 @@ class Drivetrain
         CPI = ENCODER_CPR * GEAR_RATIO / CIRCUMFERENCE;
     }
 
-    private static double DRV_TUNER = 1.12;
+    private static double DRV_TUNER = 1.00;
     private final static double TRN_TUNER = 1.0;
     private final static double TURN_TOLERANCE = 1.0;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
-    private static double WHL_DIAMETER = 6.6 * DRV_TUNER; //Diameter of the wheel (inches)
+    private static double WHL_DIAMETER = 6.5 * DRV_TUNER; //Diameter of the wheel (inches)
     private final static int    ENCODER_CPR = ShelbyBot.ENCODER_CPR;
     private final static double GEAR_RATIO  = 1;                   //Gear ratio
 

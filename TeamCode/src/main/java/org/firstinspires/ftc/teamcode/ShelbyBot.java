@@ -92,6 +92,10 @@ class ShelbyBot
         if(sweepMotor != null) sweepMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         if(shotmotor1 != null) shotmotor1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         if(shotmotor2 != null) shotmotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        if(leftMotor  != null)  leftMotor.setMaxSpeed(3000);
+        if(rightMotor != null) rightMotor.setMaxSpeed(3000);
+
         //SET ACTUAL MAX SPEED AFTER TEST - then set shooter speeds in auton and teleop
         //ALSO SET MAX SPEED for drive in auton
         //if(shotmotor1 != null) shotmotor1.setMaxSpeed(1000);
