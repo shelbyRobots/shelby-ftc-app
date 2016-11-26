@@ -70,9 +70,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         hardwareMap.logDevices();
         robot.init(hardwareMap);
 
-        DbgLog.msg("SJH: LEFTMAXSPD %d", robot.leftMotor.getMaxSpeed());
-        DbgLog.msg("SJH: RIGHTMAXSPD %d", robot.rightMotor.getMaxSpeed());
-
         tracker = new ImageTracker();
 
         if (robot.leftMotor  != null &&
@@ -279,8 +276,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                 }
             }
             DbgLog.msg("SJH: Backing up a bit");
-            drvTrn.driveDistance(2.0, 0.15, Drivetrain.Direction.REVERSE);
-            sleep(1500);
+            drvTrn.driveDistanceLinear(2.0, 0.15, Drivetrain.Direction.REVERSE);
+            //sleep(1500);
         }
         else
         {
@@ -578,8 +575,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         FtcChoiceMenu parkMenu     = new FtcChoiceMenu("PARK:", pushMenu, this);
         FtcChoiceMenu allianceMenu = new FtcChoiceMenu("ALLIANCE:", parkMenu, this);
         FtcChoiceMenu teamMenu     = new FtcChoiceMenu("TEAM:", allianceMenu, this);
-        FtcValueMenu powerMenu     = new FtcValueMenu("SHOOTPOWER:", teamMenu, this,
-                                                            0.0, 1.0, 0.05, 0.55, "%5.2f");
+        //FtcValueMenu powerMenu     = new FtcValueMenu("SHOOTPOWER:", teamMenu, this,
+        //                                                    0.0, 1.0, 0.05, 0.55, "%5.2f");
         FtcValueMenu delayMenu     = new FtcValueMenu("DELAY:", powerMenu, this,
                                                              0.0, 20.0, 1.0, 0.0, "%5.2f");
 
@@ -605,10 +602,10 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         allianceMenu.addChoice("RED",  Field.Alliance.RED, teamMenu);
         allianceMenu.addChoice("BLUE", Field.Alliance.BLUE, teamMenu);
 
-        teamMenu.addChoice("Sonic", Team.SONIC, powerMenu);
-        teamMenu.addChoice("Snowman", Team.SNOWMAN, powerMenu);
+        teamMenu.addChoice("Sonic", Team.SONIC, delayMenu);
+        teamMenu.addChoice("Snowman", Team.SNOWMAN, delayMenu);
 
-        powerMenu.setChildMenu(delayMenu);
+        //powerMenu.setChildMenu(delayMenu);
 
         //
         // Walk the menu tree starting with the strategy menu as the root
@@ -625,7 +622,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         parkChoice = (Field.ParkChoice)parkMenu.getCurrentChoiceObject();
         alliance = (Field.Alliance)allianceMenu.getCurrentChoiceObject();
         team = (Team)teamMenu.getCurrentChoiceObject();
-        DEF_SHT_PWR = powerMenu.getCurrentValue();
+        //DEF_SHT_PWR = powerMenu.getCurrentValue();
         delay = delayMenu.getCurrentValue();
 
         //dashboard.displayPrintf(0, "STRATEGY: %s", autoStrategy);
