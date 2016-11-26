@@ -113,6 +113,11 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         doMenus();
         robot.pusher.setPosition(ZER_PUSH_POS);
 
+        if(team == Team.SNOWMAN)
+        {
+            DEF_SHT_PWR = 0.85;
+        }
+
         Points pts = new Points(startPos, alliance, beaconChoice, parkChoice);
         pathSegs = pts.getSegments();
 
@@ -177,7 +182,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
             DbgLog.msg("SJH: Setting drive tuner to %4.2f", curSeg.getDrvTuner());
 
-            doEncoderTurn(curSeg); //quick but rough
+            //doEncoderTurn(curSeg); //quick but rough
             if(gyroReady) doTurn(curSeg); //fine tune using gyro
             drvTrn.setDrvTuner(curSeg.getDrvTuner());
             doMove(curSeg);
@@ -186,7 +191,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             if(usePostTurn && pturn != null)
             {
                 DbgLog.msg("SJH POST TURN %s", curSeg.getName());
-                doEncoderPostTurn(pturn);
+                //doEncoderPostTurn(pturn);
                 if(gyroReady) doPostTurn(pturn);
             }
 
