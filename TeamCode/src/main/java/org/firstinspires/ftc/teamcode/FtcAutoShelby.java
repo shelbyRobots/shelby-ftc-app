@@ -113,6 +113,11 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         doMenus();
         robot.pusher.setPosition(ZER_PUSH_POS);
 
+        if(team == Team.SNOWMAN)
+        {
+            DEF_SHT_PWR = 0.85;
+        }
+
         Points pts = new Points(startPos, alliance, beaconChoice, parkChoice);
         pathSegs = pts.getSegments();
 
@@ -177,7 +182,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
             DbgLog.msg("SJH: Setting drive tuner to %4.2f", curSeg.getDrvTuner());
 
-            doEncoderTurn(curSeg); //quick but rough
+            //doEncoderTurn(curSeg); //quick but rough
             if(gyroReady) doTurn(curSeg); //fine tune using gyro
             drvTrn.setDrvTuner(curSeg.getDrvTuner());
             doMove(curSeg);
@@ -186,7 +191,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             if(usePostTurn && pturn != null)
             {
                 DbgLog.msg("SJH POST TURN %s", curSeg.getName());
-                doEncoderPostTurn(pturn);
+                //doEncoderPostTurn(pturn);
                 if(gyroReady) doPostTurn(pturn);
             }
 
@@ -577,7 +582,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         FtcChoiceMenu teamMenu     = new FtcChoiceMenu("TEAM:", allianceMenu, this);
         //FtcValueMenu powerMenu     = new FtcValueMenu("SHOOTPOWER:", teamMenu, this,
         //                                                    0.0, 1.0, 0.05, 0.55, "%5.2f");
-        FtcValueMenu delayMenu     = new FtcValueMenu("DELAY:", powerMenu, this,
+        FtcValueMenu delayMenu     = new FtcValueMenu("DELAY:", teamMenu, this,
                                                              0.0, 20.0, 1.0, 0.0, "%5.2f");
 
 //        strategyMenu.addChoice("Shoot_Push_ParkCenter",      Field.AutoStrategy.SHOOT_PUSH_PARKCNTR,    allianceMenu);
@@ -647,8 +652,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     }
 
     private final static double ZER_PUSH_POS = 0.0;
-    private final static double RGT_PUSH_POS = 0.0;
-    private final static double LFT_PUSH_POS = 1.0;
+    private final static double RGT_PUSH_POS = 0.1;
+    private final static double LFT_PUSH_POS = 0.9;
     private final static double CTR_PUSH_POS = 0.5;
 
     //private final static double DEF_DRV_PWR  = 0.7;
