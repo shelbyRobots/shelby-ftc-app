@@ -285,8 +285,8 @@ class Points
 
     private static final double TRGT1_X = -51.0;
     private static final double TRGT1_Y = -12.0;
-    private static final double PREP1_X  = TRGT1_X - 5.0;
-    private static final double PREP1_Y  = TRGT1_Y - 5.5;
+    private static final double PREP1_X  = TRGT1_X + 5.0;
+    private static final double PREP1_Y  = TRGT1_Y - 6.5;
     private static final double TRGT2_Y =  36.0;
     private static final double PREP2_Y  = TRGT2_Y - 8.0;
     private static final double CTRPRKX = -12.0;

@@ -577,7 +577,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         FtcChoiceMenu teamMenu     = new FtcChoiceMenu("TEAM:", allianceMenu, this);
         //FtcValueMenu powerMenu     = new FtcValueMenu("SHOOTPOWER:", teamMenu, this,
         //                                                    0.0, 1.0, 0.05, 0.55, "%5.2f");
-        FtcValueMenu delayMenu     = new FtcValueMenu("DELAY:", powerMenu, this,
+        FtcValueMenu delayMenu     = new FtcValueMenu("DELAY:", teamMenu, this,
                                                              0.0, 20.0, 1.0, 0.0, "%5.2f");
 
 //        strategyMenu.addChoice("Shoot_Push_ParkCenter",      Field.AutoStrategy.SHOOT_PUSH_PARKCNTR,    allianceMenu);
@@ -647,11 +647,11 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     }
 
     private final static double ZER_PUSH_POS = 0.0;
-    private final static double RGT_PUSH_POS = 0.0;
-    private final static double LFT_PUSH_POS = 1.0;
+    private final static double RGT_PUSH_POS = 0.1;
+    private final static double LFT_PUSH_POS = 0.9;
     private final static double CTR_PUSH_POS = 0.5;
 
-    //private final static double DEF_DRV_PWR  = 0.7;
+     //private final static double DEF_DRV_PWR  = 0.7;
     private final static double DEF_TRN_PWR  = 0.45;
 
     private final static double DEF_SWP_PWR = 1.0;
