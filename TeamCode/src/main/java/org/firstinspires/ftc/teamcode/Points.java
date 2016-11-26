@@ -283,8 +283,10 @@ class Points
     private static final double ASHOOTX =   8.9;
     private static final double ASHOOTY = -56.6;
 
+    private static final double TRGT1_X = -51.0;
     private static final double TRGT1_Y = -12.0;
-    private static final double PREP1_Y  = TRGT1_Y - 8.0;
+    private static final double PREP1_X  = TRGT1_X - 5.0;
+    private static final double PREP1_Y  = TRGT1_Y - 5.5;
     private static final double TRGT2_Y =  36.0;
     private static final double PREP2_Y  = TRGT2_Y - 8.0;
     private static final double CTRPRKX = -12.0;
@@ -308,7 +310,7 @@ class Points
     private Point2d ASHOOT_PT = new Point2d("ASHOOT", ASHOOTX, ASHOOTY);
 
     private Point2d SCAN1_PT = new Point2d("SCAN1", SCAN_X, TRGT1_Y);
-    private Point2d PREP1_PT = new Point2d("PREP1", BECN_X, PREP1_Y);
+    private Point2d PREP1_PT = new Point2d("PREP1", PREP1_X, PREP1_Y);
     private Point2d BECN1_PT = new Point2d("BECN1", BECN_X, TRGT1_Y);
     private Point2d PRSS1_PT = new Point2d("PRSS1", TOUCHX, TRGT1_Y);
     private Point2d RVRS1_PT = new Point2d("RVRS1", BECN_X, TRGT1_Y);
