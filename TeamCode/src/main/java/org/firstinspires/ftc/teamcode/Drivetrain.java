@@ -78,6 +78,30 @@ class Drivetrain
         move(pwr);
     }
 
+    void driveDistanceLinear(double dst, double pwr, Direction dir)
+    {
+        driveDistance(dst, pwr, dir);
+
+        noMoveTimer.reset();
+        lposLast = left_drive.getCurrentPosition();
+        rposLast = right_drive.getCurrentPosition();
+        while(isBusy() &&
+                      !areMotorsStuck() &&
+                      op.opModeIsActive() &&
+                      !op.isStopRequested())
+        {
+            op.idle();
+        }
+
+        left_drive.setPower(0.0);
+        right_drive.setPower(0.0);
+        DbgLog.msg("SJH: driveDistanceLinear ldc %6d rdc %6d",
+                left_drive.getCurrentPosition(),
+                right_drive.getCurrentPosition());
+
+        stopAndReset();
+    }
+
     void driveToPoint(Point2d tgtPt, double pwr, Direction dir)
     {
         if (tgtPt == null)  DbgLog.error("SJH tgtPt null in driveToPoint");
@@ -170,6 +194,10 @@ class Drivetrain
             steer = getSteer(error, PADJ_TURN);
             rightSpeed  = pwr * steer;
             Range.clip(rightSpeed, -1, 1);
+            if(Math.abs(rightSpeed) < minSpeed)
+            {
+                rightSpeed = Math.signum(rightSpeed) * minSpeed;
+            }
             leftSpeed   = -rightSpeed;
         }
 
@@ -548,7 +576,7 @@ class Drivetrain
     private final static double TURN_TOLERANCE = 1.0;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
-    private static double WHL_DIAMETER = 6.5 * DRV_TUNER; //Diameter of the wheel (inches)
+    private static double WHL_DIAMETER = 6.35 * DRV_TUNER; //Diameter of the wheel (inches)
     private final static int    ENCODER_CPR = ShelbyBot.ENCODER_CPR;
     private final static double GEAR_RATIO  = 1;                   //Gear ratio
 
@@ -580,6 +608,8 @@ class Drivetrain
     private double noMoveTimeout = 0.75;
     private int noMoveThresh = 10;
     private ElapsedTime noMoveTimer = new ElapsedTime();
+
+    private double minSpeed = 0.04;
 
     private FtcOpMode op = null;
 

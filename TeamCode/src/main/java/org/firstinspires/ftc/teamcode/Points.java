@@ -59,7 +59,7 @@ class Points
             }
 
             addPoint(points, fwd, 0.2, 1.00, Segment.TargetType.ENCODER,   push, PRSS1_PT);
-            addPoint(points, rev, 0.4, 1.00, Segment.TargetType.ENCODER,  reset, RVRS1_PT);
+            addPoint(points, rev, 0.6, 1.00, Segment.TargetType.ENCODER,  reset, RVRS1_PT);
         }
 
         if(pushChoice == Field.BeaconChoice.FAR ||
@@ -77,11 +77,11 @@ class Points
             }
 
             addPoint(points, fwd, 0.2, 1.00, Segment.TargetType.ENCODER,   push, PRSS2_PT);
-            addPoint(points, rev, 0.3, 1.00, Segment.TargetType.ENCODER,  reset, RVRS2_PT);
+            addPoint(points, rev, 0.6, 1.00, Segment.TargetType.ENCODER,  reset, RVRS2_PT);
         }
 
         //PARK PTS
-        addPoint(points, fwd, 0.7, 1.00, Segment.TargetType.ENCODER,   none, park_pt);
+        addPoint(points, fwd, 0.9, 1.00, Segment.TargetType.ENCODER,   none, park_pt);
 
         return points;
     }
@@ -289,8 +289,8 @@ class Points
     private static final double PREP2_Y  = TRGT2_Y - 8.0;
     private static final double CTRPRKX = -12.0;
     private static final double CTRPRKY = -12.0;
-    private static final double CRNPRKX = -44.0;
-    private static final double CRNPRKY = -44.0;
+    private static final double CRNPRKX = -48.0;
+    private static final double CRNPRKY = -40.0;
 
     private static final double SAFETY  =   0.0;
     private static final double SCAN_X  = -40.0;
