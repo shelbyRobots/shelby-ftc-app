@@ -60,7 +60,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         int s1cnts_last = 0;
         int s2cnts_last = 0;
         double dur = 0.1;
-        double testTimeout = 0;
+        double testTimeout = 4;
         robot.leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         robot.rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         robot.leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);

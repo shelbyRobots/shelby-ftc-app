@@ -49,11 +49,12 @@ public class TeleopTank_Driver extends LinearOpMode
         double left;
         double right;
         double shooter;
-        double bkwshooter;
+        double flicker;
         boolean shoot_pressed;
-        boolean bkwshoot_pressed;
+        boolean flicker_pressed;
         boolean last_shoot_pressed = false;
-        boolean last_bkwshoot_pressed = false;
+        boolean last_flicker_pressed = false;
+        boolean flickertoggle = false;
         boolean d_down_last = false;
         boolean d_up_last = false;
         boolean b_pressed;
@@ -112,7 +113,7 @@ public class TeleopTank_Driver extends LinearOpMode
             left  = -gamepad1.left_stick_y;
             right = -gamepad1.right_stick_y;
             shooter = gamepad2.right_trigger;
-            bkwshooter = gamepad2.left_trigger;
+            flicker = gamepad2.left_trigger;
 
             b_pressed = gamepad1.b;
 
@@ -126,7 +127,7 @@ public class TeleopTank_Driver extends LinearOpMode
             robot.sweepMotor.setPower(sweep);
 
             shoot_pressed = (shooter > 0);
-            bkwshoot_pressed = (bkwshooter > 0);
+            flicker_pressed = (flicker > 0);
 
             if(shoot_pressed && !last_shoot_pressed)
             {
@@ -139,16 +140,16 @@ public class TeleopTank_Driver extends LinearOpMode
             }
             last_shoot_pressed = shoot_pressed;
 
-            if(bkwshoot_pressed && !last_bkwshoot_pressed)
+            if(flicker_pressed && !last_flicker_pressed)
             {
-                bkwtoggle = !bkwtoggle;
+                flickertoggle = !flickertoggle;
 
-                if(bkwtoggle)
-                    shooter_motors(-0.7);
+                if(flickertoggle)
+                    robot.flicker.setPosition(0.7);
                 else
-                    shooter_motors(0.0);
+                    robot.flicker.setPosition(0.0);
             }
-            last_bkwshoot_pressed = shoot_pressed;
+            last_flicker_pressed = flicker_pressed;
 
             lpush = gamepad1.left_trigger  > 0.1;
             rpush = gamepad1.right_trigger > 0.1;
@@ -181,7 +182,7 @@ public class TeleopTank_Driver extends LinearOpMode
                 robot.shotmotor1.setPower(shoot_scale);
                 robot.shotmotor2.setPower(shoot_scale);
                 robot.sweepMotor.setPower(-1.0);
-                dtrn.driveDistance(35.0, 0.5, Drivetrain.Direction.REVERSE);
+                dtrn.driveDistance(35.0, 0.8, Drivetrain.Direction.REVERSE);
                 while(opModeIsActive() && dtrn.isBusy())
                 {
                     idle();
@@ -209,6 +210,8 @@ public class TeleopTank_Driver extends LinearOpMode
             telemetry.addData("shooters", "%.2f", shooter);
             telemetry.addData("shootpwr", "%s", last_shoot_pressed);
             telemetry.addData("shoot_scale", "%.2f", shoot_scale);
+            telemetry.addData("SHT1CNT", "%5d", robot.shotmotor1.getCurrentPosition());
+            telemetry.addData("SHT2CNT", "%5d", robot.shotmotor2.getCurrentPosition());
             telemetry.addData("zmode", "%s", robot.leftMotor.getZeroPowerBehavior());
             telemetry.update();
 

@@ -70,6 +70,13 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         hardwareMap.logDevices();
         robot.init(hardwareMap);
 
+        robot.colorSensor.enableLed(true);
+        robot.colorSensor.enableLed(false);
+        sleep(100);
+        robot.colorSensor.enableLed(true);
+        sleep(100);
+        robot.colorSensor.enableLed(false);
+
         tracker = new ImageTracker();
 
         if (robot.leftMotor  != null &&

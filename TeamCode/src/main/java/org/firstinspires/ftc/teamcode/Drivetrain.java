@@ -389,7 +389,7 @@ class Drivetrain
         if (Math.abs(err) < TURN_TOLERANCE)
             return;
 
-        double steer = getSteer(err, PADJ_TURN);
+        double steer = getSteer(err, PADJ);
         //if (dir == Direction.REVERSE) steer *= -1;
 
         rdp = pwr - steer;
@@ -404,8 +404,8 @@ class Drivetrain
 
         if (ptmr.seconds() > 0.2)
         {
-            DbgLog.msg("SJH %4d lpwr: %5.3f rpwr: %5.3f err: %5.3f str %5.3f rt %5.3f",
-                    frame, ldp, rdp, err, steer, rt.seconds());
+            DbgLog.msg("SJH %4d lpwr: %5.3f rpwr: %5.3f err: %5.3f str %5.3f rt %5.3f chdg %d thdg %d",
+                    frame, ldp, rdp, err, steer, rt.seconds(), getGryoFhdg(), thdg);
         }
     }
 
@@ -553,10 +553,11 @@ class Drivetrain
 
         if(ptmr.seconds() > 0.2)
         {
-            DbgLog.msg("SJH: ldc %6d rdc %6d  mptimer: %4.2f",
+            DbgLog.msg("SJH: ldc %6d rdc %6d  mptimer: %4.2f chdg %5d",
                     left_drive.getCurrentPosition(),
                     right_drive.getCurrentPosition(),
-                    noMoveTimer.seconds());
+                    noMoveTimer.seconds(),
+                    getGryoFhdg());
         }
 
         return (left_drive.isBusy() && right_drive.isBusy());   //true if both are busy
@@ -583,7 +584,7 @@ class Drivetrain
     private static double CIRCUMFERENCE = Math.PI * WHL_DIAMETER;
     private static double CPI = ENCODER_CPR * GEAR_RATIO / CIRCUMFERENCE;
 
-    private static final double PADJ = 4.0;
+    private static final double PADJ = 1.0;
     private static final double PADJ_TURN = 0.025;
     private static final double THRESH = Math.toRadians(0.004);
 

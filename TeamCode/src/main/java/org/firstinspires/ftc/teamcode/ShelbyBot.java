@@ -36,6 +36,7 @@ class ShelbyBot
     DcMotor  shotmotor1  = null;
     DcMotor  shotmotor2  = null;
     Servo    pusher      = null;
+    Servo    flicker     = null;
     ModernRoboticsI2cGyro gyro       = null;
     ColorSensor colorSensor = null;
 
@@ -60,6 +61,7 @@ class ShelbyBot
         shotmotor1  = hwMap.dcMotor.get("leftshooter");
         shotmotor2  = hwMap.dcMotor.get("rightshooter");
         pusher      = hwMap.servo.get("pusher");
+        flicker     = hwMap.servo.get("flicker");
         gyro        = (ModernRoboticsI2cGyro)hwMap.gyroSensor.get("gyro");
         colorSensor = hwMap.colorSensor.get("color");
 
