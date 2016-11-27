@@ -82,6 +82,7 @@ class Drivetrain
     {
         driveDistance(dst, pwr, dir);
 
+        ptmr.reset();
         noMoveTimer.reset();
         lposLast = left_drive.getCurrentPosition();
         rposLast = right_drive.getCurrentPosition();
@@ -91,6 +92,7 @@ class Drivetrain
                       !op.isStopRequested())
         {
             op.idle();
+            if(ptmr.seconds() > 0.2) ptmr.reset();
         }
 
         left_drive.setPower(0.0);
@@ -114,9 +116,10 @@ class Drivetrain
     {
         if (tgtPt == null)  DbgLog.error("SJH tgtPt null in driveToPoint");
         if (currPt == null) DbgLog.error("SJH currPt null in driveToPoint");
-        driveToPoint(tgtPt, pwr, dir);
 
         int tHdg = getGryoFhdg();
+
+        driveToPoint(tgtPt, pwr, dir);
 
         ptmr.reset();
         noMoveTimer.reset();
@@ -148,6 +151,7 @@ class Drivetrain
                 right_drive.getCurrentPosition());
 
         stopAndReset();
+        DbgLog.msg("SJH: driveToPointLinear end - set currPt to %s", tgtPt);
         currPt = tgtPt;
     }
 
@@ -253,11 +257,13 @@ class Drivetrain
 
     void ctrTurnToHeading(double tgtHdg, double pwr)
     {
-        left_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        right_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         tgtHdg = Math.round(tgtHdg);
 
         DbgLog.msg("SJH: GYRO TURN to HDG %d", (int)tgtHdg);
+
+        stopAndReset();
+        left_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        right_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         ptmr.reset();
         noMoveTimer.reset();
@@ -337,6 +343,7 @@ class Drivetrain
 
     void setCurrPt(Point2d curPt)
     {
+        DbgLog.msg("SJH: setCurrPt to %s", curPt);
         currPt = curPt;
     }
 
@@ -392,8 +399,8 @@ class Drivetrain
         double steer = getSteer(err, PADJ);
         //if (dir == Direction.REVERSE) steer *= -1;
 
-        rdp = pwr - steer;
-        ldp = pwr + steer;
+        rdp = pwr + steer;
+        ldp = pwr - steer;
 
         double max = Math.max(Math.abs(rdp), Math.abs(ldp));
         if (max > 1.0)
@@ -419,7 +426,8 @@ class Drivetrain
         if(Math.abs(err) > THRESH)
         {
             double steer = getSteer(err, PADJ);
-            if(Math.abs(steer) > steer)  steer = Math.signum(steer) * pwr;
+            //TODO: FIX this mess if we start to use this method again
+            if(Math.abs(steer) > pwr)  steer = Math.signum(steer) * pwr;
             //if (dir == Direction.REVERSE) steer *= -1;
 
             rdp = pwr - steer;
@@ -584,7 +592,7 @@ class Drivetrain
     private static double CIRCUMFERENCE = Math.PI * WHL_DIAMETER;
     private static double CPI = ENCODER_CPR * GEAR_RATIO / CIRCUMFERENCE;
 
-    private static final double PADJ = 1.0;
+    private static final double PADJ = 0.2;
     private static final double PADJ_TURN = 0.025;
     private static final double THRESH = Math.toRadians(0.004);
 

@@ -167,8 +167,13 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             if (SkipNextSegment)
             {
                 SkipNextSegment = false;
+                DbgLog.msg("SJH: Skipping segment %s", pathSegs[i].getName());
                 if(i < pathSegs.length - 1)
                 {
+                    DbgLog.msg("SJH: Setting segment %s start pt to %s",
+                            pathSegs[i+1].getName(),
+                            pathSegs[i].getStrtPt());
+                    //TODO: NEED to fix currpt when backing up to BECNpt instead of SCANpt
                     pathSegs[i+1].setStrtPt(pathSegs[i].getStrtPt());
                 }
                 continue;
@@ -255,6 +260,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         Point2d pt = seg.getTgtPt();
         if(robot.colorSensor != null && seg.getTgtType() == Segment.TargetType.COLOR)
         {
+            DbgLog.msg("SJH: Turning on colorSensor LED");
             robot.colorSensor.enableLed(true);
             DcMotor.RunMode lRunMode = robot.leftMotor.getMode();
             DcMotor.RunMode rRunMode = robot.rightMotor.getMode();
@@ -288,7 +294,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                 }
             }
             DbgLog.msg("SJH: Backing up a bit");
-            drvTrn.driveDistanceLinear(2.0, 0.15, Drivetrain.Direction.REVERSE);
+            drvTrn.driveDistanceLinear(2.0, 0.3, Drivetrain.Direction.REVERSE);
             //sleep(1500);
         }
         else
@@ -361,7 +367,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         double cHdg = getGryoFhdg();
         double tHdg = Math.round(fHdg);
 
-        DbgLog.msg("SJH: doGyroTurn CHDG %4.1f THDG %4.1f",
+        DbgLog.msg("SJH: do post GyroTurn CHDG %4.1f THDG %4.1f",
                 cHdg,
                 tHdg);
 
@@ -372,16 +378,16 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         drvTrn.ctrTurnToHeading(tHdg, DEF_TRN_PWR);
 
         cHdg = getGryoFhdg();
-        DbgLog.msg("SJH Completed turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
+        DbgLog.msg("SJH Completed post turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
                 tHdg, timer.time(), cHdg);
     }
 
     private void doTurn(Segment seg)
     {
+        double cHdg = getGryoFhdg();
         double tHdg = Math.round(seg.getFieldHeading());
         if(seg.getDir() == Segment.SegDir.REVERSE)
             return;
-        double cHdg = getGryoFhdg();
 
         DbgLog.msg("SJH: doGyroTurn %s CHDG %4.1f THDG %4.1f",
                 seg.getName(),
@@ -664,7 +670,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private final static double CTR_PUSH_POS = 0.5;
 
      //private final static double DEF_DRV_PWR  = 0.7;
-    private final static double DEF_TRN_PWR  = 0.45;
+    private final static double DEF_TRN_PWR  = 0.6; //0.45
 
     private final static double DEF_SWP_PWR = 1.0;
     private final static double DEF_ELV_PWR = 0.5;
@@ -702,9 +708,9 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private boolean gyroReady;
 
-    private int RED_THRESH = 20;
-    private int GRN_THRESH = 20;
-    private int BLU_THRESH = 20;
+    private int RED_THRESH = 15;
+    private int GRN_THRESH = 15;
+    private int BLU_THRESH = 15;
 
     private double delay = 0.0;
 }

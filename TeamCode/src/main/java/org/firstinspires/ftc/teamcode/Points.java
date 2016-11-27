@@ -39,7 +39,10 @@ class Points
 
         //SHOOT PTS
         points.add(start_pt);
-        //addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   none, presh_pt);
+        if(startPos == Field.StartPos.START_B)
+        {
+            addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER, none, presh_pt);
+        }
         addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,  shoot, shoot_pt);
 
         if(pushChoice == Field.BeaconChoice.NEAR ||
@@ -48,8 +51,6 @@ class Points
             if(useColor)
             {
                 addPoint(points, fwd, 0.8,  1.00, Segment.TargetType.ENCODER, scan, PREP1_PT);
-                //addPoint(points, fwd, 0.3,  1.00, Segment.TargetType.ENCODER, scan, TMP1_PT);
-                //addPoint(points, fwd, 0.3,  1.00, Segment.TargetType.ENCODER, scan, TMP2_PT);
                 addPoint(points, fwd, 0.1,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
             }
             else
@@ -283,10 +284,8 @@ class Points
     private static final double ASHOOTX =   8.9;
     private static final double ASHOOTY = -56.6;
 
-    private static final double TRGT1_X = -50.0;
     private static final double TRGT1_Y = -12.0;
-    private static final double PREP1_X  = TRGT1_X + 5.0;
-    private static final double PREP1_Y  = TRGT1_Y - 5.1;
+
     private static final double TRGT2_Y =  36.0;
     private static final double PREP2_Y  = TRGT2_Y - 4.0;
     private static final double CTRPRKX = -12.0;
@@ -296,8 +295,15 @@ class Points
 
     private static final double SAFETY  =   0.0;
     private static final double SCAN_X  = -40.0;
-    private static final double BECN_X  = -51.0;
+    private static final double BECN_X  = -50.0;
     private static final double TOUCHX  = -58.5; //-57.5;
+
+    private static final double PCT     = 0.9;
+    private static final double PREP1_X = PCT*(BECN_X  - STARTX) + STARTX;
+    private static final double PREP1_Y = PCT*(TRGT1_Y - SHOOTY) + SHOOTY;
+
+//    private static final double PREP1_X  = BECN_X + 4.0;
+//    private static final double PREP1_Y  = TRGT1_Y - 5.1;
 
     private Point2d START_PT = new Point2d("START", STARTX, STARTY);
     private Point2d PRSHT_PT = new Point2d("PRSHT", STARTX, AIMERY);
@@ -315,14 +321,10 @@ class Points
     private Point2d PRSS1_PT = new Point2d("PRSS1", TOUCHX, TRGT1_Y);
     private Point2d RVRS1_PT = new Point2d("RVRS1", BECN_X, TRGT1_Y);
     private Point2d SCAN2_PT = new Point2d("SCAN2", SCAN_X, TRGT2_Y);
-    private Point2d PREP2_PT = new Point2d("PREP1", BECN_X, PREP2_Y);
+    private Point2d PREP2_PT = new Point2d("PREP2", BECN_X, PREP2_Y);
     private Point2d BECN2_PT = new Point2d("BECN2", BECN_X, TRGT2_Y);
     private Point2d PRSS2_PT = new Point2d("PRSS2", TOUCHX, TRGT2_Y);
     private Point2d RVRS2_PT = new Point2d("RVRS2", BECN_X, TRGT2_Y);
-
-    private Point2d TMP1_PT = new Point2d("TMP1", -12.0, -30.0);
-    private Point2d TMP2_PT = new Point2d("TMP2", -50.0, -30.0);
-    private Point2d TMP3_PT = new Point2d("TMP3", -50.0,  24.0);
 
     private Point2d CTRPRKPT = new Point2d("CTRPRK", CTRPRKX, CTRPRKY);
     private Point2d CRNPRKPT = new Point2d("CRNPRK", CRNPRKX, CRNPRKY);
