@@ -173,7 +173,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                     DbgLog.msg("SJH: Setting segment %s start pt to %s",
                             pathSegs[i+1].getName(),
                             pathSegs[i].getStrtPt());
-                    //TODO: NEED to fix currpt when backing up to BECNpt instead of SCANpt
                     pathSegs[i+1].setStrtPt(pathSegs[i].getStrtPt());
                 }
                 continue;
@@ -192,10 +191,15 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             }
             curPos = null;
 
-            DbgLog.msg("SJH: Setting drive tuner to %4.2f", curSeg.getDrvTuner());
+            if(curSeg.getStrtPt().getX() == curSeg.getTgtPt().getX() &&
+               curSeg.getStrtPt().getY() == curSeg.getTgtPt().getY())
+            {
+                continue;
+            }
 
             //doEncoderTurn(curSeg); //quick but rough
             if(gyroReady) doTurn(curSeg); //fine tune using gyro
+            DbgLog.msg("SJH: Setting drive tuner to %4.2f", curSeg.getDrvTuner());
             drvTrn.setDrvTuner(curSeg.getDrvTuner());
             doMove(curSeg);
             Double pturn = curSeg.getPostTurn();
