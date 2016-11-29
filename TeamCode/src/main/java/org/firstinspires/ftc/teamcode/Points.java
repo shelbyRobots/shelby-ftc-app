@@ -50,8 +50,8 @@ class Points
         {
             if(useColor)
             {
-                addPoint(points, fwd, 0.8,  1.00, Segment.TargetType.ENCODER, scan, PREP1_PT);
-                addPoint(points, fwd, 0.1,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
+                addPoint(points, fwd, 0.9,  1.00, Segment.TargetType.ENCODER, scan, PREP1_PT);
+                addPoint(points, fwd, 0.15,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
             }
             else
             {
@@ -59,8 +59,8 @@ class Points
                 addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER, beacon, BECN1_PT);
             }
 
-            addPoint(points, fwd, 0.2, 1.00, Segment.TargetType.ENCODER,   push, PRSS1_PT);
-            addPoint(points, rev, 0.6, 1.00, Segment.TargetType.ENCODER,  reset, RVRS1_PT);
+            addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   push, PRSS1_PT);
+            addPoint(points, rev, 0.8, 1.00, Segment.TargetType.ENCODER,  reset, RVRS1_PT);
         }
 
         if(pushChoice == Field.BeaconChoice.FAR ||
@@ -68,8 +68,8 @@ class Points
         {
             if(useColor)
             {
-                addPoint(points, fwd, 0.8, 1.00, Segment.TargetType.ENCODER,     scan, PREP2_PT);
-                addPoint(points, fwd, 0.1, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
+                addPoint(points, fwd, 0.9, 1.00, Segment.TargetType.ENCODER,     scan, PREP2_PT);
+                addPoint(points, fwd, 0.15, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
             }
             else
             {
@@ -77,8 +77,8 @@ class Points
                 addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER, beacon, BECN2_PT);
             }
 
-            addPoint(points, fwd, 0.2, 1.00, Segment.TargetType.ENCODER,   push, PRSS2_PT);
-            addPoint(points, rev, 0.6, 1.00, Segment.TargetType.ENCODER,  reset, RVRS2_PT);
+            addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   push, PRSS2_PT);
+            addPoint(points, rev, 0.8, 1.00, Segment.TargetType.ENCODER,  reset, RVRS2_PT);
         }
 
         //PARK PTS
@@ -205,6 +205,10 @@ class Points
             }
             if(sname.equals("SHOOT") || sname.equals("ASHOOT"))
             {
+                if (alliance == Field.Alliance.BLUE )
+                {
+                    BASKET_PT = convertRtoB(BASKET_PT);
+                }
                 Segment aim = new Segment("AIM", curSeg.getTgtPt(), BASKET_PT);
                 double nfhdg = aim.getFieldHeading();
                 curSeg.setPostTurn(nfhdg);
@@ -296,9 +300,9 @@ class Points
     private static final double SAFETY  =   0.0;
     private static final double SCAN_X  = -40.0;
     private static final double BECN_X  = -50.0;
-    private static final double TOUCHX  = -58.5; //-57.5;
+    private static final double TOUCHX  = -57.0;
 
-    private static final double PCT     = 0.9;
+    private static final double PCT     = 0.92;
     private static final double PREP1_X = PCT*(BECN_X  - STARTX) + STARTX;
     private static final double PREP1_Y = PCT*(TRGT1_Y - SHOOTY) + SHOOTY;
 

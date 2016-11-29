@@ -112,12 +112,12 @@ class Drivetrain
         driveDistance(dist, pwr, dir);
     }
 
-    void driveToPointLinear(Point2d tgtPt, double pwr, Direction dir)
+    void driveToPointLinear(Point2d tgtPt, double pwr, Direction dir, int targetHdg)
     {
         if (tgtPt == null)  DbgLog.error("SJH tgtPt null in driveToPoint");
         if (currPt == null) DbgLog.error("SJH currPt null in driveToPoint");
 
-        int tHdg = getGryoFhdg();
+        int tHdg = targetHdg;
 
         driveToPoint(tgtPt, pwr, dir);
 
@@ -127,9 +127,9 @@ class Drivetrain
         rposLast = right_drive.getCurrentPosition();
         DbgLog.msg("SJH: Starting drive corrections");
         while(isBusy() &&
-              !areMotorsStuck() &&
-              op.opModeIsActive() &&
-              !op.isStopRequested())
+                !areMotorsStuck() &&
+                op.opModeIsActive() &&
+                !op.isStopRequested())
         {
             if(gyroReady)
             {
@@ -153,6 +153,13 @@ class Drivetrain
         stopAndReset();
         DbgLog.msg("SJH: driveToPointLinear end - set currPt to %s", tgtPt);
         currPt = tgtPt;
+    }
+
+    void driveToPointLinear(Point2d tgtPt, double pwr, Direction dir)
+    {
+        int tHdg = getGryoFhdg();
+
+        driveToPointLinear(tgtPt, pwr, dir, tHdg);
     }
 
     void ctrTurn(double angle, double pwr)
@@ -211,8 +218,8 @@ class Drivetrain
         if(ptmr.seconds() > 0.2)
         {
             ptmr.reset();
-            DbgLog.msg("SJH: TGT %d INTZ %d ERR %d STR %4.2f L %4.2f R %4.2f",
-                    (int) hdg, gyro.getIntegratedZValue(),
+            DbgLog.msg("SJH: TGT %d CHDG %d ERR %d STR %4.2f L %4.2f R %4.2f",
+                    (int) hdg, getGryoFhdg(),
                     (int) error, steer, leftSpeed, rightSpeed);
         }
         return onTarget;
@@ -277,7 +284,7 @@ class Drivetrain
         {
             op.idle();
             frame++;
-            if(ptmr.seconds() > 0.2) ptmr.reset();
+            if(ptmr.seconds() > 0.1) ptmr.reset();
         }
         stopAndReset();
     }
@@ -393,8 +400,9 @@ class Drivetrain
 
         double err = getGyroError(thdg);
 
-        if (Math.abs(err) < TURN_TOLERANCE)
-            return;
+
+        //if (Math.abs(err) < TURN_TOLERANCE)
+        //   return;
 
         double steer = getSteer(err, PADJ);
         //if (dir == Direction.REVERSE) steer *= -1;
@@ -408,6 +416,9 @@ class Drivetrain
             rdp = rdp / max;
             ldp = ldp / max;
         }
+
+        right_drive.setPower( rdp );
+        left_drive.setPower( ldp );
 
         if (ptmr.seconds() > 0.2)
         {
@@ -426,7 +437,7 @@ class Drivetrain
         if(Math.abs(err) > THRESH)
         {
             double steer = getSteer(err, PADJ);
-            //TODO: FIX this mess if we start to use this method again
+
             if(Math.abs(steer) > pwr)  steer = Math.signum(steer) * pwr;
             //if (dir == Direction.REVERSE) steer *= -1;
 
@@ -592,8 +603,8 @@ class Drivetrain
     private static double CIRCUMFERENCE = Math.PI * WHL_DIAMETER;
     private static double CPI = ENCODER_CPR * GEAR_RATIO / CIRCUMFERENCE;
 
-    private static final double PADJ = 0.2;
-    private static final double PADJ_TURN = 0.025;
+    private static final double PADJ = 0.025;
+    private static final double PADJ_TURN = 0.07;
     private static final double THRESH = Math.toRadians(0.004);
 
     public enum Direction {FORWARD, REVERSE}

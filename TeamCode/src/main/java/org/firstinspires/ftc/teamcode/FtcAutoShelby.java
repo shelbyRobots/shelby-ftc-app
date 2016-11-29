@@ -197,7 +197,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                 continue;
             }
 
-            //doEncoderTurn(curSeg); //quick but rough
+            doEncoderTurn(curSeg); //quick but rough
             if(gyroReady) doTurn(curSeg); //fine tune using gyro
             DbgLog.msg("SJH: Setting drive tuner to %4.2f", curSeg.getDrvTuner());
             drvTrn.setDrvTuner(curSeg.getDrvTuner());
@@ -207,7 +207,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             if(usePostTurn && pturn != null)
             {
                 DbgLog.msg("SJH POST TURN %s", curSeg.getName());
-                //doEncoderPostTurn(pturn);
+                doEncoderPostTurn(pturn);
                 if(gyroReady) doPostTurn(pturn);
             }
 
@@ -293,17 +293,18 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                 {
                     drvTrn.stopAndReset();
                     robot.colorSensor.enableLed(false);
+                    DbgLog.msg("SJH: Backing up a bit");
+                    drvTrn.driveDistanceLinear(2.0, 0.3, Drivetrain.Direction.REVERSE);
                     DbgLog.msg("SJH: REACHED OVERRUN PT");
                     break;
                 }
             }
-            DbgLog.msg("SJH: Backing up a bit");
-            drvTrn.driveDistanceLinear(2.0, 0.3, Drivetrain.Direction.REVERSE);
             //sleep(1500);
         }
         else
         {
-            drvTrn.driveToPointLinear(pt, speed, ddir);
+            int targetHdg = (int)Math.round(seg.getFieldHeading());
+            drvTrn.driveToPointLinear(pt, speed, ddir, targetHdg);
         }
 
         RobotLog.ii("SJH", "Completed move %s. Time: %6.3f HDG: %5.2f",
@@ -674,7 +675,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private final static double CTR_PUSH_POS = 0.5;
 
      //private final static double DEF_DRV_PWR  = 0.7;
-    private final static double DEF_TRN_PWR  = 0.6; //0.45
+    private final static double DEF_TRN_PWR  = 0.45;
 
     private final static double DEF_SWP_PWR = 1.0;
     private final static double DEF_ELV_PWR = 0.5;

@@ -82,8 +82,8 @@ class ShelbyBot
         if(shotmotor1 != null) shotmotor1.setPower(0);
         if(shotmotor2 != null) shotmotor2.setPower(0);
 
-        if(leftMotor  != null)  leftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        if(rightMotor != null) rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        if(leftMotor  != null)  leftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        if(rightMotor != null) rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         if(leftMotor  != null)  leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         if(rightMotor != null) rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);

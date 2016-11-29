@@ -49,7 +49,6 @@ public class TeleopTank_Driver extends LinearOpMode
         double left;
         double right;
         double shooter;
-        double flicker;
         boolean shoot_pressed;
         boolean flicker_pressed;
         boolean last_shoot_pressed = false;
@@ -113,7 +112,7 @@ public class TeleopTank_Driver extends LinearOpMode
             left  = -gamepad1.left_stick_y;
             right = -gamepad1.right_stick_y;
             shooter = gamepad2.right_trigger;
-            flicker = gamepad2.left_trigger;
+            flicker_pressed = gamepad1.a;
 
             b_pressed = gamepad1.b;
 
@@ -127,7 +126,6 @@ public class TeleopTank_Driver extends LinearOpMode
             robot.sweepMotor.setPower(sweep);
 
             shoot_pressed = (shooter > 0);
-            flicker_pressed = (flicker > 0);
 
             if(shoot_pressed && !last_shoot_pressed)
             {
