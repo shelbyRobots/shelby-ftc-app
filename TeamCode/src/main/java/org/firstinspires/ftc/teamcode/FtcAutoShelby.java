@@ -261,7 +261,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         Drivetrain.Direction ddir = Drivetrain.Direction.FORWARD;
         if (dir == Segment.SegDir.REVERSE) ddir = Drivetrain.Direction.REVERSE;
         timer.reset();
-        Point2d pt = seg.getTgtPt();
+
         if(robot.colorSensor != null && seg.getTgtType() == Segment.TargetType.COLOR)
         {
             DbgLog.msg("SJH: Turning on colorSensor LED");
@@ -292,10 +292,10 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                         robot.rightMotor.getCurrentPosition() - rpos > (int)(segCounts * 1.2))
                 {
                     drvTrn.stopAndReset();
+                    DbgLog.msg("SJH: REACHED OVERRUN PT");
                     robot.colorSensor.enableLed(false);
                     DbgLog.msg("SJH: Backing up a bit");
-                    drvTrn.driveDistanceLinear(2.0, 0.3, Drivetrain.Direction.REVERSE);
-                    DbgLog.msg("SJH: REACHED OVERRUN PT");
+                    drvTrn.driveDistanceLinear(1.0, 0.3, Drivetrain.Direction.REVERSE);
                     break;
                 }
             }
@@ -304,7 +304,13 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         else
         {
             int targetHdg = (int)Math.round(seg.getFieldHeading());
-            drvTrn.driveToPointLinear(pt, speed, ddir, targetHdg);
+            if(dir == Segment.SegDir.REVERSE)
+            {
+                targetHdg += 180;
+                while(targetHdg >   180) { targetHdg -= 180; }
+                while(targetHdg <= -180) { targetHdg += 180; }
+            }
+            drvTrn.driveToPointLinear(ept, speed, ddir, targetHdg);
         }
 
         RobotLog.ii("SJH", "Completed move %s. Time: %6.3f HDG: %5.2f",
@@ -337,7 +343,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         DbgLog.msg("SJH: Turn %5.2f", angle);
         dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
         timer.reset();
-        drvTrn.ctrTurnLinear(angle,DEF_TRN_PWR);
+        drvTrn.ctrTurnLinear(angle, DEF_GYRTRN_PWR);
         cHdg = getGryoFhdg();
         DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f CHDG: %5.2f",
                 angle, timer.time(), cHdg);
@@ -361,7 +367,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         DbgLog.msg("SJH: Turn %5.2f", angle);
         dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
         timer.reset();
-        drvTrn.ctrTurnLinear(angle,DEF_TRN_PWR);
+        drvTrn.ctrTurnLinear(angle, DEF_GYRTRN_PWR);
         cHdg = getGryoFhdg();
         DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f CHDG: %5.2f",
                 angle, timer.time(), cHdg);
@@ -380,7 +386,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             return;
 
         timer.reset();
-        drvTrn.ctrTurnToHeading(tHdg, DEF_TRN_PWR);
+        drvTrn.ctrTurnToHeading(tHdg, DEF_ENCTRN_PWR);
 
         cHdg = getGryoFhdg();
         DbgLog.msg("SJH Completed post turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
@@ -403,7 +409,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             return;
 
         timer.reset();
-        drvTrn.ctrTurnToHeading(tHdg, DEF_TRN_PWR);
+        drvTrn.ctrTurnToHeading(tHdg, DEF_ENCTRN_PWR);
 
         cHdg = getGryoFhdg();
         DbgLog.msg("SJH Completed turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
@@ -654,6 +660,13 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         dashboard.displayPrintf(2, "PARK: %s", parkChoice);
         dashboard.displayPrintf(3, "ALLIANCE: %s", alliance);
         dashboard.displayPrintf(4, "TEAM: %s", team);
+
+        DbgLog.msg("SJH: STARTPOS %s", startPos);
+        DbgLog.msg("SJH: PUSH     %s", beaconChoice);
+        DbgLog.msg("SJH: PARK     %s", parkChoice);
+        DbgLog.msg("SJH: ALLIANCE %s", alliance);
+        DbgLog.msg("SJH: TEAM     %s", team);
+        DbgLog.msg("SJH: DELAY    %4.2f", delay);
     }
 
     private enum ButtonSide
@@ -674,8 +687,9 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private final static double LFT_PUSH_POS = 0.9;
     private final static double CTR_PUSH_POS = 0.5;
 
-     //private final static double DEF_DRV_PWR  = 0.7;
-    private final static double DEF_TRN_PWR  = 0.45;
+    //private final static double DEF_DRV_PWR  = 0.7;
+    private final static double DEF_ENCTRN_PWR  = 0.55;
+    private final static double DEF_GYRTRN_PWR = 0.45;
 
     private final static double DEF_SWP_PWR = 1.0;
     private final static double DEF_ELV_PWR = 0.5;

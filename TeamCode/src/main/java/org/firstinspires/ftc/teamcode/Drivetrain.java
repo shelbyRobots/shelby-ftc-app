@@ -92,7 +92,7 @@ class Drivetrain
                       !op.isStopRequested())
         {
             op.idle();
-            if(ptmr.seconds() > 0.2) ptmr.reset();
+            if(ptmr.seconds() > printTimeout) ptmr.reset();
         }
 
         left_drive.setPower(0.0);
@@ -141,7 +141,7 @@ class Drivetrain
             }
             op.idle();
 
-            if(ptmr.seconds() > 0.2) ptmr.reset();
+            if(ptmr.seconds() > printTimeout) ptmr.reset();
         }
 
         left_drive.setPower(0.0);
@@ -215,7 +215,7 @@ class Drivetrain
         left_drive.setPower(leftSpeed);
         right_drive.setPower(rightSpeed);
 
-        if(ptmr.seconds() > 0.2)
+        if(ptmr.seconds() > printTimeout)
         {
             ptmr.reset();
             DbgLog.msg("SJH: TGT %d CHDG %d ERR %d STR %4.2f L %4.2f R %4.2f",
@@ -241,7 +241,7 @@ class Drivetrain
         {
             makeCorrections(pwr, tdir);
             waitForTick(10);
-            if(ptmr.seconds() > 0.2) ptmr.reset();
+            if(ptmr.seconds() > printTimeout) ptmr.reset();
         }
 
         DbgLog.msg("SJH: ldc %6d rdc %6d",
@@ -284,7 +284,7 @@ class Drivetrain
         {
             op.idle();
             frame++;
-            if(ptmr.seconds() > 0.1) ptmr.reset();
+            if(ptmr.seconds() > printTimeout) ptmr.reset();
         }
         stopAndReset();
     }
@@ -420,7 +420,7 @@ class Drivetrain
         right_drive.setPower( rdp );
         left_drive.setPower( ldp );
 
-        if (ptmr.seconds() > 0.2)
+        if (ptmr.seconds() > printTimeout)
         {
             DbgLog.msg("SJH %4d lpwr: %5.3f rpwr: %5.3f err: %5.3f str %5.3f rt %5.3f chdg %d thdg %d",
                     frame, ldp, rdp, err, steer, rt.seconds(), getGryoFhdg(), thdg);
@@ -441,8 +441,8 @@ class Drivetrain
             if(Math.abs(steer) > pwr)  steer = Math.signum(steer) * pwr;
             //if (dir == Direction.REVERSE) steer *= -1;
 
-            rdp = pwr - steer;
-            ldp = pwr + steer;
+            rdp = pwr ;//- steer;
+            ldp = pwr ;//+ steer;
 
             double max = Math.max(Math.abs(rdp), Math.abs(ldp));
             if(max > 1.0)
@@ -485,7 +485,7 @@ class Drivetrain
                 move(ldp, rdp);
             }
 
-            if (ptmr.seconds() > 0.2)
+            if (ptmr.seconds() > printTimeout)
             {
                 DbgLog.msg("SJH %4d ldc: %6d rdc: %6d diff: %2d " +
                                 "lpwr: %5.3f rpwr: %5.3f err: %5.3f str %5.3f rt %5.3f",
@@ -570,7 +570,7 @@ class Drivetrain
             return false;
         }
 
-        if(ptmr.seconds() > 0.2)
+        if(ptmr.seconds() > printTimeout)
         {
             DbgLog.msg("SJH: ldc %6d rdc %6d  mptimer: %4.2f chdg %5d",
                     left_drive.getCurrentPosition(),
@@ -604,7 +604,7 @@ class Drivetrain
     private static double CPI = ENCODER_CPR * GEAR_RATIO / CIRCUMFERENCE;
 
     private static final double PADJ = 0.025;
-    private static final double PADJ_TURN = 0.07;
+    private static final double PADJ_TURN = 0.09;
     private static final double THRESH = Math.toRadians(0.004);
 
     public enum Direction {FORWARD, REVERSE}
@@ -625,9 +625,11 @@ class Drivetrain
     private double lposLast;
     private double rposLast;
 
-    private double noMoveTimeout = 0.75;
-    private int noMoveThresh = 10;
+    private double noMoveTimeout = 0.5;
+    private int noMoveThresh = 20;
     private ElapsedTime noMoveTimer = new ElapsedTime();
+
+    private double printTimeout = 0.05;
 
     private double minSpeed = 0.04;
 
