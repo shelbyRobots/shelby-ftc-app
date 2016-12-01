@@ -239,7 +239,7 @@ class Drivetrain
               op.opModeIsActive() &&
               !op.isStopRequested())
         {
-            makeCorrections(pwr, tdir);
+            //makeCorrections(pwr, tdir);
             waitForTick(10);
             if(ptmr.seconds() > printTimeout) ptmr.reset();
         }
@@ -603,8 +603,8 @@ class Drivetrain
     private static double CIRCUMFERENCE = Math.PI * WHL_DIAMETER;
     private static double CPI = ENCODER_CPR * GEAR_RATIO / CIRCUMFERENCE;
 
-    private static final double PADJ = 0.025;
-    private static final double PADJ_TURN = 0.09;
+    private static final double PADJ = 0.02;
+    private static final double PADJ_TURN = 0.01;
     private static final double THRESH = Math.toRadians(0.004);
 
     public enum Direction {FORWARD, REVERSE}

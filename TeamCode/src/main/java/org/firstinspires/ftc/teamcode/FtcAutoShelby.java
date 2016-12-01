@@ -295,7 +295,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                     DbgLog.msg("SJH: REACHED OVERRUN PT");
                     robot.colorSensor.enableLed(false);
                     DbgLog.msg("SJH: Backing up a bit");
-                    drvTrn.driveDistanceLinear(1.0, 0.3, Drivetrain.Direction.REVERSE);
+                    drvTrn.driveDistanceLinear(2.0, 0.3, Drivetrain.Direction.REVERSE);
                     break;
                 }
             }

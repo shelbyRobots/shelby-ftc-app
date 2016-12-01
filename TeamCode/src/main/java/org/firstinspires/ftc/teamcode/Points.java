@@ -87,7 +87,7 @@ class Points
         }
 
         //PARK PTS
-        addPoint(points, fwd, 0.9, 1.00, Segment.TargetType.ENCODER,   none, park_pt);
+        addPoint(points, fwd, 1.0, 1.00, Segment.TargetType.ENCODER,   none, park_pt);
 
         return points;
     }
