@@ -1,4 +1,3 @@
-
 package org.firstinspires.ftc.teamcode;
 
 import android.graphics.Bitmap;
@@ -21,11 +20,11 @@ import hallib.HalDashboard;
 //import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 @SuppressWarnings({"unused", "ForLoopReplaceableByForEach"})
-@Autonomous(name="AutonShelby", group="Auton")
+@Autonomous(name="AutonShelbyTest", group="Auton")
 //@Disabled
-public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
+public class FtcAutoShelbyTest extends FtcOpMode implements FtcMenu.MenuButtons
 {
-    public FtcAutoShelby()
+    public FtcAutoShelbyTest()
     {
         super();
     }
@@ -122,7 +121,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
         if(team == Team.SNOWMAN)
         {
-            DEF_SHT_PWR = 0.80;
+            DEF_SHT_PWR = 0.85;
         }
 
         Points pts = new Points(startPos, alliance, beaconChoice, parkChoice);
@@ -198,7 +197,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             }
 
             doEncoderTurn(curSeg); //quick but rough
-            if(gyroReady) doTurn(curSeg); //fine tune using gyro
+            //if(gyroReady) doTurn(curSeg); //fine tune using gyro
             DbgLog.msg("SJH: Setting drive tuner to %4.2f", curSeg.getDrvTuner());
             drvTrn.setDrvTuner(curSeg.getDrvTuner());
             doMove(curSeg);
@@ -207,8 +206,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             if(usePostTurn && pturn != null)
             {
                 DbgLog.msg("SJH POST TURN %s", curSeg.getName());
-                doEncoderPostTurn(pturn);
-                if(gyroReady) doPostTurn(pturn);
+                doEncoderTurn(pturn);
+            //    if(gyroReady) doTurn(pturn);
             }
 
             DbgLog.msg("SJH Planned pos: %s %s",
@@ -327,23 +326,23 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         return cHdg;
     }
 
-    private void doEncoderPostTurn(double fHdg)
+    private void doEncoderTurn(double fHdg)
     {
         double cHdg = getGryoFhdg();
         double tHdg = Math.round(fHdg);
         double angle = tHdg - cHdg;
-        DbgLog.msg("SJH: doEncoderPostTurn CHDG %4.1f THDG %4.1f",
+        DbgLog.msg("SJH: doEncoderTurn CHDG %4.1f THDG %4.1f",
                 cHdg,
                 tHdg);
 
         while (angle <= -180.0) angle += 360.0;
         while (angle >   180.0) angle -= 360.0;
-        if(Math.abs(angle) <= 5.0) return;
+        if(Math.abs(angle) <= 1.0) return;
 
         DbgLog.msg("SJH: Turn %5.2f", angle);
         dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
         timer.reset();
-        drvTrn.ctrTurnLinear(angle, DEF_ENCTRN_PWR);
+        drvTrn.ctrTurnLinearGyro(angle, DEF_ENCTRN_PWR);
         cHdg = getGryoFhdg();
         DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f CHDG: %5.2f",
                 angle, timer.time(), cHdg);
@@ -352,56 +351,15 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private void doEncoderTurn(Segment seg)
     {
         if (seg.getDir() == Segment.SegDir.REVERSE) return;
-        double cHdg = getGryoFhdg();
-        double tHdg = Math.round(seg.getFieldHeading());
-        double angle = tHdg - cHdg;
-        DbgLog.msg("SJH: doEncoderTurn %s CHDG %4.1f THDG %4.1f",
-                seg.getName(),
-                cHdg,
-                tHdg);
-
-        while (angle <= -180.0) angle += 360.0;
-        while (angle >   180.0) angle -= 360.0;
-        if(Math.abs(angle) <= 5.0) return;
-
-        DbgLog.msg("SJH: Turn %5.2f", angle);
-        dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
-        timer.reset();
-        drvTrn.ctrTurnLinear(angle, DEF_ENCTRN_PWR);
-        cHdg = getGryoFhdg();
-        DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f CHDG: %5.2f",
-                angle, timer.time(), cHdg);
+        doEncoderTurn(seg.getFieldHeading());
     }
 
-    private void doPostTurn(double fHdg)
+    private void doTurn(double fHdg)
     {
         double cHdg = getGryoFhdg();
         double tHdg = Math.round(fHdg);
 
-        DbgLog.msg("SJH: do post GyroTurn CHDG %4.1f THDG %4.1f",
-                cHdg,
-                tHdg);
-
-        if(Math.abs(tHdg-cHdg) <= 1.0)
-            return;
-
-        timer.reset();
-        drvTrn.ctrTurnToHeading(tHdg, DEF_GYRTRN_PWR);
-
-        cHdg = getGryoFhdg();
-        DbgLog.msg("SJH Completed post turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
-                tHdg, timer.time(), cHdg);
-    }
-
-    private void doTurn(Segment seg)
-    {
-        double cHdg = getGryoFhdg();
-        double tHdg = Math.round(seg.getFieldHeading());
-        if(seg.getDir() == Segment.SegDir.REVERSE)
-            return;
-
-        DbgLog.msg("SJH: doGyroTurn %s CHDG %4.1f THDG %4.1f",
-                seg.getName(),
+        DbgLog.msg("SJH: do GyroTurn CHDG %4.1f THDG %4.1f",
                 cHdg,
                 tHdg);
 
@@ -414,6 +372,12 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         cHdg = getGryoFhdg();
         DbgLog.msg("SJH Completed turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
                 tHdg, timer.time(), cHdg);
+    }
+
+    private void doTurn(Segment seg)
+    {
+        if(seg.getDir() == Segment.SegDir.REVERSE) return;
+        doTurn(seg.getFieldHeading());
     }
 
     private boolean findSensedLoc()
@@ -688,8 +652,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private final static double CTR_PUSH_POS = 0.5;
 
     //private final static double DEF_DRV_PWR  = 0.7;
-    private final static double DEF_ENCTRN_PWR  = 0.7; //0.45
-    private final static double DEF_GYRTRN_PWR = 0.48; //0.55
+    private final static double DEF_ENCTRN_PWR  = 0.55;
+    private final static double DEF_GYRTRN_PWR = 0.45;
 
     private final static double DEF_SWP_PWR = 1.0;
     private final static double DEF_ELV_PWR = 0.5;
@@ -733,3 +697,5 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private double delay = 0.0;
 }
+
+

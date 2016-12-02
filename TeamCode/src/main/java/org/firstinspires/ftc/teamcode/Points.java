@@ -43,14 +43,14 @@ class Points
         {
             addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER, none, presh_pt);
         }
-        addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER,  shoot, shoot_pt);
+        addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER,  shoot, shoot_pt);
 
         if(pushChoice == Field.BeaconChoice.NEAR ||
            pushChoice == Field.BeaconChoice.BOTH)
         {
             if(useColor)
             {
-                addPoint(points, fwd, 0.9,  1.00, Segment.TargetType.ENCODER, scan, PREP1_PT);
+                addPoint(points, fwd, 1.0,  1.00, Segment.TargetType.ENCODER, scan, PREP1_PT);
                 addPoint(points, fwd, 0.15,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
             }
             else
@@ -304,8 +304,9 @@ class Points
 
     private static final double SAFETY  =   0.0;
     private static final double SCAN_X  = -40.0;
-    private static final double BECN_X  = -50.0;
+    private static final double BECN_X  = -50.5;
     private static final double TOUCHX  = -56.0;
+    private static final double TOUCH2  = -58.0;
     private static final double BMID_X  = -24.0;
     private static final double BMID_Y  = -24.0;
 
@@ -334,7 +335,7 @@ class Points
     private Point2d SCAN2_PT = new Point2d("SCAN2", SCAN_X, TRGT2_Y);
     private Point2d PREP2_PT = new Point2d("PREP2", BECN_X, PREP2_Y);
     private Point2d BECN2_PT = new Point2d("BECN2", BECN_X, TRGT2_Y);
-    private Point2d PRSS2_PT = new Point2d("PRSS2", TOUCHX, TRGT2_Y);
+    private Point2d PRSS2_PT = new Point2d("PRSS2", TOUCH2, TRGT2_Y);
     private Point2d RVRS2_PT = new Point2d("RVRS2", BECN_X, TRGT2_Y);
     private Point2d B_MID_PT = new Point2d("B_MID", BMID_X, BMID_Y);
 
