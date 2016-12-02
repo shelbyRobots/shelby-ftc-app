@@ -127,7 +127,7 @@ class Drivetrain
         rposLast = right_drive.getCurrentPosition();
         DbgLog.msg("SJH: Starting drive corrections");
         while(isBusy() &&
-                !areMotorsStuck() &&
+                !areDriveMotorsStuck() &&
                 op.opModeIsActive() &&
                 !op.isStopRequested())
         {
@@ -289,15 +289,43 @@ class Drivetrain
         stopAndReset();
     }
 
-    void ctrTurnLinearGyro(double angle, double pwr)
+    void ctrTurnLinearGyro(double angle, double pwr, int pass)
     {
         angle = Math.round(angle);
-        int tgtHdg = (int)angle + getGryoFhdg();
+        int curHdg = getGryoFhdg();
+        int tgtHdg = (int)angle + curHdg;
         while(tgtHdg > 180)   tgtHdg -= 360;
         while(tgtHdg <= -180) tgtHdg += 360;
-        DbgLog.msg("SJH: GYRO TURN %d to HDG %d", (int)angle, tgtHdg);
+        DbgLog.msg("SJH: GYRO TURN %d to HDG %d PASS %d", (int)angle, tgtHdg, pass);
 
-        ctrTurnToHeading(tgtHdg, pwr);
+        ctrTurn(angle, pwr);
+        ptmr.reset();
+        noMoveTimer.reset();
+        lposLast = left_drive.getCurrentPosition();
+        rposLast = right_drive.getCurrentPosition();
+        int hDiff = tgtHdg - curHdg;
+        DbgLog.msg("SJH: Starting turn corrections");
+        while(isBusy() &&
+              hDiff > TURN_TOLERANCE &&
+              !areMotorsStuck() &&
+              op.opModeIsActive() &&
+              !op.isStopRequested())
+        {
+            waitForTick(10);
+            curHdg = getGryoFhdg();
+            hDiff = tgtHdg - curHdg;
+            if(ptmr.seconds() > printTimeout) ptmr.reset();
+        }
+
+        DbgLog.msg("SJH: ldc %6d rdc %6d",
+                left_drive.getCurrentPosition(),
+                right_drive.getCurrentPosition());
+        if(pass == 0) ctrTurnLinearGyro(hDiff, pwr, 1);
+    }
+
+    void ctrTurnLinearGyro(double angle, double pwr)
+    {
+       ctrTurnLinearGyro(angle, pwr, 0);
     }
 
 //    static void turn(double angle, double pwr, double radius)
@@ -548,10 +576,45 @@ class Drivetrain
             //stop after noMoveTimeout
             if(noMoveTimer.seconds() > noMoveTimeout)
             {
-                if ((lp >= 0.0 && Math.abs(lposLast - lc) < noMoveThresh) ||
-                    (rp >= 0.0 && Math.abs(rposLast - rc) < noMoveThresh))
+                if ((lp >= 0.0 && Math.abs(lposLast - lc) < noMoveThreshLow) ||
+                    (rp >= 0.0 && Math.abs(rposLast - rc) < noMoveThreshLow))
                 {
                     DbgLog.msg("SJH: MOTORS HAVE POWER BUT AREN'T MOVING - STOPPING %4.2f %4.2f",
+                            lp, rp);
+                    return true;
+                }
+                lposLast = lc;
+                rposLast = rc;
+                noMoveTimer.reset();
+            }
+        }
+        return false;
+    }
+
+    boolean areDriveMotorsStuck()
+    {
+        if(usePosStop)
+        {
+            int lc = Math.abs(left_drive.getCurrentPosition());
+            int rc = Math.abs(right_drive.getCurrentPosition());
+            double lp = Math.abs(left_drive.getPower());
+            double rp = Math.abs(right_drive.getPower());
+
+            //If power is above threshold and encoders aren't changing,
+            //stop after noMoveTimeout
+            if(noMoveTimer.seconds() > noMoveTimeout)
+            {
+                if ((lp >= 0.0 && Math.abs(lposLast - lc) < noMoveThreshLow) ||
+                    (rp >= 0.0 && Math.abs(rposLast - rc) < noMoveThreshLow))
+                {
+                    DbgLog.msg("SJH: MOTORS HAVE POWER BUT AREN'T MOVING - STOPPING %4.2f %4.2f",
+                            lp, rp);
+                    return true;
+                }
+                if ((lp >= noMovePwrHi && Math.abs(lposLast - lc) < noMoveThreshHi) ||
+                    (rp >= noMovePwrHi && Math.abs(rposLast - rc) < noMoveThreshHi))
+                {
+                    DbgLog.msg("SJH: MOTORS HAVE HI POWER BUT AREN'T MOVING - STOPPING %4.2f %4.2f",
                             lp, rp);
                     return true;
                 }
@@ -626,12 +689,14 @@ class Drivetrain
     private double rposLast;
 
     private double noMoveTimeout = 0.5;
-    private int noMoveThresh = 20;
+    private int noMoveThreshLow = 20;
+    private int noMoveThreshHi = 60;
+    private double noMovePwrHi = 0.25;
     private ElapsedTime noMoveTimer = new ElapsedTime();
 
     private double printTimeout = 0.05;
 
-    private double minSpeed = 0.04;
+    private double minSpeed = 0.06;
 
     private FtcOpMode op = null;
 
