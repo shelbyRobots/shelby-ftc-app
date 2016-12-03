@@ -43,14 +43,14 @@ class Points
         {
             addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER, none, presh_pt);
         }
-        addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER,  shoot, shoot_pt);
+        addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER,  shoot, shoot_pt);
 
         if(pushChoice == Field.BeaconChoice.NEAR ||
            pushChoice == Field.BeaconChoice.BOTH)
         {
             if(useColor)
             {
-                addPoint(points, fwd, 1.0,  1.00, Segment.TargetType.ENCODER, scan, PREP1_PT);
+                addPoint(points, fwd, 0.9,  1.00, Segment.TargetType.ENCODER, scan, PREP1_PT);
                 addPoint(points, fwd, 0.15,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
             }
             else
@@ -296,7 +296,7 @@ class Points
     private static final double TRGT1_Y = -12.0;
 
     private static final double TRGT2_Y =  36.0;
-    private static final double PREP2_Y  = TRGT2_Y - 4.0;
+    private static final double PREP2_Y  = TRGT2_Y - 6.0;
     private static final double CTRPRKX = -12.0;
     private static final double CTRPRKY = -12.0;
     private static final double CRNPRKX = -48.0;

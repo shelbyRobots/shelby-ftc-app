@@ -198,7 +198,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             }
 
             doEncoderTurn(curSeg); //quick but rough
-            if(gyroReady && useGyroTurn) doTurn(curSeg); //fine tune using gyro
+            if(gyroReady) doTurn(curSeg); //fine tune using gyro
             DbgLog.msg("SJH: Setting drive tuner to %4.2f", curSeg.getDrvTuner());
             drvTrn.setDrvTuner(curSeg.getDrvTuner());
             doMove(curSeg);
@@ -207,8 +207,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
             if(usePostTurn && pturn != null)
             {
                 DbgLog.msg("SJH POST TURN %s", curSeg.getName());
-                doEncoderTurn(pturn);
-                if(gyroReady && useGyroTurn) doTurn(pturn);
+                doEncoderPostTurn(pturn);
+                if(gyroReady) doPostTurn(pturn);
             }
 
             DbgLog.msg("SJH Planned pos: %s %s",
@@ -327,32 +327,23 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         return cHdg;
     }
 
-    private void doEncoderTurn(double fHdg)
+    private void doEncoderPostTurn(double fHdg)
     {
         double cHdg = getGryoFhdg();
         double tHdg = Math.round(fHdg);
         double angle = tHdg - cHdg;
-        DbgLog.msg("SJH: doEncoderTurn CHDG %4.1f THDG %4.1f",
+        DbgLog.msg("SJH: doEncoderPostTurn CHDG %4.1f THDG %4.1f",
                 cHdg,
                 tHdg);
 
         while (angle <= -180.0) angle += 360.0;
         while (angle >   180.0) angle -= 360.0;
-        double athresh = 1.0;
-        if(useGyroTurn) athresh = 5.0;
-        if(Math.abs(angle) <= athresh) return;
+        if(Math.abs(angle) <= 5.0) return;
 
         DbgLog.msg("SJH: Turn %5.2f", angle);
         dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
         timer.reset();
-        if(useGyroTurn)
-        {
-            drvTrn.ctrTurnLinear(angle, DEF_ENCTRN_PWR);
-        }
-        {
-            drvTrn.ctrTurnLinearGyro(angle, DEF_ENCTRN_PWR);
-        }
-
+        drvTrn.ctrTurnLinear(angle, DEF_ENCTRN_PWR);
         cHdg = getGryoFhdg();
         DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f CHDG: %5.2f",
                 angle, timer.time(), cHdg);
@@ -361,15 +352,56 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private void doEncoderTurn(Segment seg)
     {
         if (seg.getDir() == Segment.SegDir.REVERSE) return;
-        doEncoderTurn(seg.getFieldHeading());
+        double cHdg = getGryoFhdg();
+        double tHdg = Math.round(seg.getFieldHeading());
+        double angle = tHdg - cHdg;
+        DbgLog.msg("SJH: doEncoderTurn %s CHDG %4.1f THDG %4.1f",
+                seg.getName(),
+                cHdg,
+                tHdg);
+
+        while (angle <= -180.0) angle += 360.0;
+        while (angle >   180.0) angle -= 360.0;
+        if(Math.abs(angle) <= 5.0) return;
+
+        DbgLog.msg("SJH: Turn %5.2f", angle);
+        dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
+        timer.reset();
+        drvTrn.ctrTurnLinear(angle, DEF_ENCTRN_PWR);
+        cHdg = getGryoFhdg();
+        DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f CHDG: %5.2f",
+                angle, timer.time(), cHdg);
     }
 
-    private void doTurn(double fHdg)
+    private void doPostTurn(double fHdg)
     {
         double cHdg = getGryoFhdg();
         double tHdg = Math.round(fHdg);
 
-        DbgLog.msg("SJH: do GyroTurn CHDG %4.1f THDG %4.1f",
+        DbgLog.msg("SJH: do post GyroTurn CHDG %4.1f THDG %4.1f",
+                cHdg,
+                tHdg);
+
+        if(Math.abs(tHdg-cHdg) <= 1.0)
+            return;
+
+        timer.reset();
+        drvTrn.ctrTurnToHeading(tHdg, DEF_GYRTRN_PWR);
+
+        cHdg = getGryoFhdg();
+        DbgLog.msg("SJH Completed post turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
+                tHdg, timer.time(), cHdg);
+    }
+
+    private void doTurn(Segment seg)
+    {
+        double cHdg = getGryoFhdg();
+        double tHdg = Math.round(seg.getFieldHeading());
+        if(seg.getDir() == Segment.SegDir.REVERSE)
+            return;
+
+        DbgLog.msg("SJH: doGyroTurn %s CHDG %4.1f THDG %4.1f",
+                seg.getName(),
                 cHdg,
                 tHdg);
 
@@ -382,12 +414,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         cHdg = getGryoFhdg();
         DbgLog.msg("SJH Completed turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
                 tHdg, timer.time(), cHdg);
-    }
-
-    private void doTurn(Segment seg)
-    {
-        if(seg.getDir() == Segment.SegDir.REVERSE) return;
-        doTurn(seg.getFieldHeading());
     }
 
     private boolean findSensedLoc()
@@ -659,7 +685,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private final static double ZER_PUSH_POS = 0.0;
     private final static double RGT_PUSH_POS = 0.1;
     private final static double LFT_PUSH_POS = 0.9;
-    private final static double CTR_PUSH_POS = 0.5;
+    private final static double CTR_PUSH_POS = 0.1;
 
     //private final static double DEF_DRV_PWR  = 0.7;
     private final static double DEF_ENCTRN_PWR  = 0.7; //0.45
@@ -698,7 +724,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private boolean scanImage = false;
     private boolean useImageLoc = false;
     private boolean usePostTurn = true;
-    private boolean useGyroTurn = true;
 
     private boolean gyroReady;
 

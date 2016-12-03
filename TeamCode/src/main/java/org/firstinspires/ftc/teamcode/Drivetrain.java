@@ -304,9 +304,10 @@ class Drivetrain
         lposLast = left_drive.getCurrentPosition();
         rposLast = right_drive.getCurrentPosition();
         int hDiff = tgtHdg - curHdg;
+        if (Math.abs(hDiff) > 180) hDiff = 360 - Math.abs(hDiff);
         DbgLog.msg("SJH: Starting turn corrections");
         while(isBusy() &&
-              hDiff > TURN_TOLERANCE &&
+              Math.abs(hDiff) > TURN_TOLERANCE &&
               !areMotorsStuck() &&
               op.opModeIsActive() &&
               !op.isStopRequested())
@@ -314,6 +315,7 @@ class Drivetrain
             waitForTick(10);
             curHdg = getGryoFhdg();
             hDiff = tgtHdg - curHdg;
+            if (Math.abs(hDiff) > 180) hDiff = 360 - Math.abs(hDiff);
             if(ptmr.seconds() > printTimeout) ptmr.reset();
         }
 
