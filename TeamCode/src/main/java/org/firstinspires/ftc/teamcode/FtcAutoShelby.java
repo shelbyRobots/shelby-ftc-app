@@ -122,7 +122,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
         if(team == Team.SNOWMAN)
         {
-            DEF_SHT_PWR = 0.80;
+            DEF_SHT_PWR = 0.75;
         }
 
         Points pts = new Points(startPos, alliance, beaconChoice, parkChoice);
@@ -138,6 +138,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
         timer.reset();
         DbgLog.msg("SJH Start %s. Time: %6.3f", currPoint, timer.time());
+        DbgLog.msg("SJH START CHDG %d", robot.gyro.getIntegratedZValue());
+        DbgLog.msg("SJH START IHDG %4.3f", initHdg);
 
         dashboard.displayPrintf(3, "PATH: Start at %s %6.3f", currPoint,
                                                               timer.seconds());
@@ -148,6 +150,27 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void do_main_loop()
     {
+        DbgLog.msg("SJH START CHDG %d", robot.gyro.getIntegratedZValue());
+        boolean reCalibrateGyro = true;
+        if(reCalibrateGyro)
+        {
+            double gyroInitTimout = 5.0;
+            boolean gyroCalibTimedout = false;
+            ElapsedTime gTimer = new ElapsedTime();
+            while (!isStopRequested() &&
+                           robot.gyro.isCalibrating())
+            {
+                sleep(50);
+                if(gTimer.seconds() > gyroInitTimout)
+                {
+                    DbgLog.msg("SJH: GYRO INIT TIMED OUT!!");
+                    gyroCalibTimedout = true;
+                    break;
+                }
+            }
+            DbgLog.msg("SJH: Gyro callibrated in %4.2f seconds", gTimer.seconds());
+        }
+
         DbgLog.msg("SJH: Delaying for %4.2f seconds", delay);
         ElapsedTime delayTimer = new ElapsedTime();
         while (delayTimer.seconds() < delay)
@@ -295,7 +318,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                     DbgLog.msg("SJH: REACHED OVERRUN PT");
                     robot.colorSensor.enableLed(false);
                     DbgLog.msg("SJH: Backing up a bit");
-                    drvTrn.driveDistanceLinear(2.0, 0.3, Drivetrain.Direction.REVERSE);
+                    drvTrn.driveDistanceLinear(3.0, 0.3, Drivetrain.Direction.REVERSE);
                     break;
                 }
             }
@@ -470,6 +493,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         int timeout = 2000;
         BeaconFinder.LightOrder ord = BeaconFinder.LightOrder.UNKNOWN;
         ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
+
+        bSide = ButtonSide.UNKNOWN;
 
         tracker.setFrameQueueSize(10);
         tracker.setActive(true);
@@ -715,7 +740,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private static Field.ParkChoice parkChoice = Field.ParkChoice.CENTER_PARK;
     private static Field.Alliance alliance = Field.Alliance.RED;
     private static Team team = Team.SONIC;
-    private static double DEF_SHT_PWR = 0.9;
+    private static double DEF_SHT_PWR = 0.85;
 
     private HalDashboard dashboard;
 

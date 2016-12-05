@@ -2,12 +2,12 @@ package org.firstinspires.ftc.teamcode;
 
 import android.util.Log;
 
-import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
+
+import java.util.Locale;
 
 @TeleOp(name="Test: Loop Timing", group="3543TestSamples")
 public class TimingTest extends LinearOpMode
@@ -24,27 +24,31 @@ public class TimingTest extends LinearOpMode
     private static SensorType sensorType = SensorType.GYRO;
     private static final DcMotor.Direction LEFTWHEEL_DIRECTION = DcMotor.Direction.FORWARD;
     private static final DcMotor.Direction RIGHTWHEEL_DIRECTION = DcMotor.Direction.REVERSE;
+    private static final double MS2NS = 1000000.0;
 
     private DcMotor lrWheel;
     private DcMotor rrWheel;
     private ModernRoboticsI2cGyro gyro;
     //private ColorSensor colorSensor;
 
+    private boolean useSleep = true;
+    private int     sleepMs  = 10;
+
 
     public void runOpMode()
     {
         initRobot();
 
-        waitForStart();
-
+        gyro.calibrate();
         while (!isStopRequested() &&
                gyro.isCalibrating())
         {
             sleep(50);
         }
 
-        startRobot();
+        waitForStart();
 
+        startRobot();
 
         sleep(1000);  //Give motors time to ramp up to speed
 
@@ -92,10 +96,11 @@ public class TimingTest extends LinearOpMode
                 maxLoopInterval = loopInterval;
             }
 
-            logRobot(String.format("[%4d:%7.3f] LoopInterval=%7.3f, ",
-                    loopCount, (currTime - startTime)/1000000.0, loopInterval/1000000.0));
+            logRobot(String.format(Locale.US, "[%4d:%7.3f] LoopInterval=%7.3f, ",
+                    loopCount, (currTime - startTime)/MS2NS, loopInterval/MS2NS));
 
             prevLoopTime = currTime;
+            if(useSleep) sleep(sleepMs);
             loopCount++;
         }
         stopRobot();
@@ -103,13 +108,13 @@ public class TimingTest extends LinearOpMode
         long endTime = System.nanoTime();
         Log.i(TAG, String.format(
                 "Loop: MinInterval=%7.3f, MaxInterval=%7.3f, AvgInterval=%7.3f",
-                minLoopInterval/1000000.0, maxLoopInterval/1000000.0,
-                (endTime - startTime)/1000000.0/loopCount));
+                minLoopInterval/MS2NS, maxLoopInterval/MS2NS,
+                (endTime - startTime)/MS2NS/loopCount));
         Log.i(TAG, String.format(
                 "Sensor: MinSampleInterval=%7.3f, MaxSampleInterval=%7.3f, AvgSampleInterval=%7.3f %7.3f",
-                minSampleInterval/1000000.0, maxSampleInterval/1000000.0,
-                (endTime - startTime)/1000000.0/sampleCount,
-                (double)totalSampleTime/sampleCount));
+                minSampleInterval/MS2NS, maxSampleInterval/MS2NS,
+                (endTime - startTime)/MS2NS/sampleCount,
+                (double)totalSampleTime/MS2NS/sampleCount));
     }
 
     private void initRobot()
@@ -195,5 +200,4 @@ public class TimingTest extends LinearOpMode
         lrWheel.setPower(0.0);
         rrWheel.setPower(0.0);
     }
-
 }
