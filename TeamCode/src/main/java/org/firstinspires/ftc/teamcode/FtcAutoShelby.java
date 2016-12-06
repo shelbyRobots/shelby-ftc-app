@@ -7,6 +7,8 @@ import android.widget.TextView;
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.I2cController;
+import com.qualcomm.robotcore.hardware.I2cDevice;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.RobotLog;
 
@@ -136,40 +138,31 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         drvTrn.setCurrPt(currPoint);
         drvTrn.setInitHdg(initHdg);
 
-        timer.reset();
-        DbgLog.msg("SJH Start %s. Time: %6.3f", currPoint, timer.time());
-        DbgLog.msg("SJH START CHDG %d", robot.gyro.getIntegratedZValue());
-        DbgLog.msg("SJH START IHDG %4.3f", initHdg);
+        DbgLog.msg("SJH Start %s.", currPoint);
+        dashboard.displayPrintf(3, "PATH: Start at %s", currPoint);
 
-        dashboard.displayPrintf(3, "PATH: Start at %s %6.3f", currPoint,
-                                                              timer.seconds());
+        DbgLog.msg("SJH IHDG %4.3f", initHdg);
 
-        dashboard.displayPrintf(6, "GHDG: %d",
-                robot.gyro.getIntegratedZValue());
+        ElapsedTime ptimer = new ElapsedTime();
+        double pTimeout = 0.1;
+        while(!isStarted() && !isStopRequested())
+        {
+            if(ptimer.seconds() > pTimeout)
+            {
+                DbgLog.msg("SJH INIT CHDG %d", robot.gyro.getIntegratedZValue());
+                dashboard.displayPrintf(6, "GHDG: %d",
+                        robot.gyro.getIntegratedZValue());
+                ptimer.reset();
+            }
+
+        }
     }
 
     private void do_main_loop()
     {
-        DbgLog.msg("SJH START CHDG %d", robot.gyro.getIntegratedZValue());
-        boolean reCalibrateGyro = true;
-        if(reCalibrateGyro)
-        {
-            double gyroInitTimout = 5.0;
-            boolean gyroCalibTimedout = false;
-            ElapsedTime gTimer = new ElapsedTime();
-            while (!isStopRequested() &&
-                           robot.gyro.isCalibrating())
-            {
-                sleep(50);
-                if(gTimer.seconds() > gyroInitTimout)
-                {
-                    DbgLog.msg("SJH: GYRO INIT TIMED OUT!!");
-                    gyroCalibTimedout = true;
-                    break;
-                }
-            }
-            DbgLog.msg("SJH: Gyro callibrated in %4.2f seconds", gTimer.seconds());
-        }
+        timer.reset();
+
+        DbgLog.msg("SJH: STARTING AT %4.2f", timer.seconds());
 
         DbgLog.msg("SJH: Delaying for %4.2f seconds", delay);
         ElapsedTime delayTimer = new ElapsedTime();
@@ -179,6 +172,10 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         }
 
         DbgLog.msg("SJH: Done delay");
+
+        DbgLog.msg("SJH START CHDG %d", robot.gyro.getIntegratedZValue());
+
+        robot.gyro.resetZAxisIntegrator();
 
         boolean SkipNextSegment = false;
         for (int i = 0; i < pathSegs.length; ++i)
