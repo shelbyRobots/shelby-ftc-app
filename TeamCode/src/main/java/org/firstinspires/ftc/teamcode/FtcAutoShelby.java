@@ -1,6 +1,7 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.widget.TextView;
 
@@ -11,6 +12,11 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.JavaCameraView;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
 
 import ftclib.FtcChoiceMenu;
 import ftclib.FtcMenu;
@@ -78,6 +84,33 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         robot.colorSensor.enableLed(false);
 
         tracker = new ImageTracker();
+
+        BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(hardwareMap.appContext) {
+            @Override
+            public void onManagerConnected(int status) {
+                switch (status) {
+                    case LoaderCallbackInterface.SUCCESS: {
+                        openCVCamera.enableView();
+                    }
+                    break;
+                    default: {
+                        super.onManagerConnected(status);
+                    }
+                    break;
+                }
+            }
+        };
+
+        openCVCamera = (JavaCameraView) ((Activity) hardwareMap.appContext).findViewById(R.id.surfaceView);
+        openCVCamera.setVisibility(CameraBridgeViewBase.VISIBLE);
+        openCVCamera.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_FRONT);
+        openCVCamera.setCvCameraViewListener(this);
+
+        if (!OpenCVLoader.initDebug()) {
+            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, hardwareMap.appContext, mLoaderCallback);
+        } else {
+            mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
+        }
 
         if (robot.leftMotor  != null &&
             robot.rightMotor != null &&
@@ -669,13 +702,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         DbgLog.msg("SJH: DELAY    %4.2f", delay);
     }
 
-    private enum ButtonSide
-    {
-        UNKNOWN,
-        LEFT,
-        RIGHT
-    }
-
     private enum Team
     {
         SONIC,
@@ -700,9 +726,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private ElapsedTime timer = new ElapsedTime();
     private Drivetrain drvTrn = new Drivetrain();
 
-    private ImageTracker tracker;
     private BeaconDetector bd = new BeaconDetector();
-    private ButtonSide bSide = ButtonSide.UNKNOWN;
 
     private static Point2d curPos;
     private static double  curHdg;
