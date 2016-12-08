@@ -164,17 +164,17 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
             while (!isStopRequested() && robot.gyro.isCalibrating())
             {
                 sleep(50);
-                idle();
             }
         }
-
 
         pathSegs = new Segment[1];
 
         Segment tseg = new Segment("TESTSEG", new Point2d(0.0, 0.0), new Point2d(0.0, testDist));
 
         tseg.setSpeed(testSpeed);
+        tseg.setPostTurn(testPost);
         drvTrn.setDrvTuner(testK);
+        tseg.setAction(Segment.Action.NOTHING);
 
         pathSegs[0] = tseg;
 
@@ -198,6 +198,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void do_main_loop()
     {
+        robot.gyro.resetZAxisIntegrator();
         boolean SkipNextSegment = false;
         for (int i = 0; i < pathSegs.length; ++i)
         {
@@ -533,7 +534,8 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         FtcChoiceMenu allianceMenu = new FtcChoiceMenu("ALLIANCE:", parkMenu, this);
         FtcChoiceMenu teamMenu     = new FtcChoiceMenu("TEAM:", allianceMenu, this);
         FtcValueMenu  testDistMenu = new FtcValueMenu("DIST:",  startPosMenu, this, 0.0, 60.0, 1.0, 48.0,  "%4.1f");
-        FtcValueMenu  testSpdMenu  = new FtcValueMenu("SPEED:", testDistMenu, this, 0.0, 1.0, 0.01, 0.1,  "%4.2f");
+        FtcValueMenu  testPostMenu = new FtcValueMenu("POST:",  testDistMenu, this, -90.0, 90.0, 5.0, 0.0,  "%4.1f");
+        FtcValueMenu  testSpdMenu  = new FtcValueMenu("SPEED:", testPostMenu, this, 0.0, 1.0, 0.1, 0.5,  "%4.2f");
         FtcValueMenu  testKMenu    = new FtcValueMenu("K:",     testSpdMenu,  this, 0.5, 1.5, 0.01, 1.0, "%4.2f");
 
         startPosMenu.addChoice("Start_A", Field.StartPos.START_A, pushMenu);
@@ -553,7 +555,8 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         teamMenu.addChoice("Sonic",   Team.SONIC);
         teamMenu.addChoice("Snowman", Team.SNOWMAN);
 
-        testDistMenu.setChildMenu(testSpdMenu);
+        testDistMenu.setChildMenu(testPostMenu);
+        testPostMenu.setChildMenu(testSpdMenu);
         testSpdMenu.setChildMenu(testKMenu);
 
         //
@@ -572,6 +575,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         alliance = (Field.Alliance)allianceMenu.getCurrentChoiceObject();
         team = (Team)teamMenu.getCurrentChoiceObject();
         testDist  = testDistMenu.getCurrentValue();
+        testPost  = testPostMenu.getCurrentValue();
         testSpeed = testSpdMenu.getCurrentValue();
         testK     = testKMenu.getCurrentValue();
 
@@ -678,6 +682,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
     private HalDashboard dashboard;
 
     private double testDist  = 3.0;
+    private double testPost  = 0.0;
     private double testSpeed = 0.5;
     private double testK = 1.0;
 

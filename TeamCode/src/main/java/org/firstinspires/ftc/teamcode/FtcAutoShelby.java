@@ -76,12 +76,14 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         hardwareMap.logDevices();
         robot.init(hardwareMap);
 
+        robot.colorSensor.resetDeviceConfigurationForOpMode();
         robot.colorSensor.enableLed(true);
         robot.colorSensor.enableLed(false);
         sleep(100);
         robot.colorSensor.enableLed(true);
         sleep(100);
         robot.colorSensor.enableLed(false);
+        turnColorOff();
 
         tracker = new ImageTracker();
 
@@ -155,7 +157,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
         if(team == Team.SNOWMAN)
         {
-            DEF_SHT_PWR = 0.80;
+            DEF_SHT_PWR = 0.75;
         }
 
         Points pts = new Points(startPos, alliance, beaconChoice, parkChoice);
@@ -169,26 +171,44 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         drvTrn.setCurrPt(currPoint);
         drvTrn.setInitHdg(initHdg);
 
-        timer.reset();
-        DbgLog.msg("SJH Start %s. Time: %6.3f", currPoint, timer.time());
+        DbgLog.msg("SJH Start %s.", currPoint);
+        dashboard.displayPrintf(3, "PATH: Start at %s", currPoint);
 
-        dashboard.displayPrintf(3, "PATH: Start at %s %6.3f", currPoint,
-                                                              timer.seconds());
+        DbgLog.msg("SJH IHDG %4.3f", initHdg);
 
-        dashboard.displayPrintf(6, "GHDG: %d",
-                robot.gyro.getIntegratedZValue());
+        ElapsedTime ptimer = new ElapsedTime();
+        double pTimeout = 0.1;
+        while(!isStarted() && !isStopRequested())
+        {
+            if(ptimer.seconds() > pTimeout)
+            {
+                DbgLog.msg("SJH INIT CHDG %d", robot.gyro.getIntegratedZValue());
+                dashboard.displayPrintf(6, "GHDG: %d",
+                        robot.gyro.getIntegratedZValue());
+                ptimer.reset();
+            }
+
+        }
     }
 
     private void do_main_loop()
     {
+        timer.reset();
+
+        DbgLog.msg("SJH: STARTING AT %4.2f", timer.seconds());
+
         DbgLog.msg("SJH: Delaying for %4.2f seconds", delay);
         ElapsedTime delayTimer = new ElapsedTime();
-        while (delayTimer.seconds() < delay)
+        while (opModeIsActive() && delayTimer.seconds() < delay)
         {
             idle();
         }
 
         DbgLog.msg("SJH: Done delay");
+
+        DbgLog.msg("SJH START CHDG %d", robot.gyro.getIntegratedZValue());
+
+        robot.gyro.resetZAxisIntegrator();
 
         boolean SkipNextSegment = false;
         for (int i = 0; i < pathSegs.length; ++i)
@@ -244,6 +264,12 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                 if(gyroReady) doPostTurn(pturn);
             }
 
+            if(!opModeIsActive() || isStopRequested())
+            {
+                drvTrn.stopAndReset();
+                break;
+            }
+
             DbgLog.msg("SJH Planned pos: %s %s",
                     pathSegs[i].getTgtPt(),
                     pathSegs[i].getFieldHeading());
@@ -276,6 +302,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void doMove(Segment seg)
     {
+        if(!opModeIsActive() || isStopRequested()) return;
         String  snm = seg.getName();
         Point2d spt = seg.getStrtPt();
         Point2d ept = seg.getTgtPt();
@@ -298,6 +325,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         if(robot.colorSensor != null && seg.getTgtType() == Segment.TargetType.COLOR)
         {
             DbgLog.msg("SJH: Turning on colorSensor LED");
+            turnColorOn();
             robot.colorSensor.enableLed(true);
             DcMotor.RunMode lRunMode = robot.leftMotor.getMode();
             DcMotor.RunMode rRunMode = robot.rightMotor.getMode();
@@ -328,9 +356,10 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                     DbgLog.msg("SJH: REACHED OVERRUN PT");
                     robot.colorSensor.enableLed(false);
                     DbgLog.msg("SJH: Backing up a bit");
-                    drvTrn.driveDistanceLinear(2.0, 0.3, Drivetrain.Direction.REVERSE);
+                    drvTrn.driveDistanceLinear(3.0, 0.3, Drivetrain.Direction.REVERSE);
                     break;
                 }
+                turnColorOff();
             }
             //sleep(1500);
         }
@@ -350,6 +379,24 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                 seg.getName(), timer.time(), getGryoFhdg());
     }
 
+    private void turnColorOn()
+    {
+        robot.colorSensor.getI2cController()
+                .registerForI2cPortReadyCallback(robot.colorSensor,
+                                                 robot.colorSensor.getPort());
+        robot.colorSensor.enableLed(true);
+        sleep(100);
+        robot.colorSensor.enableLed(false);
+        sleep(100);
+        robot.colorSensor.enableLed(true);
+    }
+
+    private void turnColorOff()
+    {
+        robot.colorSensor.getI2cController()
+                .deregisterForPortReadyCallback(robot.colorSensor.getPort());
+    }
+
     private double getGryoFhdg()
     {
         double cHdg = robot.gyro.getIntegratedZValue() + initHdg;
@@ -362,6 +409,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void doEncoderPostTurn(double fHdg)
     {
+        if(!opModeIsActive() || isStopRequested()) return;
         double cHdg = getGryoFhdg();
         double tHdg = Math.round(fHdg);
         double angle = tHdg - cHdg;
@@ -384,6 +432,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void doEncoderTurn(Segment seg)
     {
+        if(!opModeIsActive() || isStopRequested()) return;
         if (seg.getDir() == Segment.SegDir.REVERSE) return;
         double cHdg = getGryoFhdg();
         double tHdg = Math.round(seg.getFieldHeading());
@@ -408,6 +457,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void doPostTurn(double fHdg)
     {
+        if(!opModeIsActive() || isStopRequested()) return;
         double cHdg = getGryoFhdg();
         double tHdg = Math.round(fHdg);
 
@@ -428,6 +478,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void doTurn(Segment seg)
     {
+        if(!opModeIsActive() || isStopRequested()) return;
         double cHdg = getGryoFhdg();
         double tHdg = Math.round(seg.getFieldHeading());
         if(seg.getDir() == Segment.SegDir.REVERSE)
@@ -503,6 +554,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         int timeout = 2000;
         BeaconFinder.LightOrder ord = BeaconFinder.LightOrder.UNKNOWN;
         ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
+
+        bSide = ButtonSide.UNKNOWN;
 
         tracker.setFrameQueueSize(10);
         tracker.setActive(true);
@@ -739,7 +792,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private static Field.ParkChoice parkChoice = Field.ParkChoice.CENTER_PARK;
     private static Field.Alliance alliance = Field.Alliance.RED;
     private static Team team = Team.SONIC;
-    private static double DEF_SHT_PWR = 0.9;
+    private static double DEF_SHT_PWR = 0.85;
 
     private HalDashboard dashboard;
 

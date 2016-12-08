@@ -295,8 +295,8 @@ class Points
 
     private static final double TRGT1_Y = -12.0;
 
-    private static final double TRGT2_Y =  36.0;
-    private static final double PREP2_Y  = TRGT2_Y - 6.0;
+    private static final double TRGT2_Y =  35.0;
+    private static final double PREP2_Y  = TRGT2_Y - 5.0;
     private static final double CTRPRKX = -12.0;
     private static final double CTRPRKY = -12.0;
     private static final double CRNPRKX = -48.0;
@@ -305,6 +305,7 @@ class Points
     private static final double SAFETY  =   0.0;
     private static final double SCAN_X  = -40.0;
     private static final double BECN_X  = -50.5;
+    private static final double BECN2X  = -50.2;
     private static final double TOUCHX  = -56.0;
     private static final double TOUCH2  = -58.0;
     private static final double BMID_X  = -24.0;
@@ -333,8 +334,8 @@ class Points
     private Point2d PRSS1_PT = new Point2d("PRSS1", TOUCHX, TRGT1_Y);
     private Point2d RVRS1_PT = new Point2d("RVRS1", BECN_X, TRGT1_Y);
     private Point2d SCAN2_PT = new Point2d("SCAN2", SCAN_X, TRGT2_Y);
-    private Point2d PREP2_PT = new Point2d("PREP2", BECN_X, PREP2_Y);
-    private Point2d BECN2_PT = new Point2d("BECN2", BECN_X, TRGT2_Y);
+    private Point2d PREP2_PT = new Point2d("PREP2", BECN2X, PREP2_Y);
+    private Point2d BECN2_PT = new Point2d("BECN2", BECN2X, TRGT2_Y);
     private Point2d PRSS2_PT = new Point2d("PRSS2", TOUCH2, TRGT2_Y);
     private Point2d RVRS2_PT = new Point2d("RVRS2", BECN_X, TRGT2_Y);
     private Point2d B_MID_PT = new Point2d("B_MID", BMID_X, BMID_Y);

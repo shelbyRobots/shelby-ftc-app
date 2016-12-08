@@ -190,8 +190,16 @@ class Drivetrain
         double leftSpeed;
         double rightSpeed;
 
+        int ihdg = (int)(Math.round(hdg));
+
         // determine turn power based on +/- error
         error = getGyroError((int)hdg);
+
+        if(error * lastGyroError < 0) //error sign changed - we passed target
+        {
+            DbgLog.msg("SJH: ctrTurnGryo overshot lastErr %5.2f error %5.2f hdg %d tgt %d",
+                    lastGyroError, error, getGryoFhdg(), ihdg);
+        }
 
         if (Math.abs(error) <= TURN_TOLERANCE)
         {
@@ -202,6 +210,8 @@ class Drivetrain
         }
         else
         {
+            double d = (error - lastGyroError)/gyroFrameTime.seconds();
+            gyroFrameTime.reset();
             steer = getSteer(error, PADJ_TURN);
             rightSpeed  = pwr * steer;
             Range.clip(rightSpeed, -1, 1);
@@ -214,6 +224,7 @@ class Drivetrain
 
         left_drive.setPower(leftSpeed);
         right_drive.setPower(rightSpeed);
+        lastGyroError = error;
 
         if(ptmr.seconds() > printTimeout)
         {
@@ -277,6 +288,7 @@ class Drivetrain
         lposLast = left_drive.getCurrentPosition();
         rposLast = right_drive.getCurrentPosition();
         DbgLog.msg("SJH: Starting gyro turn corrections");
+        gyroFrameTime.reset();
         while(!ctrTurnGyro(tgtHdg, pwr) &&
               !areMotorsStuck()         &&
               op.opModeIsActive()       &&
@@ -524,6 +536,12 @@ class Drivetrain
 
             frame++;
         }
+        else
+        {
+            ldp = pwr;
+            rdp = pwr;
+            move(ldp, rdp);
+        }
     }
 
     private double getEncoderError()
@@ -661,7 +679,7 @@ class Drivetrain
     private final static double TURN_TOLERANCE = 1.0;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
-    private static double WHL_DIAMETER = 6.35 * DRV_TUNER; //Diameter of the wheel (inches)
+    private static double WHL_DIAMETER = 6.5 * DRV_TUNER; //Diameter of the wheel (inches)
     private final static int    ENCODER_CPR = ShelbyBot.ENCODER_CPR;
     private final static double GEAR_RATIO  = 1;                   //Gear ratio
 
@@ -705,5 +723,8 @@ class Drivetrain
     private boolean usePosStop = true;
 
     private boolean gyroReady = false;
+    private double lastGyroError = 0;
+    private boolean useLastError = true;
 
+    private ElapsedTime gyroFrameTime = new ElapsedTime();
 }

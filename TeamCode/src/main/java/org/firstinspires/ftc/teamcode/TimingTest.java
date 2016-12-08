@@ -2,12 +2,15 @@ package org.firstinspires.ftc.teamcode;
 
 import android.util.Log;
 
-import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cColorSensor;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
+import java.util.Locale;
 
 @TeleOp(name="Test: Loop Timing", group="3543TestSamples")
 public class TimingTest extends LinearOpMode
@@ -19,34 +22,41 @@ public class TimingTest extends LinearOpMode
     }
 
     private static final String TAG = "TrcDbg";
-    private static final double DRIVE_POWER = 0.2;
-    private static final double TURN_POWER = 0.4;
+    //private static final double DRIVE_POWER = 0.2;
+    //private static final double TURN_POWER = 0.4;
+    private static final double DEF_POWER = 0.4;
     private static SensorType sensorType = SensorType.GYRO;
     private static final DcMotor.Direction LEFTWHEEL_DIRECTION = DcMotor.Direction.FORWARD;
     private static final DcMotor.Direction RIGHTWHEEL_DIRECTION = DcMotor.Direction.REVERSE;
+    private static final double MS2NS = 1000000.0;
 
     private DcMotor lrWheel;
     private DcMotor rrWheel;
     private ModernRoboticsI2cGyro gyro;
-    //private ColorSensor colorSensor;
+    private ModernRoboticsI2cColorSensor colorSensor;
+
+    private boolean useSleep = true;
+    private int     sleepMs  = 10;
+
+    private boolean doTurn = true;
 
 
     public void runOpMode()
     {
         initRobot();
 
-        waitForStart();
-
+        gyro.calibrate();
         while (!isStopRequested() &&
                gyro.isCalibrating())
         {
             sleep(50);
         }
 
-        startRobot();
+        waitForStart();
 
+        //startRobot();
 
-        sleep(1000);  //Give motors time to ramp up to speed
+        //sleep(1000);  //Give motors time to ramp up to speed
 
         long minLoopInterval = Long.MAX_VALUE;
         long maxLoopInterval = Long.MIN_VALUE;
@@ -64,52 +74,78 @@ public class TimingTest extends LinearOpMode
         prevLoopTime = startTime;
         int prevSample = getSensorValue();
 
-        while (opModeIsActive())
+        ElapsedTime spdTimer = new ElapsedTime();
+        double spdTimout = 2.0;
+        double curSpd = 0.3;
+
+        colorSensor.getI2cController().deregisterForPortReadyCallback(colorSensor.getPort());
+
+        while (opModeIsActive() && curSpd <= 0.35)
         {
-            long currTime = System.nanoTime();
-            int currSample = getSensorValue();
-            long loopInterval = currTime - prevLoopTime;
-
-            if (currSample != prevSample)
+            Log.i(TAG, String.format(Locale.US, "TESTING AT SPEED = %5.2f", curSpd));
+            startRobot(curSpd);
+            while (spdTimer.seconds() < spdTimout)
             {
-                long sampleTime = currTime - prevSampleTime;
-                sampleCount++;
-                prevSample = currSample;
-                totalSampleTime += sampleTime;
-                prevSampleTime = currTime;
-                if (sampleTime < minSampleInterval)
-                    minSampleInterval = sampleTime;
-                else if (sampleTime > maxSampleInterval)
-                    maxSampleInterval = sampleTime;
-            }
+                long currTime = System.nanoTime();
+                int currSample = getSensorValue();
+                long loopInterval = currTime - prevLoopTime;
+                long sampleTime = 0;
+                boolean sampleIsNew = false;
 
-            if (loopInterval < minLoopInterval)
-            {
-                minLoopInterval = loopInterval;
-            }
-            else if (loopInterval > maxLoopInterval)
-            {
-                maxLoopInterval = loopInterval;
-            }
+                if (currSample != prevSample)
+                {
+                    sampleIsNew = true;
+                    sampleTime = currTime - prevSampleTime;
+                    sampleCount++;
+                    prevSample = currSample;
+                    totalSampleTime += sampleTime;
+                    prevSampleTime = currTime;
+                    if (sampleTime < minSampleInterval)
+                        minSampleInterval = sampleTime;
+                    else if (sampleTime > maxSampleInterval)
+                        maxSampleInterval = sampleTime;
+                }
 
-            logRobot(String.format("[%4d:%7.3f] LoopInterval=%7.3f, ",
-                    loopCount, (currTime - startTime)/1000000.0, loopInterval/1000000.0));
+                if (loopInterval < minLoopInterval)
+                {
+                    minLoopInterval = loopInterval;
+                } else if (loopInterval > maxLoopInterval)
+                {
+                    maxLoopInterval = loopInterval;
+                }
+                if (sampleIsNew)
+                {
+                    logRobot(String.format(Locale.US, "NEW SAMPLE - sampleTime %7.3f",
+                            sampleTime / MS2NS));
+                }
+                logRobot(String.format(Locale.US, "[%4d:%7.3f] LoopInterval=%7.3f, ",
+                        loopCount, (currTime - startTime) / MS2NS, loopInterval / MS2NS));
 
-            prevLoopTime = currTime;
-            loopCount++;
+                prevLoopTime = currTime;
+                if (useSleep) waitForTick(sleepMs);
+                loopCount++;
+            }
+            stopRobot();
+            waitForTick(500);
+            spdTimer.reset();
+            if(curSpd < 0.15) curSpd += 0.01;
+            else curSpd += 0.05;
+
+            colorSensor.getI2cController()
+                       .registerForI2cPortReadyCallback(colorSensor, colorSensor.getPort());
         }
         stopRobot();
 
         long endTime = System.nanoTime();
         Log.i(TAG, String.format(
                 "Loop: MinInterval=%7.3f, MaxInterval=%7.3f, AvgInterval=%7.3f",
-                minLoopInterval/1000000.0, maxLoopInterval/1000000.0,
-                (endTime - startTime)/1000000.0/loopCount));
+                minLoopInterval/MS2NS, maxLoopInterval/MS2NS,
+                (endTime - startTime)/MS2NS/loopCount));
         Log.i(TAG, String.format(
                 "Sensor: MinSampleInterval=%7.3f, MaxSampleInterval=%7.3f, AvgSampleInterval=%7.3f %7.3f",
-                minSampleInterval/1000000.0, maxSampleInterval/1000000.0,
-                (endTime - startTime)/1000000.0/sampleCount,
-                (double)totalSampleTime/sampleCount));
+                minSampleInterval/MS2NS, maxSampleInterval/MS2NS,
+                (endTime - startTime)/MS2NS/sampleCount,
+                (double)totalSampleTime/MS2NS/sampleCount));
     }
 
     private void initRobot()
@@ -123,6 +159,8 @@ public class TimingTest extends LinearOpMode
         rrWheel.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         lrWheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rrWheel.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        lrWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rrWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         lrWheel.setMaxSpeed(3000);
         rrWheel.setMaxSpeed(3000);
@@ -130,7 +168,7 @@ public class TimingTest extends LinearOpMode
         gyro = (ModernRoboticsI2cGyro)hardwareMap.gyroSensor.get("gyro");
         gyro.resetZAxisIntegrator();
 
-        //colorSensor = hardwareMap.colorSensor.get("color");
+        colorSensor = (ModernRoboticsI2cColorSensor)hardwareMap.colorSensor.get("color");
     }
 
     private int getSensorValue()
@@ -140,7 +178,11 @@ public class TimingTest extends LinearOpMode
         switch (sensorType)
         {
             case DRIVEBASE_ENCODERS:
-                value = (lrWheel.getCurrentPosition() + rrWheel.getCurrentPosition())/2;
+                int lrPos = lrWheel.getCurrentPosition();
+                int rrPos = rrWheel.getCurrentPosition();
+                value = rrPos;
+                if(Math.abs(lrPos) >= Math.abs(rrPos)) value = lrPos;
+                //value = (lrWheel.getCurrentPosition() + rrWheel.getCurrentPosition())/2;
                 break;
 
             case GYRO:
@@ -153,40 +195,25 @@ public class TimingTest extends LinearOpMode
 
     private void logRobot(String prefix)
     {
-        switch (sensorType)
-        {
-            case DRIVEBASE_ENCODERS:
-                // checking encoders.
-                Log.i(TAG, prefix + String.format("lr=%d, rr=%d",
-                        lrWheel.getCurrentPosition(), rrWheel.getCurrentPosition()));
-                break;
-
-            case GYRO:
-                // checking gyro.
-                Log.i(TAG, prefix + String.format("heading=%d %d", -gyro.getIntegratedZValue(),
-                        gyro.getHeading()));
-                break;
-        }
+        Log.i(TAG, prefix + String.format("heading=%d %d lspd %4.2f rspd %4.2f lPos %d rPos %d",
+                -gyro.getIntegratedZValue(),
+                gyro.getHeading(),
+                lrWheel.getPower(),
+                rrWheel.getPower(),
+                lrWheel.getCurrentPosition(),
+                rrWheel.getCurrentPosition()));
     }
 
     private void startRobot()
     {
-       double lspd = 0.0;
-       double rspd = 0.0;
-        switch (sensorType)
-        {
-            case DRIVEBASE_ENCODERS:
-               // Driving forward
-               lspd = DRIVE_POWER;
-               rspd = DRIVE_POWER;
-               break;
-            case GYRO:
-               // Turning right
-               lspd = TURN_POWER;
-               rspd = -TURN_POWER;
-               break;
-        }
-        lrWheel.setPower(lspd);
+        startRobot(DEF_POWER);
+    }
+
+    private void startRobot(double spd)
+    {
+        double rspd = spd;
+        if(doTurn) rspd = -rspd;
+        lrWheel.setPower(spd);
         rrWheel.setPower(rspd);
     }
 
@@ -196,4 +223,17 @@ public class TimingTest extends LinearOpMode
         rrWheel.setPower(0.0);
     }
 
+    private ElapsedTime period  = new ElapsedTime();
+
+    void waitForTick(long periodMs)
+    {
+        long  remaining = periodMs - (long)period.milliseconds();
+
+        // sleep for the remaining portion of the regular cycle period.
+        if (remaining > 0)
+            sleep(remaining);
+
+        // Reset the cycle clock for the next pass.
+        period.reset();
+    }
 }
