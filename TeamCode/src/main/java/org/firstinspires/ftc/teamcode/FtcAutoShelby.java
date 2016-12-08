@@ -7,8 +7,6 @@ import android.widget.TextView;
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.I2cController;
-import com.qualcomm.robotcore.hardware.I2cDevice;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.RobotLog;
 
@@ -72,12 +70,14 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         hardwareMap.logDevices();
         robot.init(hardwareMap);
 
+        robot.colorSensor.resetDeviceConfigurationForOpMode();
         robot.colorSensor.enableLed(true);
         robot.colorSensor.enableLed(false);
         sleep(100);
         robot.colorSensor.enableLed(true);
         sleep(100);
         robot.colorSensor.enableLed(false);
+        turnColorOff();
 
         tracker = new ImageTracker();
 
@@ -166,7 +166,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
         DbgLog.msg("SJH: Delaying for %4.2f seconds", delay);
         ElapsedTime delayTimer = new ElapsedTime();
-        while (delayTimer.seconds() < delay)
+        while (opModeIsActive() && delayTimer.seconds() < delay)
         {
             idle();
         }
@@ -231,6 +231,12 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                 if(gyroReady) doPostTurn(pturn);
             }
 
+            if(!opModeIsActive() || isStopRequested())
+            {
+                drvTrn.stopAndReset();
+                break;
+            }
+
             DbgLog.msg("SJH Planned pos: %s %s",
                     pathSegs[i].getTgtPt(),
                     pathSegs[i].getFieldHeading());
@@ -263,6 +269,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void doMove(Segment seg)
     {
+        if(!opModeIsActive() || isStopRequested()) return;
         String  snm = seg.getName();
         Point2d spt = seg.getStrtPt();
         Point2d ept = seg.getTgtPt();
@@ -285,6 +292,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         if(robot.colorSensor != null && seg.getTgtType() == Segment.TargetType.COLOR)
         {
             DbgLog.msg("SJH: Turning on colorSensor LED");
+            turnColorOn();
             robot.colorSensor.enableLed(true);
             DcMotor.RunMode lRunMode = robot.leftMotor.getMode();
             DcMotor.RunMode rRunMode = robot.rightMotor.getMode();
@@ -318,6 +326,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                     drvTrn.driveDistanceLinear(3.0, 0.3, Drivetrain.Direction.REVERSE);
                     break;
                 }
+                turnColorOff();
             }
             //sleep(1500);
         }
@@ -337,6 +346,24 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                 seg.getName(), timer.time(), getGryoFhdg());
     }
 
+    private void turnColorOn()
+    {
+        robot.colorSensor.getI2cController()
+                .registerForI2cPortReadyCallback(robot.colorSensor,
+                                                 robot.colorSensor.getPort());
+        robot.colorSensor.enableLed(true);
+        sleep(100);
+        robot.colorSensor.enableLed(false);
+        sleep(100);
+        robot.colorSensor.enableLed(true);
+    }
+
+    private void turnColorOff()
+    {
+        robot.colorSensor.getI2cController()
+                .deregisterForPortReadyCallback(robot.colorSensor.getPort());
+    }
+
     private double getGryoFhdg()
     {
         double cHdg = robot.gyro.getIntegratedZValue() + initHdg;
@@ -349,6 +376,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void doEncoderPostTurn(double fHdg)
     {
+        if(!opModeIsActive() || isStopRequested()) return;
         double cHdg = getGryoFhdg();
         double tHdg = Math.round(fHdg);
         double angle = tHdg - cHdg;
@@ -371,6 +399,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void doEncoderTurn(Segment seg)
     {
+        if(!opModeIsActive() || isStopRequested()) return;
         if (seg.getDir() == Segment.SegDir.REVERSE) return;
         double cHdg = getGryoFhdg();
         double tHdg = Math.round(seg.getFieldHeading());
@@ -395,6 +424,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void doPostTurn(double fHdg)
     {
+        if(!opModeIsActive() || isStopRequested()) return;
         double cHdg = getGryoFhdg();
         double tHdg = Math.round(fHdg);
 
@@ -415,6 +445,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void doTurn(Segment seg)
     {
+        if(!opModeIsActive() || isStopRequested()) return;
         double cHdg = getGryoFhdg();
         double tHdg = Math.round(seg.getFieldHeading());
         if(seg.getDir() == Segment.SegDir.REVERSE)

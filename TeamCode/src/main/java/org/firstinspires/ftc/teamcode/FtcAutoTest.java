@@ -174,6 +174,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         tseg.setSpeed(testSpeed);
         tseg.setPostTurn(testPost);
         drvTrn.setDrvTuner(testK);
+        tseg.setAction(Segment.Action.NOTHING);
 
         pathSegs[0] = tseg;
 
@@ -197,6 +198,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
 
     private void do_main_loop()
     {
+        robot.gyro.resetZAxisIntegrator();
         boolean SkipNextSegment = false;
         for (int i = 0; i < pathSegs.length; ++i)
         {
@@ -533,7 +535,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         FtcChoiceMenu teamMenu     = new FtcChoiceMenu("TEAM:", allianceMenu, this);
         FtcValueMenu  testDistMenu = new FtcValueMenu("DIST:",  startPosMenu, this, 0.0, 60.0, 1.0, 48.0,  "%4.1f");
         FtcValueMenu  testPostMenu = new FtcValueMenu("POST:",  testDistMenu, this, -90.0, 90.0, 5.0, 0.0,  "%4.1f");
-        FtcValueMenu  testSpdMenu  = new FtcValueMenu("SPEED:", testPostMenu, this, 0.0, 1.0, 0.01, 0.1,  "%4.2f");
+        FtcValueMenu  testSpdMenu  = new FtcValueMenu("SPEED:", testPostMenu, this, 0.0, 1.0, 0.1, 0.5,  "%4.2f");
         FtcValueMenu  testKMenu    = new FtcValueMenu("K:",     testSpdMenu,  this, 0.5, 1.5, 0.01, 1.0, "%4.2f");
 
         startPosMenu.addChoice("Start_A", Field.StartPos.START_A, pushMenu);

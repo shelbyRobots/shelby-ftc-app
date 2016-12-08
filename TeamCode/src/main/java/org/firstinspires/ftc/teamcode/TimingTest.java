@@ -2,9 +2,11 @@ package org.firstinspires.ftc.teamcode;
 
 import android.util.Log;
 
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cColorSensor;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -31,7 +33,7 @@ public class TimingTest extends LinearOpMode
     private DcMotor lrWheel;
     private DcMotor rrWheel;
     private ModernRoboticsI2cGyro gyro;
-    //private ColorSensor colorSensor;
+    private ModernRoboticsI2cColorSensor colorSensor;
 
     private boolean useSleep = true;
     private int     sleepMs  = 10;
@@ -74,9 +76,11 @@ public class TimingTest extends LinearOpMode
 
         ElapsedTime spdTimer = new ElapsedTime();
         double spdTimout = 2.0;
-        double curSpd = 0.01;
+        double curSpd = 0.3;
 
-        while (opModeIsActive() && curSpd <= 1.0)
+        colorSensor.getI2cController().deregisterForPortReadyCallback(colorSensor.getPort());
+
+        while (opModeIsActive() && curSpd <= 0.35)
         {
             Log.i(TAG, String.format(Locale.US, "TESTING AT SPEED = %5.2f", curSpd));
             startRobot(curSpd);
@@ -126,6 +130,9 @@ public class TimingTest extends LinearOpMode
             spdTimer.reset();
             if(curSpd < 0.15) curSpd += 0.01;
             else curSpd += 0.05;
+
+            colorSensor.getI2cController()
+                       .registerForI2cPortReadyCallback(colorSensor, colorSensor.getPort());
         }
         stopRobot();
 
@@ -161,7 +168,7 @@ public class TimingTest extends LinearOpMode
         gyro = (ModernRoboticsI2cGyro)hardwareMap.gyroSensor.get("gyro");
         gyro.resetZAxisIntegrator();
 
-        //colorSensor = hardwareMap.colorSensor.get("color");
+        colorSensor = (ModernRoboticsI2cColorSensor)hardwareMap.colorSensor.get("color");
     }
 
     private int getSensorValue()
