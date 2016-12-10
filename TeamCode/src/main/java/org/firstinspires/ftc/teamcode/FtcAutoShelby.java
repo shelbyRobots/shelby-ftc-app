@@ -385,6 +385,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
         robot.colorSensor.getI2cController()
                 .registerForI2cPortReadyCallback(robot.colorSensor,
                                                  robot.colorSensor.getPort());
+
+        robot.colorSensor.resetDeviceConfigurationForOpMode();
         robot.colorSensor.enableLed(true);
         sleep(100);
         robot.colorSensor.enableLed(false);

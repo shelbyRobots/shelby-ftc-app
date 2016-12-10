@@ -87,7 +87,7 @@ class Drivetrain
         lposLast = left_drive.getCurrentPosition();
         rposLast = right_drive.getCurrentPosition();
         while(isBusy() &&
-                      !areMotorsStuck() &&
+                      !areDriveMotorsStuck() &&
                       op.opModeIsActive() &&
                       !op.isStopRequested())
         {
@@ -210,10 +210,15 @@ class Drivetrain
         }
         else
         {
-            double d = (error - lastGyroError)/gyroFrameTime.seconds();
+            double deltaErr = (error - lastGyroError)/gyroFrameTime.seconds();
+            double d = Kd_GyroTurn * deltaErr;
             gyroFrameTime.reset();
-            steer = getSteer(error, PADJ_TURN);
+            steer = getSteer(error, Kp_GyroTurn);
             rightSpeed  = pwr * steer;
+            if(useDterm)
+            {
+                rightSpeed += d;
+            }
             Range.clip(rightSpeed, -1, 1);
             if(Math.abs(rightSpeed) < minSpeed)
             {
@@ -442,16 +447,22 @@ class Drivetrain
 
     void makeGyroCorrections(double pwr, int thdg)
     {
+        if (!op.opModeIsActive() || op.isStopRequested())
+        {
+            right_drive.setPower( 0.0 );
+            left_drive.setPower( 0.0 );
+            return;
+        }
+
         double ldp; // = Math.abs(left_drive.getPower());
         double rdp; // = Math.abs(right_drive.getPower());
 
         double err = getGyroError(thdg);
 
-
         //if (Math.abs(err) < TURN_TOLERANCE)
         //   return;
 
-        double steer = getSteer(err, PADJ);
+        double steer = getSteer(err, Kp_GyrCorrection);
         //if (dir == Direction.REVERSE) steer *= -1;
 
         rdp = pwr + steer;
@@ -483,7 +494,7 @@ class Drivetrain
 
         if(Math.abs(err) > THRESH)
         {
-            double steer = getSteer(err, PADJ);
+            double steer = getSteer(err, Kp_EncCorrection);
 
             if(Math.abs(steer) > pwr)  steer = Math.signum(steer) * pwr;
             //if (dir == Direction.REVERSE) steer *= -1;
@@ -673,26 +684,25 @@ class Drivetrain
 
     public void setDrvTuner(double dtnr)
     {
-        DRV_TUNER = dtnr;
-        WHL_DIAMETER = 6.6 * DRV_TUNER;
-        CIRCUMFERENCE = Math.PI * WHL_DIAMETER;
-        CPI = ENCODER_CPR * GEAR_RATIO / CIRCUMFERENCE;
+        CPI = ENCODER_CPR * GEAR_RATIO / (CIRCUMFERENCE * dtnr);
     }
 
     private static double DRV_TUNER = 1.00;
     private final static double TRN_TUNER = 1.0;
-    private final static double TURN_TOLERANCE = 1.0;
+    private final static double TURN_TOLERANCE = 2.0;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
-    private static double WHL_DIAMETER = 6.5 * DRV_TUNER; //Diameter of the wheel (inches)
+    private static double WHL_DIAMETER = 6.5; //Diameter of the wheel (inches)
     private final static int    ENCODER_CPR = ShelbyBot.ENCODER_CPR;
     private final static double GEAR_RATIO  = 1;                   //Gear ratio
 
     private static double CIRCUMFERENCE = Math.PI * WHL_DIAMETER;
-    private static double CPI = ENCODER_CPR * GEAR_RATIO / CIRCUMFERENCE;
+    private static double CPI = ENCODER_CPR * GEAR_RATIO / (CIRCUMFERENCE * DRV_TUNER);
 
-    private static final double PADJ = 0.02;
-    private static final double PADJ_TURN = 0.01;
+    private static final double Kp_GyrCorrection = 0.02;
+    private static final double Kp_EncCorrection = 0.02;
+    private static final double Kp_GyroTurn      = 0.01;
+    private static final double Kd_GyroTurn      = 0.001;
     private static final double THRESH = Math.toRadians(0.004);
 
     public enum Direction {FORWARD, REVERSE}
@@ -714,7 +724,7 @@ class Drivetrain
     private double rposLast;
 
     private double noMoveTimeout = 0.5;
-    private int noMoveThreshLow = 20;
+    private int noMoveThreshLow = 10;
     private int noMoveThreshHi = 60;
     private double noMovePwrHi = 0.25;
     private ElapsedTime noMoveTimer = new ElapsedTime();
@@ -729,7 +739,7 @@ class Drivetrain
 
     private boolean gyroReady = false;
     private double lastGyroError = 0;
-    private boolean useLastError = true;
+    private boolean useDterm = false;
 
     private ElapsedTime gyroFrameTime = new ElapsedTime();
 }

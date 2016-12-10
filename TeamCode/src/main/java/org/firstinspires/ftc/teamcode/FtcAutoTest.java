@@ -59,61 +59,82 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         int s2cnts = 0;
         int s1cnts_last = 0;
         int s2cnts_last = 0;
-        double dur = 0.1;
-        double testTimeout = 4;
-        robot.leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        robot.rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        robot.leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        robot.rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        //robot.leftMotor.setPower(1.0);
-        //robot.rightMotor.setPower(1.0);
-        robot.shotmotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        robot.shotmotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        robot.shotmotor1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        robot.shotmotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        robot.shotmotor1.setPower(0.5);
-        robot.shotmotor2.setPower(0.5);
-        ElapsedTime sTimer = new ElapsedTime();
-        ElapsedTime mspdTimer = new ElapsedTime();
+        double dur = 0.2;
+        double testTimeout = 6;
 
-        DbgLog.msg("SJH: LMAXSPD %d", robot.leftMotor.getMaxSpeed());
-        DbgLog.msg("SJH: RMAXSPD %d", robot.rightMotor.getMaxSpeed());
-        DbgLog.msg("SJH: LSMAXSPD %d", robot.shotmotor1.getMaxSpeed());
-        DbgLog.msg("SJH: RSMAXSPD %d", robot.shotmotor2.getMaxSpeed());
-        while(mspdTimer.seconds() < testTimeout)
+        if(doMaxSpeedTest)
         {
-            double elapsed = sTimer.seconds();
-            if(elapsed >= dur)
+            robot.leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            robot.rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            robot.leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            robot.rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+            robot.leftMotor.setPower(1.0);
+            robot.rightMotor.setPower(1.0);
+            robot.shotmotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            robot.shotmotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+            //robot.shotmotor1.setPower(0.5);
+            //robot.shotmotor2.setPower(0.5);
+
+            DbgLog.msg("SJH: LMAXSPD %d", robot.leftMotor.getMaxSpeed());
+            DbgLog.msg("SJH: RMAXSPD %d", robot.rightMotor.getMaxSpeed());
+            DbgLog.msg("SJH: LSMAXSPD %d", robot.shotmotor1.getMaxSpeed());
+            DbgLog.msg("SJH: RSMAXSPD %d", robot.shotmotor2.getMaxSpeed());
+            sleep(500);
+
+            ElapsedTime sTimer = new ElapsedTime();
+            ElapsedTime mspdTimer = new ElapsedTime();
+            int lcnts_0 = robot.leftMotor.getCurrentPosition();
+            int rcnts_0 = robot.rightMotor.getCurrentPosition();
+
+            lcnts_last = robot.leftMotor.getCurrentPosition();
+            rcnts_last = robot.rightMotor.getCurrentPosition();
+
+            while (mspdTimer.seconds() < testTimeout)
             {
-                lcnts = robot.leftMotor.getCurrentPosition();
-                rcnts = robot.rightMotor.getCurrentPosition();
-                lavgspd = (lcnts - lcnts_last)/elapsed;
-                ravgspd = (rcnts - rcnts_last)/elapsed;
-                lcnts_last = lcnts;
-                rcnts_last = rcnts;
+                double elapsed = sTimer.seconds();
+                if (elapsed >= dur)
+                {
+                    lcnts = robot.leftMotor.getCurrentPosition();
+                    rcnts = robot.rightMotor.getCurrentPosition();
+                    lavgspd = (lcnts - lcnts_last) / elapsed;
+                    ravgspd = (rcnts - rcnts_last) / elapsed;
+                    lcnts_last = lcnts;
+                    rcnts_last = rcnts;
 
-                s1cnts = robot.shotmotor1.getCurrentPosition();
-                s2cnts = robot.shotmotor2.getCurrentPosition();
-                s1avgspd = (s1cnts - s1cnts_last)/elapsed;
-                s2avgspd = (s2cnts - s2cnts_last)/elapsed;
-                s1cnts_last = s1cnts;
-                s2cnts_last = s2cnts;
+                    s1cnts = robot.shotmotor1.getCurrentPosition();
+                    s2cnts = robot.shotmotor2.getCurrentPosition();
+                    s1avgspd = (s1cnts - s1cnts_last) / elapsed;
+                    s2avgspd = (s2cnts - s2cnts_last) / elapsed;
+                    s1cnts_last = s1cnts;
+                    s2cnts_last = s2cnts;
 
-                DbgLog.msg("SJH: %4.2f LEFT  AVG SPD %4.2f", mspdTimer.seconds(), lavgspd);
-                DbgLog.msg("SJH: %4.2f RIGHT AVG SPD %4.2f", mspdTimer.seconds(), ravgspd);
-                DbgLog.msg("SJH: %4.2f SHOT1 AVG SPD %4.2f", mspdTimer.seconds(), s1avgspd);
-                DbgLog.msg("SJH: %4.2f SHOT2 AVG SPD %4.2f", mspdTimer.seconds(), s2avgspd);
+                    DbgLog.msg("SJH: %4.2f LEFT  AVG SPD %4.2f", mspdTimer.seconds(), lavgspd);
+                    DbgLog.msg("SJH: %4.2f RIGHT AVG SPD %4.2f", mspdTimer.seconds(), ravgspd);
+                    DbgLog.msg("SJH: %4.2f SHOT1 AVG SPD %4.2f", mspdTimer.seconds(), s1avgspd);
+                    DbgLog.msg("SJH: %4.2f SHOT2 AVG SPD %4.2f", mspdTimer.seconds(), s2avgspd);
 
-                sTimer.reset();
+                    sTimer.reset();
+                }
             }
+            int delta_l = robot.leftMotor.getCurrentPosition() - lcnts_0;
+            int delta_r = robot.rightMotor.getCurrentPosition() - rcnts_0;
+            lavgspd = (delta_l) / mspdTimer.seconds();
+            ravgspd = (delta_r) / mspdTimer.seconds();
+            DbgLog.msg("SJH: %4.2f LEFT  TOTAL AVG MAX SPD %4.2f", mspdTimer.seconds(), lavgspd);
+            DbgLog.msg("SJH: %4.2f RIGHT TOTAL AVG MAX SPD %4.2f", mspdTimer.seconds(), ravgspd);
         }
 
         robot.leftMotor.setPower(0.0);
         robot.rightMotor.setPower(0.0);
         robot.shotmotor1.setPower(0.0);
         robot.shotmotor2.setPower(0.0);
+
+        robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.shotmotor1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.shotmotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         do_main_loop();
     }
@@ -158,27 +179,46 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         {
             drvTrn.init(robot.leftMotor, robot.rightMotor, robot.gyro);
             drvTrn.setOpMode(getInstance());
+            DbgLog.msg("SJH: Starting gyro calibration");
             robot.gyro.calibrate();
 
             // make sure the gyro is calibrated before continuing
-            while (!isStopRequested() && robot.gyro.isCalibrating())
+            ElapsedTime gyroTimer = new ElapsedTime();
+            double gyroInitTimout = 5.0;
+            boolean gyroCalibTimedout = false;
+            gyroTimer.reset();
+            while (!isStopRequested() &&
+                           robot.gyro.isCalibrating())
             {
                 sleep(50);
+                if(gyroTimer.seconds() > gyroInitTimout)
+                {
+                    DbgLog.msg("SJH: GYRO INIT TIMED OUT!!");
+                    gyroCalibTimedout = true;
+                    break;
+                }
             }
+            DbgLog.msg("SJH: Gyro callibrated in %4.2f seconds", gyroTimer.seconds());
+
+            gyroReady = !gyroCalibTimedout;
+            if(gyroReady) robot.gyro.resetZAxisIntegrator();
         }
 
         pathSegs = new Segment[1];
 
         Segment tseg = new Segment("TESTSEG", new Point2d(0.0, 0.0), new Point2d(0.0, testDist));
 
-        tseg.setSpeed(testSpeed);
-        tseg.setPostTurn(testPost);
-        drvTrn.setDrvTuner(testK);
-        tseg.setAction(Segment.Action.NOTHING);
-
         pathSegs[0] = tseg;
 
         initHdg = pathSegs[0].getFieldHeading();
+
+        tseg.setSpeed(testSpeed);
+        tseg.setPostTurn(testPost + initHdg);
+        tseg.setDrvTuner(testK);
+        drvTrn.setDrvTuner(testK);
+        tseg.setDir(Segment.SegDir.FORWARD);
+        tseg.setTgtType(Segment.TargetType.TIME);
+        tseg.setAction(Segment.Action.NOTHING);
 
         Point2d currPoint = pathSegs[0].getStrtPt();
         drvTrn.setCurrPt(currPoint);
@@ -222,14 +262,20 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
                 curPos = null;
             }
 
-            doEncoderTurn(curSeg); //quick but rough
+            doEncoderTurn(curSeg);
             doTurn(curSeg); //fine tune using gyro
-            doMove(curSeg);
-
-            if(curSeg.getPostTurn() != null)
+            if(curSeg.getLength() > 1.0)
             {
-                doEncoderTurn(pathSegs[i+1]);
-                doTurn(pathSegs[i+1]);
+                doMove(curSeg);
+            }
+
+            Double pturn = curSeg.getPostTurn();
+
+            if(usePostTurn && pturn != null)
+            {
+                DbgLog.msg("SJH POST TURN %s", curSeg.getName());
+                doEncoderPostTurn(pturn);
+                if(gyroReady) doPostTurn(pturn);
             }
 
             DbgLog.msg("SJH Planned pos: %s %s",
@@ -301,6 +347,29 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         return cHdg;
     }
 
+    private void doEncoderPostTurn(double fHdg)
+    {
+        if(!opModeIsActive() || isStopRequested()) return;
+        double cHdg = getGryoFhdg();
+        double tHdg = Math.round(fHdg);
+        double angle = tHdg - cHdg;
+        DbgLog.msg("SJH: doEncoderPostTurn CHDG %4.1f THDG %4.1f",
+                cHdg,
+                tHdg);
+
+        while (angle <= -180.0) angle += 360.0;
+        while (angle >   180.0) angle -= 360.0;
+        if(Math.abs(angle) <= 5.0) return;
+
+        DbgLog.msg("SJH: Turn %5.2f", angle);
+        dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
+        timer.reset();
+        drvTrn.ctrTurnLinear(angle, DEF_ENCTRN_PWR);
+        cHdg = getGryoFhdg();
+        DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f CHDG: %5.2f",
+                angle, timer.time(), cHdg);
+    }
+
     private void doEncoderTurn(Segment seg)
     {
         if (seg.getDir() == Segment.SegDir.REVERSE) return;
@@ -319,11 +388,32 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         DbgLog.msg("SJH: Turn %5.2f", angle);
         dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
         timer.reset();
-        drvTrn.ctrTurnLinear(angle,DEF_TRN_PWR);
+        drvTrn.ctrTurnLinear(angle,DEF_ENCTRN_PWR);
         //drvTrn.ctrTurnLinearGyro(angle,DEF_TRN_PWR);
         cHdg = getGryoFhdg();
         DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f CHDG: %5.2f",
                 angle, timer.time(), cHdg);
+    }
+
+    private void doPostTurn(double fHdg)
+    {
+        if(!opModeIsActive() || isStopRequested()) return;
+        double cHdg = getGryoFhdg();
+        double tHdg = Math.round(fHdg);
+
+        DbgLog.msg("SJH: do post GyroTurn CHDG %4.1f THDG %4.1f",
+                cHdg,
+                tHdg);
+
+        if(Math.abs(tHdg-cHdg) <= 1.0)
+            return;
+
+        timer.reset();
+        drvTrn.ctrTurnToHeading(tHdg, DEF_GYRTRN_PWR);
+
+        cHdg = getGryoFhdg();
+        DbgLog.msg("SJH Completed post turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
+                tHdg, timer.time(), cHdg);
     }
 
     private void doTurn(Segment seg)
@@ -342,7 +432,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
             return;
 
         timer.reset();
-        drvTrn.ctrTurnToHeading(tHdg, DEF_TRN_PWR);
+        drvTrn.ctrTurnToHeading(tHdg, DEF_ENCTRN_PWR);
         cHdg = getGryoFhdg();
         DbgLog.msg("SJH Completed turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
                 tHdg, timer.time(), cHdg);
@@ -533,14 +623,15 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         FtcChoiceMenu parkMenu     = new FtcChoiceMenu("PARK:", pushMenu, this);
         FtcChoiceMenu allianceMenu = new FtcChoiceMenu("ALLIANCE:", parkMenu, this);
         FtcChoiceMenu teamMenu     = new FtcChoiceMenu("TEAM:", allianceMenu, this);
-        FtcValueMenu  testDistMenu = new FtcValueMenu("DIST:",  startPosMenu, this, 0.0, 60.0, 1.0, 48.0,  "%4.1f");
-        FtcValueMenu  testPostMenu = new FtcValueMenu("POST:",  testDistMenu, this, -90.0, 90.0, 5.0, 0.0,  "%4.1f");
+        FtcChoiceMenu testMaxMenu  = new FtcChoiceMenu("MAXSPD:", startPosMenu, this);
+        FtcValueMenu  testDistMenu = new FtcValueMenu("DIST:",  testMaxMenu,  this, 0.0, 60.0, 6.0, 48.0,  "%4.1f");
+        FtcValueMenu  testPostMenu = new FtcValueMenu("POST:",  testDistMenu, this, -90.0, 90.0, 2.5, 0.0,  "%4.1f");
         FtcValueMenu  testSpdMenu  = new FtcValueMenu("SPEED:", testPostMenu, this, 0.0, 1.0, 0.1, 0.5,  "%4.2f");
         FtcValueMenu  testKMenu    = new FtcValueMenu("K:",     testSpdMenu,  this, 0.5, 1.5, 0.01, 1.0, "%4.2f");
 
         startPosMenu.addChoice("Start_A", Field.StartPos.START_A, pushMenu);
         startPosMenu.addChoice("Start_B", Field.StartPos.START_B, pushMenu);
-        startPosMenu.addChoice("Start_TEST", Field.StartPos.START_TEST, testDistMenu);
+        startPosMenu.addChoice("Start_TEST", Field.StartPos.START_TEST, testMaxMenu);
         pushMenu.addChoice("BOTH", Field.BeaconChoice.BOTH, parkMenu);
         pushMenu.addChoice("NEAR", Field.BeaconChoice.NEAR, parkMenu);
         pushMenu.addChoice("FAR",  Field.BeaconChoice.FAR,  parkMenu);
@@ -555,6 +646,8 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         teamMenu.addChoice("Sonic",   Team.SONIC);
         teamMenu.addChoice("Snowman", Team.SNOWMAN);
 
+        testMaxMenu.addChoice("TRUE",  Boolean.TRUE,  testDistMenu);
+        testMaxMenu.addChoice("FALSE", Boolean.FALSE, testDistMenu);
         testDistMenu.setChildMenu(testPostMenu);
         testPostMenu.setChildMenu(testSpdMenu);
         testSpdMenu.setChildMenu(testKMenu);
@@ -574,6 +667,8 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         parkChoice = (Field.ParkChoice)parkMenu.getCurrentChoiceObject();
         alliance = (Field.Alliance)allianceMenu.getCurrentChoiceObject();
         team = (Team)teamMenu.getCurrentChoiceObject();
+
+        doMaxSpeedTest = (Boolean)testMaxMenu.getCurrentChoiceObject();
         testDist  = testDistMenu.getCurrentValue();
         testPost  = testPostMenu.getCurrentValue();
         testSpeed = testSpdMenu.getCurrentValue();
@@ -649,7 +744,8 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
     private final static double CTR_PUSH_POS = 0.5;
 
     //private final static double DEF_DRV_PWR  = 0.7;
-    private final static double DEF_TRN_PWR  = 0.45;
+    private final static double DEF_ENCTRN_PWR = 0.4;
+    private final static double DEF_GYRTRN_PWR = 0.45;
 
     private final static double SHT_PWR_SONIC = 0.50;
     private final static double SHT_PWR_SNOWMAN = 0.50;
@@ -687,6 +783,12 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
     private double testK = 1.0;
 
     private double initHdg = 0.0;
+
+    private boolean usePostTurn = true;
+
+    private boolean gyroReady;
+
+    private Boolean doMaxSpeedTest = false;
 }
 
 
