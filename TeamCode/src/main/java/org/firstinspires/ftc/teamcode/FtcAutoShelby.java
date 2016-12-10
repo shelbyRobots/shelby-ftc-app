@@ -2,7 +2,6 @@
 package org.firstinspires.ftc.teamcode;
 
 import android.app.Activity;
-import android.graphics.Bitmap;
 import android.widget.TextView;
 
 import com.qualcomm.ftccommon.DbgLog;
@@ -17,6 +16,8 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.core.Core;
+import org.opencv.core.Mat;
 
 import ftclib.FtcChoiceMenu;
 import ftclib.FtcMenu;
@@ -29,7 +30,7 @@ import hallib.HalDashboard;
 @SuppressWarnings({"unused", "ForLoopReplaceableByForEach"})
 @Autonomous(name="AutonShelby", group="Auton")
 //@Disabled
-public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
+public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, CameraBridgeViewBase.CvCameraViewListener2
 {
     public FtcAutoShelby()
     {
@@ -67,6 +68,11 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     @Override
     public void stopMode()
     {
+        if (openCVCamera != null)
+        {
+            openCVCamera.disableView();
+        }
+
         if(drvTrn != null) drvTrn.stopAndReset();
     }
 
@@ -84,8 +90,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         sleep(100);
         robot.colorSensor.enableLed(false);
         turnColorOff();
-
-        tracker = new ImageTracker();
 
         BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(hardwareMap.appContext) {
             @Override
@@ -279,21 +283,18 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                 case SHOOT:
                     do_shoot();
                     break;
-                case SCAN_IMAGE:
-                    if (scanImage && findSensedLoc())
-                    {
-                        DbgLog.msg("SJH Sensed pos: %s %s",
-                                curPos, curHdg);
-                    }
-                    break;
+
                 case FIND_BEACON:
-
-                    SkipNextSegment = !do_findBeaconOrder(true);
-
+                    do_findAndPushBeacon();
+                    // Only using the BECN segments for post turns
+                    // See Points.initSegments for logic/setup
+                    SkipNextSegment = true;
                     break;
+
                 case RST_PUSHER:
                     robot.pusher.setPosition(ZER_PUSH_POS);
                     break;
+
                 case NOTHING:
                     break;
             }
@@ -500,141 +501,159 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
                 tHdg, timer.time(), cHdg);
     }
 
-    private boolean findSensedLoc()
+    private void do_findAndPushBeacon()
     {
-        DbgLog.msg("SJH findSensedLoc");
-        dashboard.displayPrintf(2, "STATE: %s", "FIND IMG LOC");
-        curPos = null;
-        ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
-        tracker.setActive(true);
-        Point2d sensedBotPos = null;
-        double  sensedFldHdg = pathSegs[0].getFieldHeading();
-        while(opModeIsActive() && itimer.milliseconds() < 2000)
-        {
-            tracker.updateRobotLocationInfo();
-            sensedBotPos = tracker.getSensedPosition();
+        DbgLog.msg("SJH: /BEACON/ > THE HUNT FOR BEACON");
 
-            if(sensedBotPos != null)
+        String beaconStep = "FIND";
+        BeaconDetector.BeaconSide pushSide = BeaconDetector.BeaconSide.UNKNOWN;
+        boolean allDone = false;
+        double baseSpeed = 0.3;
+        double bConf = 0.0;
+        double zPos = 0.0;
+        double zOff = 0.0;
+        double xOff = 0.0;
+        double rDv = 0.0;
+        double lDv = 0.0;
+        double curDistCount = 0.0;
+        double bailPos = -1;
+
+        bd.startSensing();
+        sleep( 500 );
+
+        while(opModeIsActive() && !allDone ) {
+
+            switch ( beaconStep )
             {
-                curPos = sensedBotPos;
-                sensedFldHdg = tracker.getSensedFldHeading();
-                curHdg = sensedFldHdg;
-                break;
+                case "FIND":
+
+                    bd.logDebug();
+
+                    if ( bd.getBeaconConf() > 0.25 )
+                    {
+                        beaconStep = "FORWARD";
+                        DbgLog.msg("SJH: /BEACON/FIND > CONFIDENCE HIGH, MOVE ALONG" );
+                    }
+                    else
+                    {
+                        beaconStep = "LEAVE";
+                        DbgLog.msg("SJH: /BEACON/FIND > CONFIDENCE LOW, NEXT STEP" );
+                    }
+
+                    break;
+
+                case "FORWARD":
+
+                    bd.logDebug();
+
+                    bConf = bd.getBeaconConf();
+                    zPos = bd.getBeaconPosZ();
+                    xOff = bd.getBeaconPosX();
+                    zOff = 1.0 - zPos;
+
+                    rDv = baseSpeed + zOff * xOff * 0.0025;
+                    lDv = baseSpeed - zOff * xOff * 0.0025;
+
+                    robot.rightMotor.setPower( rDv );
+                    robot.leftMotor.setPower( lDv );
+
+                    curDistCount = ( robot.leftMotor.getCurrentPosition() + robot.rightMotor.getCurrentPosition() ) / 2.0;
+
+                    DbgLog.msg("SJH: /BEACON/FORWARD > r: %5.2f, l: %5.2f ", rDv, lDv );
+
+                    // Good when the beacon is in view enough or at least
+                    // some driving done.
+                    if ( zPos > 0.65 && drvTrn.countsToDistance( curDistCount ) > 10.0 )
+                    {
+                        // Stop turning
+                        robot.rightMotor.setPower( 0.0 );
+                        robot.rightMotor.setPower( 0.0 );
+
+                        if ( alliance == Field.Alliance.BLUE ) {
+                            pushSide = bd.getBluePosSide();
+                        }
+                        else if ( alliance == Field.Alliance.RED ) {
+                            pushSide = bd.getRedPosSide();
+                        }
+
+                        if ( pushSide == BeaconDetector.BeaconSide.UNKNOWN )
+                        {
+                            beaconStep = "BACKUP";
+                            bailPos = curDistCount;
+                            DbgLog.msg("SJH: /BEACON/FORWARD > NO SIDE DETECTED, EXITING AT %5.2f ", bailPos );
+                        }
+                        else
+                        {
+                            beaconStep = "PUSH";
+                            DbgLog.msg("SJH: /BEACON/FORWARD > TIME TO PUSH BUTTON ON THE %s", pushSide );
+                        }
+                    }
+                    else if ( bConf < 0.2 )
+                    {
+                        beaconStep = "BACKUP";
+                        bailPos = curDistCount;
+                        DbgLog.msg("SJH: /BEACON/FORWARD > CONFIDENCE DROPPED UNDER THREASHOLD %5.2f", bConf );
+                    }
+//                    else if ( drvTrn.areDriveMotorsStuck() )
+//                    {
+//                        beaconStep = "BACKUP";
+//                        DbgLog.msg("SJH: /BEACON/FORWARD > MOTORS ARE NOT MOVING, EXITING AT %5.2f ", curDistCount );
+//                    }
+
+                    break;
+
+                case "PUSH":
+
+                    switch ( pushSide ){
+
+                        case LEFT:
+                            robot.pusher.setPosition(LFT_PUSH_POS);
+                            break;
+
+                        case RIGHT:
+                            robot.pusher.setPosition(RGT_PUSH_POS);
+                            break;
+                    }
+
+                    sleep( 500 );
+
+                    DbgLog.msg("SJH: /BEACON/PUSH > GOING TO PUSH BUTTON" );
+                    drvTrn.driveDistanceLinear( 4.0, 0.3, Drivetrain.Direction.FORWARD );
+                    DbgLog.msg("SJH: /BEACON/PUSH > PUSHED THE BUTTON" );
+
+                    beaconStep = "BACKUP";
+
+                    break;
+
+                case "BACKUP":
+
+                    DbgLog.msg("SJH: /BEACON/BACKUP > BACKING UP" );
+                    if ( bailPos > 0 )
+                        drvTrn.driveDistanceLinear( drvTrn.countsToDistance( bailPos ), 0.5, Drivetrain.Direction.REVERSE );
+                    else
+                        drvTrn.driveDistanceLinear( 8.0, 0.5, Drivetrain.Direction.REVERSE );
+
+                    DbgLog.msg("SJH: /BEACON/BACKUP > BACKED UP" );
+                    robot.pusher.setPosition(ZER_PUSH_POS);
+                    beaconStep = "LEAVE";
+
+                    break;
+
+                case "LEAVE":
+
+                    allDone = true;
+                    DbgLog.msg("SJH: /BEACON/LEAVE > MOVING ALONG" );
+                    break;
+
             }
-            sleep(50);
+
+            sleep( 10 );
+            idle();
         }
 
-        tracker.setActive(false);
+        bd.stopSensing();
 
-        if ( sensedBotPos != null )
-        {
-            DbgLog.msg("Image based location: %s %5.2f", sensedBotPos, sensedFldHdg);
-            dashboard.displayPrintf(4, "SENSLOC: %s %5.2f",
-                    sensedBotPos, sensedFldHdg);
-        }
-        else
-        {
-            dashboard.displayPrintf(4, "SENSLOC: %s", "NO VALUE");
-        }
-
-        return (curPos != null);
-    }
-
-    private void do_beacon_push_integrated()
-    {
-        RobotLog.ii("SJH", "FIND/PUSH");
-        dashboard.displayPrintf(2, "STATE: %s", "BEACON FIND/PUSH");
-        do_findBeaconOrder(true);
-    }
-
-    private boolean do_findBeaconOrder(boolean push)
-    {
-        DbgLog.msg("SJH: FIND BEACON ORDER!!!");
-        dashboard.displayPrintf(2, "STATE: %s", "BEACON FIND");
-        int timeout = 2000;
-        BeaconFinder.LightOrder ord = BeaconFinder.LightOrder.UNKNOWN;
-        ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
-
-        bSide = ButtonSide.UNKNOWN;
-
-        tracker.setFrameQueueSize(10);
-        tracker.setActive(true);
-        while (opModeIsActive() &&
-               (ord == BeaconFinder.LightOrder.UNKNOWN ||
-                ord == BeaconFinder.LightOrder.RED_RED ||
-                ord == BeaconFinder.LightOrder.BLUE_BLUE) &&
-               itimer.milliseconds() < timeout)
-        {
-            Bitmap bmap = tracker.getImage();
-            if(bmap != null)
-            {
-                bd.setBitmap(bmap);
-                ord = bd.getLightOrder();
-            }
-            sleep(50);
-        }
-        tracker.setActive(false);
-        tracker.setFrameQueueSize(0);
-
-        if (ord != BeaconFinder.LightOrder.UNKNOWN)
-        {
-            DbgLog.msg("SJH: Found Beacon!!! " + ord);
-        }
-
-        if (ord == BeaconFinder.LightOrder.BLUE_RED)
-        {
-            if (alliance == Field.Alliance.BLUE)
-            {
-                bSide = ButtonSide.LEFT;
-            }
-            else
-            {
-                bSide = ButtonSide.RIGHT;
-            }
-        }
-        else if (ord == BeaconFinder.LightOrder.RED_BLUE)
-        {
-            if (alliance == Field.Alliance.BLUE)
-            {
-                bSide = ButtonSide.RIGHT;
-            }
-            else
-            {
-                bSide = ButtonSide.LEFT;
-            }
-        }
-
-        DbgLog.msg("SJH: Gonna push button " + bSide);
-        dashboard.displayPrintf(5, "BUTTON: %s", bSide);
-
-        if(push)
-        {
-            do_pushButton(bSide);
-        }
-        return bSide != ButtonSide.UNKNOWN;
-    }
-
-    private void do_pushButton(ButtonSide bside)
-    {
-        DbgLog.msg("SJH: PUSH BUTTON!!!");
-        dashboard.displayPrintf(2, "STATE: %s", "BUTTON PUSH");
-        if (bside == ButtonSide.LEFT)
-        {
-            robot.pusher.setPosition(LFT_PUSH_POS);
-            DbgLog.msg("SJH: Pushing left button");
-        }
-        else if (bside == ButtonSide.RIGHT)
-        {
-            robot.pusher.setPosition(RGT_PUSH_POS);
-            DbgLog.msg("SJH: Pushing right button");
-        }
-        else
-        {
-            robot.pusher.setPosition(CTR_PUSH_POS);
-            DbgLog.msg("SJH: Not Pushing A Button");
-
-        }
-
+        DbgLog.msg("SJH: /BEACON/ > MISSION COMPLETE");
     }
 
     private void do_shoot()
@@ -754,6 +773,23 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
         DbgLog.msg("SJH: TEAM     %s", team);
         DbgLog.msg("SJH: DELAY    %4.2f", delay);
     }
+    public void onCameraViewStarted(int width, int height) {
+        DbgLog.msg("SJH: CAMERA VIEW STARTED");
+    }
+
+    public void onCameraViewStopped() {
+        DbgLog.msg("SJH: CAMERA VIEW STOPPED");
+    }
+
+    public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+        Mat rgb = inputFrame.rgba();
+        Mat flip = rgb.clone();
+
+        Core.flip(rgb, flip, 1);
+        bd.setImage( flip );
+
+        return bd.drawBeacon();
+    }
 
     private enum Team
     {
@@ -779,6 +815,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons
     private ElapsedTime timer = new ElapsedTime();
     private Drivetrain drvTrn = new Drivetrain();
 
+    private JavaCameraView openCVCamera;
     private BeaconDetector bd = new BeaconDetector();
 
     private static Point2d curPos;

@@ -380,6 +380,11 @@ class Drivetrain
         return (int)(distance * CPI);
     }
 
+    int countsToDistance(double counts)
+    {
+        return (int)(counts / CPI);
+    }
+
     private int angleToCounts(double angle, double radius)
     {
         return distanceToCounts(Math.toRadians(angle) * radius);
@@ -716,7 +721,7 @@ class Drivetrain
 
     private double printTimeout = 0.05;
 
-    private double minSpeed = 0.06;
+    private double minSpeed = 0.25;
 
     private FtcOpMode op = null;
 

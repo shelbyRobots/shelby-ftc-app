@@ -49,13 +49,19 @@ public class BeaconDetector implements BeaconFinder
     private Rect beacon_box;
     private List<Rect> buttons = new ArrayList<Rect>();
 
+    private RingBuffer beaconConfBuf = new RingBuffer(20);
+    private RingBuffer beaconPosXBuf = new RingBuffer(15);
+    private RingBuffer beaconPosZBuf = new RingBuffer(2);
+
     private double beaconConf = 0;
     private double beaconPosX = 0;
     private double beaconPosZ = 0;
+
     private BeaconSide redPosSide = BeaconSide.UNKNOWN;
     private BeaconSide bluePosSide = BeaconSide.UNKNOWN;
 
     private boolean sensingActive = false;
+    private boolean firstCalcsDone = false;
 
     enum BeaconSide
     {
@@ -87,16 +93,21 @@ public class BeaconDetector implements BeaconFinder
     public BeaconDetector() {}
 
     public void startSensing() {
+        beaconConfBuf.clear();
+        beaconPosXBuf.clear();
+        beaconPosZBuf.clear();
+
+        firstCalcsDone = false;
         sensingActive = true;
     }
 
     public void stopSensing() {
+        firstCalcsDone = false;
         sensingActive = false;
     }
 
     public void setImage( Mat img )
     {
-        if ( !sensingActive ) return;
         // Convert to HSV colorspace to make it easier to
         // threshold certain colors (ig red/blue)
         image = new Mat();
@@ -104,7 +115,9 @@ public class BeaconDetector implements BeaconFinder
         Imgproc.cvtColor( img, image, Imgproc.COLOR_RGB2HSV, 4 );
         showImg = image.clone();
 
+        if ( !sensingActive ) return;
         findColors();
+        firstCalcsDone = true;
     }
 
     public LightOrder getLightOrder() {
@@ -138,11 +151,11 @@ public class BeaconDetector implements BeaconFinder
                 bluePosSide);
     }
 
-    public BeaconSide getRedPosSide() { return redPosSide; }
-    public BeaconSide getBluePosSide() { return bluePosSide; }
-    public double getBeaconConf() { return beaconConf; }
-    public double getBeaconPosX() { return beaconPosX; }
-    public double getBeaconPosZ() { return beaconPosZ; }
+    public synchronized BeaconSide getRedPosSide() { return redPosSide; }
+    public synchronized BeaconSide getBluePosSide() { return bluePosSide; }
+    public synchronized double getBeaconConf() { return beaconConf; }
+    public synchronized double getBeaconPosX() { return beaconPosX; }
+    public synchronized double getBeaconPosZ() { return beaconPosZ; }
 
     private void calcPosition()
     {
@@ -180,15 +193,18 @@ public class BeaconDetector implements BeaconFinder
 //                    ( 0.4 - blue_rt ) * 2.5
 //                );
 
-        beaconConf = Range.clip( 1 - Math.sqrt(
-                      ( Math.pow( Range.clip( sens_bcn_rt - actl_beac_rt, -1.0, 1.0 ) * 1.0 / actl_beac_rt, 2 ) +
-                        Math.pow( Range.clip( sens_btn_rt - actl_butn_rt, -1.0, 1.0 ) * 1.0 / actl_butn_rt, 2 ) +
-                        3 * Math.pow( Range.clip( 0.6 - beac_rt, 0, 0.6 ) * 1.67, 2 ) +
-                        2 * Math.pow( ( 0.4 - red_rt ) * 2.5, 2 ) +
-                        2 * Math.pow( ( 0.4 - blue_rt ) * 2.5, 2 ) ) / 9.0 ), 0.0, 1.0 );
 
-        beaconPosX = beac_ctr - scrn_ctr;
-        beaconPosZ = (double) beacon_box.width / (double) image.cols();
+        beaconConf = beaconConfBuf.smooth(
+                        Range.clip( 1 - Math.sqrt(
+                          ( Math.pow( Range.clip( sens_bcn_rt - actl_beac_rt, -1.0, 1.0 ) / actl_beac_rt, 2 ) +
+                            Math.pow( Range.clip( sens_btn_rt - actl_butn_rt, -1.0, 1.0 ) / actl_butn_rt, 2 ) +
+                            3 * Math.pow( Range.clip( 0.6 - beac_rt, -0.6, 0.6 ) * 1.67, 2 ) +
+                            2 * Math.pow( Range.clip( 0.4 - ( red_rt + blue_rt ) / 2, -0.4, 0.4 ) * 2.5, 2 )
+                          ) / 7.0 ), 0.0, 1.0 )
+                    );
+
+        beaconPosX = beaconPosXBuf.smooth( beac_ctr - scrn_ctr );
+        beaconPosZ = beaconPosZBuf.smooth( (double) beacon_box.width / (double) image.cols() );
 
         // Keep in mind that we flip the image before
         // processing to make it easier to visualize
@@ -206,7 +222,7 @@ public class BeaconDetector implements BeaconFinder
         else
             bluePosSide = BeaconSide.LEFT;
 
-        if ( redPosSide == bluePosSide || beaconConf < 0.4 )
+        if ( redPosSide == bluePosSide || beaconConf < 0.3 )
         {
             redPosSide = BeaconSide.UNKNOWN;
             bluePosSide = BeaconSide.UNKNOWN;
@@ -285,7 +301,7 @@ public class BeaconDetector implements BeaconFinder
         Core.merge( tmp, mask );
 
         Core.multiply( zonedImg.clone(), mask, zonedImg );
- //     showImg = zonedImg.clone();
+//        showImg = zonedImg.clone();
     }
 
     private void findButtons()
@@ -348,7 +364,7 @@ public class BeaconDetector implements BeaconFinder
 
         // Threshold based on color.  White regions match the desired color.  Black do not.
         // We now have a binary image to work with.  Contour detection looks for white blobs
-        Core.inRange( zonedImg, new Scalar( 105,120,180 ), new Scalar( 125,255,255 ), blue_areas );
+        Core.inRange( zonedImg, new Scalar( 105,100,100 ), new Scalar( 125,255,255 ), blue_areas );
         Imgproc.dilate( blue_areas.clone(), blue_areas, new Mat() );
 
         // There can be several blobs.  Find the largest that fills a certain amount
@@ -462,6 +478,7 @@ public class BeaconDetector implements BeaconFinder
 
         Mat out = image.clone();
         Imgproc.cvtColor( showImg, out, Imgproc.COLOR_HSV2RGB, 4 );
+        if ( !sensingActive || !firstCalcsDone ) return out;
 
         Imgproc.rectangle( out, beacon_box.tl(), beacon_box.br(), new Scalar(200,200,200), -1 );
         Imgproc.rectangle( out, blue_box.tl(), blue_box.br(), new Scalar(50,50,255), -1 );

@@ -55,12 +55,12 @@ class Points
             }
             else
             {
-                addPoint(points, fwd, 0.8, 1.00, Segment.TargetType.ENCODER,   scan, SCAN1_PT);
+                addPoint(points, fwd, 0.8, 1.00, Segment.TargetType.ENCODER, beacon, SCAN1_PT);
                 addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER, beacon, BECN1_PT);
             }
 
-            addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   push, PRSS1_PT);
-            addPoint(points, rev, 0.8, 1.00, Segment.TargetType.ENCODER,  reset, RVRS1_PT);
+            //addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   push, PRSS1_PT);
+            //addPoint(points, rev, 0.8, 1.00, Segment.TargetType.ENCODER,  reset, RVRS1_PT);
         }
 
         if(pushChoice == Field.BeaconChoice.FAR && startPos == Field.StartPos.START_B)
@@ -78,12 +78,12 @@ class Points
             }
             else
             {
-                addPoint(points, fwd, 0.8, 1.00, Segment.TargetType.ENCODER,   scan, SCAN2_PT);
+                addPoint(points, fwd, 0.8, 1.00, Segment.TargetType.ENCODER, beacon, SCAN2_PT);
                 addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER, beacon, BECN2_PT);
             }
 
-            addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   push, PRSS2_PT);
-            addPoint(points, rev, 0.8, 1.00, Segment.TargetType.ENCODER,  reset, RVRS2_PT);
+            //addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   push, PRSS2_PT);
+            //addPoint(points, rev, 0.8, 1.00, Segment.TargetType.ENCODER,  reset, RVRS2_PT);
         }
 
         //PARK PTS
@@ -357,5 +357,5 @@ class Points
     private Field.BeaconChoice pushChoice = Field.BeaconChoice.NEAR;
     private Field.ParkChoice   parkChoice = Field.ParkChoice.CENTER_PARK;
     private Field.Alliance     alliance   = Field.Alliance.RED;
-    private boolean            useColor   = true;
+    private boolean            useColor   = false;
 }
