@@ -77,6 +77,7 @@ public class TimingTest extends LinearOpMode
         ElapsedTime spdTimer = new ElapsedTime();
         double spdTimout = 2.0;
         double curSpd = 0.3;
+        long stoppedSleepTime = 0;
 
         colorSensor.getI2cController().deregisterForPortReadyCallback(colorSensor.getPort());
 
@@ -122,11 +123,19 @@ public class TimingTest extends LinearOpMode
                         loopCount, (currTime - startTime) / MS2NS, loopInterval / MS2NS));
 
                 prevLoopTime = currTime;
-                if (useSleep) waitForTick(sleepMs);
+                if (useSleep)
+                {
+                    long startSleepTime = System.nanoTime();
+                    waitForTick(sleepMs);
+                    long endSleepTime = System.nanoTime();
+                    totalSampleTime -= (endSleepTime - startSleepTime);
+                }
                 loopCount++;
             }
             stopRobot();
+            long startStopSleepTime = System.nanoTime();
             waitForTick(500);
+            stoppedSleepTime += (System.nanoTime() - startStopSleepTime);
             spdTimer.reset();
             if(curSpd < 0.15) curSpd += 0.01;
             else curSpd += 0.05;
@@ -136,7 +145,7 @@ public class TimingTest extends LinearOpMode
         }
         stopRobot();
 
-        long endTime = System.nanoTime();
+        long endTime = System.nanoTime() - stoppedSleepTime;
         Log.i(TAG, String.format(
                 "Loop: MinInterval=%7.3f, MaxInterval=%7.3f, AvgInterval=%7.3f",
                 minLoopInterval/MS2NS, maxLoopInterval/MS2NS,

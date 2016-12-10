@@ -103,8 +103,8 @@ class ShelbyBot
 
         //SET ACTUAL MAX SPEED AFTER TEST - then set shooter speeds in auton and teleop
         //ALSO SET MAX SPEED for drive in auton
-        if(shotmotor1 != null) shotmotor1.setMaxSpeed(3080);
-        if(shotmotor2 != null) shotmotor2.setMaxSpeed(3080);
+        if(shotmotor1 != null) shotmotor1.setMaxSpeed(30800);
+        if(shotmotor2 != null) shotmotor2.setMaxSpeed(30800);
     }
 
     /***
