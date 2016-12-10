@@ -87,6 +87,10 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
             ElapsedTime mspdTimer = new ElapsedTime();
             int lcnts_0 = robot.leftMotor.getCurrentPosition();
             int rcnts_0 = robot.rightMotor.getCurrentPosition();
+
+            lcnts_last = robot.leftMotor.getCurrentPosition();
+            rcnts_last = robot.rightMotor.getCurrentPosition();
+
             while (mspdTimer.seconds() < testTimeout)
             {
                 double elapsed = sTimer.seconds();
@@ -204,18 +208,17 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
 
         Segment tseg = new Segment("TESTSEG", new Point2d(0.0, 0.0), new Point2d(0.0, testDist));
 
+        pathSegs[0] = tseg;
+
+        initHdg = pathSegs[0].getFieldHeading();
 
         tseg.setSpeed(testSpeed);
-        tseg.setPostTurn(testPost);
+        tseg.setPostTurn(testPost + initHdg);
         tseg.setDrvTuner(testK);
         drvTrn.setDrvTuner(testK);
         tseg.setDir(Segment.SegDir.FORWARD);
         tseg.setTgtType(Segment.TargetType.TIME);
         tseg.setAction(Segment.Action.NOTHING);
-
-        pathSegs[0] = tseg;
-
-        initHdg = pathSegs[0].getFieldHeading();
 
         Point2d currPoint = pathSegs[0].getStrtPt();
         drvTrn.setCurrPt(currPoint);
@@ -259,9 +262,12 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
                 curPos = null;
             }
 
-            doEncoderTurn(curSeg); //quick but rough
+            doEncoderTurn(curSeg);
             doTurn(curSeg); //fine tune using gyro
-            doMove(curSeg);
+            if(curSeg.getLength() > 1.0)
+            {
+                doMove(curSeg);
+            }
 
             Double pturn = curSeg.getPostTurn();
 
@@ -618,14 +624,14 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         FtcChoiceMenu allianceMenu = new FtcChoiceMenu("ALLIANCE:", parkMenu, this);
         FtcChoiceMenu teamMenu     = new FtcChoiceMenu("TEAM:", allianceMenu, this);
         FtcChoiceMenu testMaxMenu  = new FtcChoiceMenu("MAXSPD:", startPosMenu, this);
-        FtcValueMenu  testDistMenu = new FtcValueMenu("DIST:",  testMaxMenu,  this, 0.0, 60.0, 1.0, 48.0,  "%4.1f");
+        FtcValueMenu  testDistMenu = new FtcValueMenu("DIST:",  testMaxMenu,  this, 0.0, 60.0, 6.0, 48.0,  "%4.1f");
         FtcValueMenu  testPostMenu = new FtcValueMenu("POST:",  testDistMenu, this, -90.0, 90.0, 2.5, 0.0,  "%4.1f");
         FtcValueMenu  testSpdMenu  = new FtcValueMenu("SPEED:", testPostMenu, this, 0.0, 1.0, 0.1, 0.5,  "%4.2f");
         FtcValueMenu  testKMenu    = new FtcValueMenu("K:",     testSpdMenu,  this, 0.5, 1.5, 0.01, 1.0, "%4.2f");
 
         startPosMenu.addChoice("Start_A", Field.StartPos.START_A, pushMenu);
         startPosMenu.addChoice("Start_B", Field.StartPos.START_B, pushMenu);
-        startPosMenu.addChoice("Start_TEST", Field.StartPos.START_TEST, testDistMenu);
+        startPosMenu.addChoice("Start_TEST", Field.StartPos.START_TEST, testMaxMenu);
         pushMenu.addChoice("BOTH", Field.BeaconChoice.BOTH, parkMenu);
         pushMenu.addChoice("NEAR", Field.BeaconChoice.NEAR, parkMenu);
         pushMenu.addChoice("FAR",  Field.BeaconChoice.FAR,  parkMenu);
