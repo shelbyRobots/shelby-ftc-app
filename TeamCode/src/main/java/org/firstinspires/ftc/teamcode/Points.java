@@ -293,7 +293,7 @@ class Points
     private static final double ASHOOTX =   8.9;
     private static final double ASHOOTY = -56.6;
 
-    private static final double TRGT1_Y = -12.0;
+    private static final double TRGT1_Y = -13.0;
 
     private static final double TRGT2_Y =  35.0;
     private static final double PREP2_Y  = TRGT2_Y - 5.0;

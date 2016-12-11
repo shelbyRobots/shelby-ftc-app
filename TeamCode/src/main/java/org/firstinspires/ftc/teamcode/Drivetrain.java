@@ -731,7 +731,7 @@ class Drivetrain
 
     private double printTimeout = 0.05;
 
-    private double minSpeed = 0.25;
+    private double minSpeed = 0.2;
 
     private FtcOpMode op = null;
 

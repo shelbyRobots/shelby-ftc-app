@@ -11,6 +11,7 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
@@ -31,10 +32,6 @@ public class BeaconDetector implements BeaconFinder
     private Mat showImg;
     private Mat cvImage;
 
-    private double blue_light_box = -1;
-    private double red_light_box = -1;
-    private LightOrder light_order;
-
     private final static boolean DEBUG = false;
     private final static boolean POS_IS_Y = false;
 
@@ -43,6 +40,10 @@ public class BeaconDetector implements BeaconFinder
     private List<MatOfPoint> white_blobs = new ArrayList<MatOfPoint>();
     private List<MatOfPoint> black_blobs = new ArrayList<MatOfPoint>();
 
+    private ArrayList<Rect> red_matches = new ArrayList<Rect>();
+    private ArrayList<Rect> blue_matches = new ArrayList<Rect>();
+    private ArrayList<Rect> white_matches = new ArrayList<Rect>();
+
     private Rect red_box;
     private Rect blue_box;
     private Rect white_box;
@@ -50,7 +51,7 @@ public class BeaconDetector implements BeaconFinder
     private List<Rect> buttons = new ArrayList<Rect>();
 
     private RingBuffer beaconConfBuf = new RingBuffer(20);
-    private RingBuffer beaconPosXBuf = new RingBuffer(15);
+    private RingBuffer beaconPosXBuf = new RingBuffer(3);
     private RingBuffer beaconPosZBuf = new RingBuffer(2);
 
     private double beaconConf = 0;
@@ -68,14 +69,6 @@ public class BeaconDetector implements BeaconFinder
         UNKNOWN,
         LEFT,
         RIGHT
-    }
-
-    enum Color
-    {
-        WHITE,
-        BLUE,
-        RED,
-        BLACK
     }
 
     static
@@ -120,27 +113,6 @@ public class BeaconDetector implements BeaconFinder
         firstCalcsDone = true;
     }
 
-    public LightOrder getLightOrder() {
-        return light_order;
-    }
-
-    public void calcLightOrder() {
-
-        light_order = LightOrder.UNKNOWN;
-
-        if ( blue_light_box != -1 && red_light_box != -1 ) {
-            if ( blue_light_box < red_light_box )
-                light_order = LightOrder.BLUE_RED;
-            else
-                light_order = LightOrder.RED_BLUE;
-        } else if ( blue_light_box != -1 ) {
-            light_order = LightOrder.BLUE_BLUE;
-        } else if ( red_light_box != -1 ) {
-            light_order = LightOrder.RED_RED;
-        }
-
-    }
-
     public void logDebug()
     {
         DbgLog.msg("SJH: CONF: %5.2f, X: %5.2f, Z: %5.2f, RED: %s, BLUE: %s",
@@ -157,52 +129,45 @@ public class BeaconDetector implements BeaconFinder
     public synchronized double getBeaconPosX() { return beaconPosX; }
     public synchronized double getBeaconPosZ() { return beaconPosZ; }
 
+    private double scoreFit( Rect wb, Rect rb, Rect bb )
+    {
+        double beac_w = 8.5;
+        double beac_h = 6.5;
+
+        double actl_beac_rt = beac_w / beac_h;
+        double sens_bcn_rt = wb.width / wb.height;
+
+        double beac_rt = wb.area() / ( image.cols() * image.rows() );
+        double red_rt = rb.area() / wb.area();
+        double blue_rt = bb.area() / wb.area();
+
+        return Range.clip( 1 - Math.sqrt(
+                    ( Math.pow( Range.clip( sens_bcn_rt - actl_beac_rt, -1.0, 1.0 ) / actl_beac_rt, 2 ) +
+                            3 * Math.pow( Range.clip( 0.6 - beac_rt, -0.6, 0.6 ) * 1.67, 2 ) +
+                            2 * Math.pow( Range.clip( 0.4 - ( red_rt + blue_rt ) / 2, -0.4, 0.4 ) * 2.5, 2 )
+                    ) / 6.0 ), 0.0, 1.0 );
+    }
+
     private void calcPosition()
     {
-        beaconConf = 0;
-        redPosSide = BeaconSide.UNKNOWN;
-        bluePosSide = BeaconSide.UNKNOWN;
 
-        if ( beacon_box.height == 0 || beacon_box.width == 0) return;
+        if ( beacon_box.height == 0 || beacon_box.width == 0)
+        {
+            beaconConf = beaconConfBuf.smooth( 0.0 );
+
+            if ( redPosSide == bluePosSide || beaconConf < 0.3 )
+            {
+                redPosSide = BeaconSide.UNKNOWN;
+                bluePosSide = BeaconSide.UNKNOWN;
+            }
+
+            return;
+        }
 
         double scrn_ctr = image.cols() / 2;
         double beac_ctr = beacon_box.x + beacon_box.width / 2;
 
-        double beac_w = 8.5;
-        double beac_h = 6.5;
-        double butn_d = 5.25;
-
-        double actl_beac_rt = beac_w / beac_h;
-        double actl_butn_rt = butn_d / beac_w;
-
-        double sens_bcn_rt = beacon_box.width / beacon_box.height;
-        double sens_btn_rt = 0.0;
-
-        if ( buttons.size() == 2 )
-            sens_btn_rt = Math.abs( buttons.get( 0 ).x - buttons.get( 1 ).x ) / beacon_box.width;
-
-        double beac_rt = beacon_box.area() / ( image.cols() * image.rows() );
-        double red_rt = red_box.area() / beacon_box.area();
-        double blue_rt = blue_box.area() / beacon_box.area();
-
-//        DbgLog.msg( "SJH BCN: %5.2f, BTN: %5.2f, BCN2: %5.2f, RED: %5.2f, BLUE: %5.2f",
-//                    Range.clip( sens_bcn_rt - actl_beac_rt, -1.0, 1.0 ) * 1.0 / actl_beac_rt,
-//                    Range.clip( sens_btn_rt - actl_butn_rt, -1.0, 1.0 ) * 1.0 / actl_butn_rt,
-//                    Range.clip( 0.6 - beac_rt, 0, 0.6 ) * 1.67,
-//                    ( 0.4 - red_rt ) * 2.5,
-//                    ( 0.4 - blue_rt ) * 2.5
-//                );
-
-
-        beaconConf = beaconConfBuf.smooth(
-                        Range.clip( 1 - Math.sqrt(
-                          ( Math.pow( Range.clip( sens_bcn_rt - actl_beac_rt, -1.0, 1.0 ) / actl_beac_rt, 2 ) +
-                            Math.pow( Range.clip( sens_btn_rt - actl_butn_rt, -1.0, 1.0 ) / actl_butn_rt, 2 ) +
-                            3 * Math.pow( Range.clip( 0.6 - beac_rt, -0.6, 0.6 ) * 1.67, 2 ) +
-                            2 * Math.pow( Range.clip( 0.4 - ( red_rt + blue_rt ) / 2, -0.4, 0.4 ) * 2.5, 2 )
-                          ) / 7.0 ), 0.0, 1.0 )
-                    );
-
+        beaconConf = beaconConfBuf.smooth( scoreFit( beacon_box, red_box, blue_box ) );
         beaconPosX = beaconPosXBuf.smooth( beac_ctr - scrn_ctr );
         beaconPosZ = beaconPosZBuf.smooth( (double) beacon_box.width / (double) image.cols() );
 
@@ -240,14 +205,71 @@ public class BeaconDetector implements BeaconFinder
         return ( w + 2 * Math.max( r, b ) ) / 3;
     }
 
+    private Rect bestFit( Rect wb, ArrayList<Rect> matches )
+    {
+        int w_ctr_x = wb.x + wb.width / 2;
+        Double mp1, mp2, mp3, mpf;
+        Double minFit = Double.POSITIVE_INFINITY;
+        Rect best = new Rect( wb.x, wb.y, 1, 1 );
+
+        for ( Rect cb : matches )
+        {
+            if ( wb.contains( new Point( cb.x + cb.width / 2, cb.y + cb.height / 2 ) ) )
+            {
+                mp1 = Math.pow( wb.tl().y - cb.tl().y, 2 );
+                mp2 = Math.pow( wb.br().y - cb.br().y, 2 );
+                mp3 = Math.min( Math.pow( w_ctr_x - cb.tl().x, 2 ), Math.pow( w_ctr_x - cb.br().x, 2 ) );
+
+                mpf = Math.sqrt( mp1 + mp2 + mp3 / 3.0 );
+                if ( mpf < minFit )
+                {
+                    minFit = mpf;
+                    best = cb;
+                }
+            }
+        }
+
+        return best;
+    }
+
     private void findBeaconBox()
     {
-        double tx = minOf(white_box.x, red_box.x, blue_box.x);
-        double bx = maxOf(white_box.br().x, red_box.br().x, blue_box.br().x);
-        double ty = minOf(white_box.y, red_box.y, blue_box.y);
-        double by = maxOf(white_box.br().y, red_box.br().y, blue_box.br().y);
+        if ( white_matches.size() == 0 )
+        {
+            white_box = new Rect( 0, 0, 1, 1 );
+            blue_box = new Rect( 0, 0, 1, 1 );
+            red_box = new Rect( 0, 0, 1, 1 );
+            beacon_box = new Rect( 0, 0, 1, 1 );
+        }
+        else
+        {
+            double fs, maxFit = 0.0;
+            Rect rb, bb;
 
-        beacon_box = new Rect( (int) tx, (int) ty, (int)(bx - tx), (int)(by - ty) );
+            for ( Rect wb : white_matches )
+            {
+                rb = bestFit( wb, red_matches );
+                bb = bestFit( wb, blue_matches );
+
+                fs = scoreFit( wb, rb, bb );
+                if ( fs > maxFit )
+                {
+                    maxFit = fs;
+
+                    white_box = wb;
+                    red_box = rb;
+                    blue_box = bb;
+                }
+            }
+
+            double tx = minOf(white_box.x, red_box.x, blue_box.x);
+            double bx = maxOf(white_box.br().x, red_box.br().x, blue_box.br().x);
+            double ty = minOf(white_box.y, red_box.y, blue_box.y);
+            double by = maxOf(white_box.br().y, red_box.br().y, blue_box.br().y);
+
+            beacon_box = new Rect( (int) tx, (int) ty, (int)(bx - tx), (int)(by - ty) );
+        }
+
     }
 
     private void findColors()
@@ -258,8 +280,6 @@ public class BeaconDetector implements BeaconFinder
         findBeaconBox();
         findButtons();
         calcPosition();
-
-        calcLightOrder();
     }
 
     private void findLum()
@@ -282,7 +302,7 @@ public class BeaconDetector implements BeaconFinder
         Imgproc.threshold( adj, white, 255 - lumAvg, 255, Imgproc.THRESH_BINARY ); //+ Imgproc.THRESH_OTSU
         Imgproc.erode( white.clone(), white, Imgproc.getGaussianKernel( 5, 2 ) );
 
-        findWeightedPos( white, Color.WHITE );
+        findWeightedPos( white, white_blobs, white_matches );
 
         channels.set( 1, sat );
         channels.set( 2, lum );
@@ -360,8 +380,6 @@ public class BeaconDetector implements BeaconFinder
     {
         Mat blue_areas = new Mat();
 
-        blue_light_box = -1;
-
         // Threshold based on color.  White regions match the desired color.  Black do not.
         // We now have a binary image to work with.  Contour detection looks for white blobs
         Core.inRange( zonedImg, new Scalar( 105,100,100 ), new Scalar( 125,255,255 ), blue_areas );
@@ -371,7 +389,7 @@ public class BeaconDetector implements BeaconFinder
         // of the image.  These are crude heuristics but should be fine if we control
         // the conditions of when we start searching (ie, appx size of beacon in image
         // frame, etc).
-        blue_light_box = findWeightedPos(blue_areas, Color.BLUE);
+        findWeightedPos(blue_areas, blue_blobs, blue_matches);
     }
 
     private void findRed()
@@ -381,54 +399,18 @@ public class BeaconDetector implements BeaconFinder
         Mat red2 = new Mat();
         Mat red_areas = new Mat();
 
-        red_light_box = -1;
-
         Core.inRange( zonedImg, new Scalar( 0,100,150 ), new Scalar( 10,255,255 ), red1);
         Core.inRange( zonedImg, new Scalar( 140,100,150 ), new Scalar( 179,255,255 ), red2);
         Core.bitwise_or(red1, red2, red_areas);
         Imgproc.dilate( red_areas.clone(), red_areas, new Mat() );
 
-        red_light_box = findWeightedPos( red_areas, Color.RED );
+        findWeightedPos( red_areas, red_blobs, red_matches );
     }
 
-    private double findWeightedPos( Mat img, Color find )
-    {
-
-        Rect bbox = findColorBlobs( img, find );
-
-        switch (find) {
-            case BLUE:
-                blue_box = bbox;
-                break;
-            case RED:
-                red_box = bbox;
-                break;
-            case WHITE:
-                white_box = bbox;
-                break;
-        }
-
-        return bbox.x + bbox.width / 2 ;
-    }
-
-    public Rect findColorBlobs( Mat img, Color find ) {
+    public void findWeightedPos( Mat img, List<MatOfPoint> calcCtr, ArrayList<Rect> boxMatches ) {
 
         Mat hchy = new Mat();
         List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-        List<MatOfPoint> calcCtr;
-        calcCtr = null;
-
-        switch (find) {
-            case BLUE:
-                calcCtr = blue_blobs;
-                break;
-            case RED:
-                calcCtr = red_blobs;
-                break;
-            case WHITE:
-                calcCtr = white_blobs;
-                break;
-        }
 
         Imgproc.findContours(img, contours, hchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
 
@@ -444,34 +426,27 @@ public class BeaconDetector implements BeaconFinder
 
         // Filter contours by area and resize to fit the original image size
 
-        double contour_area;
-        double a_sum = 0, w_x = 0, w_h = 0, w_y = 0, w_w = 0;
+        double contour_area, box_area;
         Rect bounded_box;
 
         calcCtr.clear();
+        boxMatches.clear();
+
         each = contours.iterator();
         while (each.hasNext()) {
+
             MatOfPoint contour = each.next();
+
             contour_area = Imgproc.contourArea( contour );
+            bounded_box = Imgproc.boundingRect( contour );
+
             if ( contour_area > MIN_COLOR_ZONE_AREA * maxArea ) {
+
                 calcCtr.add(contour);
+                boxMatches.add( bounded_box );
 
-                bounded_box = Imgproc.boundingRect( contour );
-
-                a_sum += contour_area;
-                w_x += contour_area * bounded_box.x;
-                w_y += contour_area * bounded_box.y;
-                w_h += contour_area * bounded_box.height;
-                w_w += contour_area * bounded_box.width;
             }
         }
-
-        return new Rect(
-                (int)(w_x / a_sum),
-                (int)(w_y / a_sum),
-                (int)(w_w / a_sum),
-                (int)(w_h / a_sum)
-                );
     }
 
     public Mat drawBeacon() {
@@ -479,6 +454,16 @@ public class BeaconDetector implements BeaconFinder
         Mat out = image.clone();
         Imgproc.cvtColor( showImg, out, Imgproc.COLOR_HSV2RGB, 4 );
         if ( !sensingActive || !firstCalcsDone ) return out;
+
+        for ( Rect bb : blue_matches )
+        {
+            Imgproc.rectangle( out, bb.tl(), bb.br(), new Scalar(150,150,255), -1 );
+        }
+
+        for ( Rect rb : red_matches )
+        {
+            Imgproc.rectangle( out, rb.tl(), rb.br(), new Scalar(255,150,150), -1 );
+        }
 
         Imgproc.rectangle( out, beacon_box.tl(), beacon_box.br(), new Scalar(200,200,200), -1 );
         Imgproc.rectangle( out, blue_box.tl(), blue_box.br(), new Scalar(50,50,255), -1 );
@@ -513,4 +498,10 @@ public class BeaconDetector implements BeaconFinder
 
         findColors();
     }
+
+
+    public LightOrder getLightOrder() {
+        return LightOrder.UNKNOWN;
+    }
+
 }
