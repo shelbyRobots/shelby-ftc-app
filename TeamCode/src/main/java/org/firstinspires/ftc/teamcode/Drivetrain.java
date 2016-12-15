@@ -385,9 +385,9 @@ class Drivetrain
         return (int)(distance * CPI);
     }
 
-    int countsToDistance(double counts)
+    double countsToDistance(double counts)
     {
-        return (int)(counts / CPI);
+        return (counts / CPI);
     }
 
     private int angleToCounts(double angle, double radius)
