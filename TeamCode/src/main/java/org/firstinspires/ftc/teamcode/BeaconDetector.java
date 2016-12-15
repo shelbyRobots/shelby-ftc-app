@@ -31,6 +31,7 @@ public class BeaconDetector implements BeaconFinder
     private Mat maskImg;
     private Mat showImg;
     private Mat cvImage;
+    private Mat colorDiff;
 
     private final static boolean DEBUG = false;
     private final static boolean POS_IS_Y = false;
@@ -104,9 +105,17 @@ public class BeaconDetector implements BeaconFinder
         // Convert to HSV colorspace to make it easier to
         // threshold certain colors (ig red/blue)
         image = new Mat();
+        colorDiff = new Mat();
 
         Imgproc.cvtColor( img, image, Imgproc.COLOR_RGB2HSV, 4 );
         showImg = image.clone();
+
+        List<Mat> channels = new ArrayList<>();
+        Core.split( img, channels );
+        Mat red = channels.get( 0 );
+        Mat blue = channels.get( 2 );
+        Core.absdiff( red, blue, colorDiff );
+        Imgproc.threshold( colorDiff.clone(), colorDiff, 20, 255, Imgproc.THRESH_BINARY );
 
         if ( !sensingActive ) return;
         findColors();
@@ -293,6 +302,19 @@ public class BeaconDetector implements BeaconFinder
         calcPosition();
     }
 
+    private void setDebugImg( Mat ch )
+    {
+        List<Mat> channels = new ArrayList<>();
+        Core.split( image, channels );
+
+        channels.set( 0, Mat.zeros( image.rows(), image.cols(), ch.type() ) );
+        channels.set( 1, Mat.zeros( image.rows(), image.cols(), ch.type() ) );
+        channels.set( 2, ch );
+
+        showImg = image.clone();
+        Core.merge( channels, showImg );
+    }
+
     private void findLum()
     {
         List<Mat> channels = new ArrayList<>();
@@ -313,6 +335,8 @@ public class BeaconDetector implements BeaconFinder
         Imgproc.threshold( adj, white, 255 - lumAvg, 255, Imgproc.THRESH_BINARY ); //+ Imgproc.THRESH_OTSU
         Imgproc.erode( white.clone(), white, Imgproc.getGaussianKernel( 5, 2 ) );
 
+//        setDebugImg( white );
+
         findWeightedPos( white, white_blobs, white_matches );
 
         channels.set( 1, sat );
@@ -332,7 +356,7 @@ public class BeaconDetector implements BeaconFinder
         Core.merge( tmp, mask );
 
         Core.multiply( zonedImg.clone(), mask, zonedImg );
-//        showImg = zonedImg.clone();
+        //showImg = zonedImg.clone();
     }
 
     private void findButtons()
@@ -394,6 +418,7 @@ public class BeaconDetector implements BeaconFinder
         // Threshold based on color.  White regions match the desired color.  Black do not.
         // We now have a binary image to work with.  Contour detection looks for white blobs
         Core.inRange( zonedImg, new Scalar( 105,100,100 ), new Scalar( 125,255,255 ), blue_areas );
+        Core.multiply( blue_areas.clone(), colorDiff, blue_areas );
         Imgproc.dilate( blue_areas.clone(), blue_areas, new Mat() );
 
         // There can be several blobs.  Find the largest that fills a certain amount
@@ -413,6 +438,7 @@ public class BeaconDetector implements BeaconFinder
         Core.inRange( zonedImg, new Scalar( 0,100,150 ), new Scalar( 10,255,255 ), red1);
         Core.inRange( zonedImg, new Scalar( 140,100,150 ), new Scalar( 179,255,255 ), red2);
         Core.bitwise_or(red1, red2, red_areas);
+        Core.multiply( red_areas.clone(), colorDiff, red_areas );
         Imgproc.dilate( red_areas.clone(), red_areas, new Mat() );
 
         findWeightedPos( red_areas, red_blobs, red_matches );

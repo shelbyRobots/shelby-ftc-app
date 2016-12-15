@@ -381,6 +381,6 @@ class Points
     private Field.BeaconChoice pushChoice = Field.BeaconChoice.NEAR;
     private Field.ParkChoice   parkChoice = Field.ParkChoice.CENTER_PARK;
     private Field.Alliance     alliance   = Field.Alliance.RED;
-    private boolean            useBecn    = true;
+    private boolean            useBecn    = false;
     private boolean            usePreScan = false;
 }

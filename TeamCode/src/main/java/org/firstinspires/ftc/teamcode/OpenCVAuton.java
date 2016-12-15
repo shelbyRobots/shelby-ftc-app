@@ -28,7 +28,7 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
     private ShelbyBot   robot = new ShelbyBot();
     private Drivetrain drvTrn = new Drivetrain();
 
-    private boolean useMotor  = true;
+    private boolean useMotor  = false;
     private boolean gyroReady = false;
     private boolean follow    = false;
 
@@ -102,17 +102,17 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
         double baseSpeed = 0.4;
 
         double bConf, zPos, zOff, xPos, xOff, nPos = 0, rDv = 0, lDv = 0;
+        double tPow1 = 0, tPow2 = 0, nAng = 0, dDist = 0;
         double curDistCount = 0.0;
-
-        double cRos = 0.03125;
-        double dDist = 0;
-
-        double cHdg;
-        double hErr;
+        double cHdg, hErr, nOff;
 
         String beaconStep = "WAIT";
 
+        if ( useMotor )
+            robot.gyro.resetZAxisIntegrator();
+
         bd.startSensing();
+
         sleep( 200 );
 
         while(opModeIsActive()) {
@@ -148,6 +148,9 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
                     if (gamepad1.b)
                         beaconStep = "INIT";
 
+                    if (gamepad1.y)
+                        robot.gyro.resetZAxisIntegrator();
+
                     switch (beaconStep) {
                         case "INIT":
 
@@ -158,18 +161,24 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
                             robot.pusher.setPosition(0.1);
 
                             curDistCount = 0.0;
-                            robot.gyro.resetZAxisIntegrator();
                             drvTrn.stopAndReset();
+
+                            cHdg = getGryoFhdg() % 90;
+                            hErr = Math.abs( cHdg ) < 45 ? cHdg : Math.signum( cHdg ) * ( 90 - Math.abs( cHdg ) );
 
                             xPos = bd.getBeaconPosX();
 
-                            nPos = xPos / 17.7;
-                            dDist = 8.0 / Math.cos( Math.atan( nPos / 16.0 ) ) - 1.0;
+                            nOff = 24.0 * Math.tan( Math.toRadians( hErr ) );
+                            nPos = xPos / 17.7; // + nOff;
+                            nAng = Math.atan( nPos / 9.0 );
+                            dDist = 6.0 / Math.cos( nAng );
+                            tPow1 = 2.0 * nAng / Math.PI; //2 * ( nAng - Math.toRadians( hErr ) ) / Math.PI;
+                            tPow2 = 2.0 * nAng / Math.PI;
 
-                            rDv = Range.clip( baseSpeed + nPos * cRos * 1.8, 0.15, 0.65 );
-                            lDv = Range.clip( baseSpeed - nPos * cRos * 1.8, 0.15, 0.65 );
+                            rDv = Range.clip( baseSpeed + tPow1, -1.0, 1.0 );
+                            lDv = Range.clip( baseSpeed - tPow1, -1.0, 1.0 );
 
-                            DbgLog.msg("SJH: /BEACON/CENTER > r: %5.2f, l: %5.2f, xpos: %5.2f", rDv, lDv, xPos );
+                            DbgLog.msg("SJH: /BEACON/INIT > nOff: %5.2f, nPos: %5.2f, nAng: %5.2f, dDist: %5.2f", nOff, nPos, nAng, dDist );
 
                             robot.rightMotor.setPower(rDv);
                             robot.leftMotor.setPower(lDv);
@@ -188,8 +197,8 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
 
                             if (drvTrn.countsToDistance(curDistCount) > dDist) {
 
-                                rDv = Range.clip( baseSpeed - nPos * cRos * 1.8, 0.15, 0.65 );
-                                lDv = Range.clip( baseSpeed + nPos * cRos * 1.8, 0.15, 0.65 );
+                                rDv = Range.clip( baseSpeed - tPow2, -1.0, 1.0 );
+                                lDv = Range.clip( baseSpeed + tPow2, -1.0, 1.0 );
 
                                 robot.rightMotor.setPower(rDv);
                                 robot.leftMotor.setPower(lDv);
@@ -208,7 +217,7 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
 
                             DbgLog.msg("SJH: /BEACON/ALIGN > r: %5.2f, l: %5.2f, d: %5.2f, a: %5.2f", rDv, lDv, drvTrn.countsToDistance(curDistCount), hErr );
 
-                            if (drvTrn.countsToDistance(curDistCount) > dDist * 2) {
+                            if (drvTrn.countsToDistance(curDistCount) > dDist * 1.8) {
 
                                 beaconStep = "DRIVE";
                                 robot.rightMotor.setPower(0.25);
@@ -226,8 +235,8 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
 
                             curDistCount = (robot.leftMotor.getCurrentPosition() + robot.rightMotor.getCurrentPosition()) / 2.0;
 
-                            rDv = Range.clip(0.25 - hErr * cRos, 0.15, 0.4);
-                            lDv = Range.clip(0.25 + hErr * cRos, 0.15, 0.4);
+                            rDv = Range.clip(0.25 - hErr * 0.035, 0.15, 0.4);
+                            lDv = Range.clip(0.25 + hErr * 0.035, 0.15, 0.4);
 
                             DbgLog.msg("SJH: /BEACON/DRIVE > r: %5.2f, l: %5.2f, d: %5.2f, a: %5.2f", rDv, lDv, drvTrn.countsToDistance(curDistCount), hErr );
 
