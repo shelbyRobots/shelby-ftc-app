@@ -50,8 +50,8 @@ class Points
         {
             if(useBecn)
             {
-                addPoint(points, fwd, 0.9,  1.00, Segment.TargetType.ENCODER, none, PREP1_PT);
-                addPoint(points, fwd, 0.15,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
+                addPoint(points, fwd, 0.95,  1.00, Segment.TargetType.ENCODER, none, PREP1_PT);
+                addPoint(points, fwd, 0.20,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
             }
             else
             {
@@ -80,8 +80,8 @@ class Points
         {
             if(useBecn)
             {
-                addPoint(points, fwd, 0.9, 1.00, Segment.TargetType.ENCODER, none, PREP2_PT);
-                addPoint(points, fwd, 0.15, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
+                addPoint(points, fwd, 0.95, 1.00, Segment.TargetType.ENCODER, none, PREP2_PT);
+                addPoint(points, fwd, 0.20, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
             }
             else
             {
@@ -310,7 +310,7 @@ class Points
 
     private static final double TRGT1_Y = -12.0;
 
-    private static final double FUDGE = 0.0;
+    private static final double FUDGE = 1.0;
     private static final double TRGT2_Y =  36.0 - FUDGE;
     //private static final double PREP2_Y  = TRGT2_Y - 4.0;
     private static final double CTRPRKX = -12.0;
@@ -320,8 +320,8 @@ class Points
 
     private static final double SAFETY  =   0.0;
     private static final double SCAN_X  = -40.0;
-    private static final double BECN_X  = -50.5;
-    private static final double BECN2X  = -50.2;
+    private static final double BECN_X  = -51.5;
+    private static final double BECN2X  = -51.5;
     private static final double TOUCHX  = -56.0;
     private static final double TOUCH2  = -58.0;
     private static final double BMID_X  = -24.0;

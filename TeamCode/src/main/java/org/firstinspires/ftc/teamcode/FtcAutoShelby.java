@@ -508,7 +508,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
                 cHdg,
                 tHdg);
 
-        if(Math.abs(tHdg-cHdg) <= 2.0)
+        if(Math.abs(tHdg-cHdg) <= 1.0)
             return;
 
         timer.reset();
@@ -523,6 +523,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
                                                    BeaconDetector.BeaconSide rSide)
     {
         BeaconDetector.BeaconSide pushSide = BeaconDetector.BeaconSide.UNKNOWN;
+
+        if (bSide == rSide) return pushSide;
 
         if      ( alliance == Field.Alliance.BLUE ) pushSide = bSide;
         else if ( alliance == Field.Alliance.RED  ) pushSide = rSide;
@@ -561,7 +563,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
         BeaconDetector.BeaconSide pushSide = BeaconDetector.BeaconSide.UNKNOWN;
 
         bd.startSensing();
-        sleep( 200 );
+        //sleep( 200 );
 
         ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
 
@@ -917,8 +919,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
     private final static double CTR_PUSH_POS = 0.1;
 
     //private final static double DEF_DRV_PWR  = 0.7;
-    private final static double DEF_ENCTRN_PWR  = 0.7; //0.45
-    private final static double DEF_GYRTRN_PWR = 0.48; //0.55
+    private final static double DEF_ENCTRN_PWR  = 0.7; //0.70
+    private final static double DEF_GYRTRN_PWR = 0.48; //0.48
 
     private final static double DEF_SWP_PWR = 1.0;
     private final static double DEF_ELV_PWR = 0.5;
