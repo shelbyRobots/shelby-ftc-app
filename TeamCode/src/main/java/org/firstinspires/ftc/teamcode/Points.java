@@ -48,15 +48,22 @@ class Points
         if(pushChoice == Field.BeaconChoice.NEAR ||
            pushChoice == Field.BeaconChoice.BOTH)
         {
-            if(useColor)
+            if(useBecn)
             {
-                addPoint(points, fwd, 0.9,  1.00, Segment.TargetType.ENCODER, scan, PREP1_PT);
+                addPoint(points, fwd, 0.9,  1.00, Segment.TargetType.ENCODER, none, PREP1_PT);
                 addPoint(points, fwd, 0.15,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
             }
             else
             {
-                addPoint(points, fwd, 0.8, 1.00, Segment.TargetType.ENCODER, beacon, SCAN1_PT);
-                addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER, beacon, BECN1_PT);
+                if(usePreScan)
+                {
+                    addPoint(points, fwd, 0.9, 1.00, Segment.TargetType.ENCODER, none, PREB1_PT);
+                    addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.COLOR, beacon, SCAN1_PT);
+                }
+                else
+                {
+                    addPoint(points, fwd, 0.9, 1.00, Segment.TargetType.ENCODER, beacon, SCAN1_PT);
+                }
             }
 
             //addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   push, PRSS1_PT);
@@ -71,15 +78,22 @@ class Points
         if(pushChoice == Field.BeaconChoice.FAR ||
            pushChoice == Field.BeaconChoice.BOTH)
         {
-            if(useColor)
+            if(useBecn)
             {
-                addPoint(points, fwd, 0.9, 1.00, Segment.TargetType.ENCODER,     scan, PREP2_PT);
+                addPoint(points, fwd, 0.9, 1.00, Segment.TargetType.ENCODER, none, PREP2_PT);
                 addPoint(points, fwd, 0.15, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
             }
             else
             {
-                addPoint(points, fwd, 0.8, 1.00, Segment.TargetType.ENCODER, beacon, SCAN2_PT);
-                addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER, beacon, BECN2_PT);
+                if(usePreScan)
+                {
+                    addPoint(points, fwd, 0.9, 1.00, Segment.TargetType.ENCODER, none, PREB2_PT);
+                    addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.COLOR, beacon, SCAN2_PT);
+                }
+                else
+                {
+                    addPoint(points, fwd, 0.9, 1.00, Segment.TargetType.ENCODER, beacon, SCAN2_PT);
+                }
             }
 
             //addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   push, PRSS2_PT);
@@ -204,7 +218,8 @@ class Points
             if(sname.equals("SCAN1") || sname.equals("SCAN2") ||
                sname.equals("BECN1") || sname.equals("BECN2"))
             {
-                double nfhdg = nxtSeg.getFieldHeading();
+                double nfhdg = 180.0;
+                if (alliance == Field.Alliance.BLUE) nfhdg = 90.0;
                 curSeg.setPostTurn(nfhdg);
                 DbgLog.msg("SJH: Segment %s setting postTurn %4.2f", sname, nfhdg);
             }
@@ -293,10 +308,11 @@ class Points
     private static final double ASHOOTX =   8.9;
     private static final double ASHOOTY = -56.6;
 
-    private static final double TRGT1_Y = -13.0;
+    private static final double TRGT1_Y = -12.0;
 
-    private static final double TRGT2_Y =  35.0;
-    private static final double PREP2_Y  = TRGT2_Y - 5.0;
+    private static final double FUDGE = 0.0;
+    private static final double TRGT2_Y =  36.0 - FUDGE;
+    //private static final double PREP2_Y  = TRGT2_Y - 4.0;
     private static final double CTRPRKX = -12.0;
     private static final double CTRPRKY = -12.0;
     private static final double CRNPRKX = -48.0;
@@ -315,8 +331,14 @@ class Points
     private static final double PREP1_X = PCT*(BECN_X  - STARTX) + STARTX;
     private static final double PREP1_Y = PCT*(TRGT1_Y - SHOOTY) + SHOOTY;
 
-//    private static final double PREP1_X  = BECN_X + 4.0;
-//    private static final double PREP1_Y  = TRGT1_Y - 5.1;
+    private static final double PREP2_X = PCT*(BECN2X  - BECN_X) + BECN_X;
+    private static final double PREP2_Y = PCT*(TRGT2_Y - TRGT1_Y) + TRGT1_Y;
+
+    private static final double PREBC1X = PCT*(SCAN_X - STARTX) + STARTX;
+    private static final double PREBC1Y = PCT*(TRGT1_Y - SHOOTY) + SHOOTY;
+
+    private static final double PREBC2X = PCT*(SCAN_X - SCAN_X) + SCAN_X;
+    private static final double PREBC2Y = PCT*(TRGT2_Y - TRGT1_Y) + TRGT1_Y;
 
     private Point2d START_PT = new Point2d("START", STARTX, STARTY);
     private Point2d PRSHT_PT = new Point2d("PRSHT", STARTX, AIMERY);
@@ -330,11 +352,13 @@ class Points
 
     private Point2d SCAN1_PT = new Point2d("SCAN1", SCAN_X, TRGT1_Y);
     private Point2d PREP1_PT = new Point2d("PREP1", PREP1_X, PREP1_Y);
+    private Point2d PREB1_PT = new Point2d("PREB1", PREBC1X, PREBC1Y);
     private Point2d BECN1_PT = new Point2d("BECN1", BECN_X, TRGT1_Y);
     private Point2d PRSS1_PT = new Point2d("PRSS1", TOUCHX, TRGT1_Y);
     private Point2d RVRS1_PT = new Point2d("RVRS1", BECN_X, TRGT1_Y);
     private Point2d SCAN2_PT = new Point2d("SCAN2", SCAN_X, TRGT2_Y);
-    private Point2d PREP2_PT = new Point2d("PREP2", BECN2X, PREP2_Y);
+    private Point2d PREP2_PT = new Point2d("PREP2", PREP2_X, PREP2_Y);
+    private Point2d PREB2_PT = new Point2d("PREB2", PREBC2X, PREBC2Y);
     private Point2d BECN2_PT = new Point2d("BECN2", BECN2X, TRGT2_Y);
     private Point2d PRSS2_PT = new Point2d("PRSS2", TOUCH2, TRGT2_Y);
     private Point2d RVRS2_PT = new Point2d("RVRS2", BECN_X, TRGT2_Y);
@@ -357,5 +381,6 @@ class Points
     private Field.BeaconChoice pushChoice = Field.BeaconChoice.NEAR;
     private Field.ParkChoice   parkChoice = Field.ParkChoice.CENTER_PARK;
     private Field.Alliance     alliance   = Field.Alliance.RED;
-    private boolean            useColor   = false;
+    private boolean            useBecn    = true;
+    private boolean            usePreScan = false;
 }

@@ -15,6 +15,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
+import ftclib.FtcOpMode;
+
 /**
  * This is NOT an opmode.
  *
@@ -29,6 +31,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
  */
 class ShelbyBot
 {
+    private FtcOpMode op = null;
     /* Public OpMode members. */
     DcMotor  leftMotor   = null;
     DcMotor  rightMotor  = null;
@@ -105,6 +108,21 @@ class ShelbyBot
         //ALSO SET MAX SPEED for drive in auton
         if(shotmotor1 != null) shotmotor1.setMaxSpeed(30800);
         if(shotmotor2 != null) shotmotor2.setMaxSpeed(30800);
+
+        if(colorSensor != null)
+        {
+            colorPort = colorSensor.getPort();
+        }
+    }
+
+    int getColorPort()
+    {
+        return colorPort;
+    }
+
+    void setOpMode(FtcOpMode op)
+    {
+        this.op = op;
     }
 
     /***
@@ -116,13 +134,13 @@ class ShelbyBot
      * @param periodMs  Length of wait cycle in mSec.
      * @throws InterruptedException
      */
-    void waitForTick(long periodMs) throws InterruptedException
+    void waitForTick(long periodMs)
     {
         long  remaining = periodMs - (long)period.milliseconds();
 
         // sleep for the remaining portion of the regular cycle period.
         if (remaining > 0)
-            Thread.sleep(remaining);
+            op.sleep(remaining);
 
         // Reset the cycle clock for the next pass.
         period.reset();
@@ -141,6 +159,8 @@ class ShelbyBot
     private static final float CAMERA_X_IN_BOT = 12.5f  * MM_PER_INCH;
     private static final float CAMERA_Y_IN_BOT = 0f; //12.5f * MM_PER_INCH;
     private static final float CAMERA_Z_IN_BOT = 0f; //15.5f * MM_PER_INCH;
+
+    private int colorPort = 0;
 
     //With phone laid flat in portrait mode with screen up:
     //The phone axis is 0,0,0 at Camera (using front camera)

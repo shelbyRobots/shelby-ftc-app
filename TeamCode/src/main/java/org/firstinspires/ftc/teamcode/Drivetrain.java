@@ -56,6 +56,13 @@ class Drivetrain
         //time.reset();
     }
 
+    public void resetLastPos()
+    {
+        noMoveTimer.reset();
+        lposLast = left_drive.getCurrentPosition();
+        rposLast = right_drive.getCurrentPosition();
+    }
+
     public void driveDistance(double dst, double pwr, Direction dir)
     {
         int counts = distanceToCounts(dst);
@@ -78,7 +85,7 @@ class Drivetrain
         move(pwr);
     }
 
-    void driveDistanceLinear(double dst, double pwr, Direction dir)
+    int driveDistanceLinear(double dst, double pwr, Direction dir)
     {
         driveDistance(dst, pwr, dir);
 
@@ -86,22 +93,25 @@ class Drivetrain
         noMoveTimer.reset();
         lposLast = left_drive.getCurrentPosition();
         rposLast = right_drive.getCurrentPosition();
-        while(isBusy() &&
-                      !areDriveMotorsStuck() &&
-                      op.opModeIsActive() &&
-                      !op.isStopRequested())
+        while(isBusy()               &&
+              !areDriveMotorsStuck() &&
+              op.opModeIsActive()    &&
+              !op.isStopRequested())
         {
-            op.idle();
             if(ptmr.seconds() > printTimeout) ptmr.reset();
         }
 
         left_drive.setPower(0.0);
         right_drive.setPower(0.0);
+
+        int ldrive_end =  left_drive.getCurrentPosition();
+        int rdrive_end = right_drive.getCurrentPosition();
+
         DbgLog.msg("SJH: driveDistanceLinear ldc %6d rdc %6d",
-                left_drive.getCurrentPosition(),
-                right_drive.getCurrentPosition());
+                ldrive_end, rdrive_end);
 
         stopAndReset();
+        return((int)(ldrive_end + rdrive_end)/2);
     }
 
     void driveToPoint(Point2d tgtPt, double pwr, Direction dir)
@@ -112,7 +122,7 @@ class Drivetrain
         driveDistance(dist, pwr, dir);
     }
 
-    void driveToPointLinear(Point2d tgtPt, double pwr, Direction dir, int targetHdg)
+    int driveToPointLinear(Point2d tgtPt, double pwr, Direction dir, int targetHdg)
     {
         if (tgtPt == null)  DbgLog.error("SJH tgtPt null in driveToPoint");
         if (currPt == null) DbgLog.error("SJH currPt null in driveToPoint");
@@ -146,13 +156,15 @@ class Drivetrain
 
         left_drive.setPower(0.0);
         right_drive.setPower(0.0);
+        int ldrive_end =  left_drive.getCurrentPosition();
+        int rdrive_end = right_drive.getCurrentPosition();
         DbgLog.msg("SJH: ldc %6d rdc %6d",
-                left_drive.getCurrentPosition(),
-                right_drive.getCurrentPosition());
+                ldrive_end, rdrive_end);
 
         stopAndReset();
         DbgLog.msg("SJH: driveToPointLinear end - set currPt to %s", tgtPt);
         currPt = tgtPt;
+        return ((int)(ldrive_end + rdrive_end)/2);
     }
 
     void driveToPointLinear(Point2d tgtPt, double pwr, Direction dir)
@@ -638,7 +650,7 @@ class Drivetrain
 
             //If power is above threshold and encoders aren't changing,
             //stop after noMoveTimeout
-            if(noMoveTimer.seconds() > noMoveTimeout)
+            if(noMoveTimer.seconds() > noDriveMoveTimeout)
             {
                 if ((lp >= 0.0 && Math.abs(lposLast - lc) < noMoveThreshLow) ||
                     (rp >= 0.0 && Math.abs(rposLast - rc) < noMoveThreshLow))
@@ -724,6 +736,7 @@ class Drivetrain
     private double rposLast;
 
     private double noMoveTimeout = 0.5;
+    private double noDriveMoveTimeout = 0.35;
     private int noMoveThreshLow = 10;
     private int noMoveThreshHi = 60;
     private double noMovePwrHi = 0.25;
