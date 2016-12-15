@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.widget.TextView;
 
 import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cColorSensor;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -80,16 +81,26 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
     private void setup()
     {
         dashboard.displayPrintf(2, "STATE: %s", "INITIALIZING - PLEASE WAIT FOR MENU");
+        DbgLog.msg("SJH: SETUP");
         hardwareMap.logDevices();
         robot.init(hardwareMap);
 
-        robot.colorSensor.resetDeviceConfigurationForOpMode();
+        DbgLog.msg("SJH: I2C Controller version %d",
+                robot.colorSensor.getI2cController().getVersion());
+
+        DbgLog.msg("SJH: COLOR_SENSOR");
+        DbgLog.msg("SJH:  ConnectionInfo %s", robot.colorSensor.getConnectionInfo());
+        DbgLog.msg("SJH:  I2cAddr %s", Integer.toHexString(robot.colorSensor.getI2cAddress().get8Bit()));
+        DbgLog.msg("SJH:  I2cAddr %s", Integer.toHexString(robot.colorSensor.getI2cAddress().get7Bit()));
+
+        DbgLog.msg("SJH: GYRO_SENSOR");
+        DbgLog.msg("SJH:  ConnectionInfo %s", robot.gyro.getConnectionInfo());
+        DbgLog.msg("SJH:  I2cAddr %s", Integer.toHexString(robot.gyro.getI2cAddress().get8Bit()));
+        DbgLog.msg("SJH:  I2cAddr %s", Integer.toHexString(robot.gyro.getI2cAddress().get7Bit()));
+
         robot.colorSensor.enableLed(true);
-        robot.colorSensor.enableLed(false);
-        sleep(100);
-        robot.colorSensor.enableLed(true);
-        sleep(100);
-        robot.colorSensor.enableLed(false);
+        sleep(50);
+
         turnColorOff();
 
         BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(hardwareMap.appContext) {
@@ -125,6 +136,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
         {
             drvTrn.init(robot.leftMotor, robot.rightMotor, robot.gyro);
             drvTrn.setOpMode(getInstance());
+            robot.setOpMode(getInstance());
 
             int lms = robot.leftMotor.getMaxSpeed();
             int rms = robot.rightMotor.getMaxSpeed();
@@ -286,10 +298,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
                     break;
 
                 case FIND_BEACON:
-                    do_findAndPushBeacon();
-                    // Only using the BECN segments for post turns
-                    // See Points.initSegments for logic/setup
-                    SkipNextSegment = true;
+                    do_findAndPushBeacon(true);
+                    //do_findAndPushBeacon();
                     break;
 
                 case RST_PUSHER:
@@ -328,7 +338,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
         {
             DbgLog.msg("SJH: Turning on colorSensor LED");
             turnColorOn();
-            robot.colorSensor.enableLed(true);
             DcMotor.RunMode lRunMode = robot.leftMotor.getMode();
             DcMotor.RunMode rRunMode = robot.rightMotor.getMode();
             robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -337,33 +346,41 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
             int rpos = robot.rightMotor.getCurrentPosition();
             int segCounts = drvTrn.distanceToCounts(seg.getLength());
 
-            drvTrn.move(seg.getSpeed());
+            DbgLog.msg("SJH: Color Driving to pt %s at speed %4.2f", ept, speed);
+            drvTrn.move(speed);
 
             while(opModeIsActive() &&
                   !isStopRequested())
             {
-                if (robot.colorSensor.red()   > RED_THRESH &&
-                    robot.colorSensor.green() > GRN_THRESH &&
-                    robot.colorSensor.blue()  > BLU_THRESH)
+                int r = robot.colorSensor.red();
+                int g = robot.colorSensor.green();
+                int b = robot.colorSensor.blue();
+
+                DbgLog.msg("SJH: RGB %d %d %d", r, g, b);
+
+                int totColor = r + g + b;
+
+                if (totColor > COLOR_THRESH)
                 {
                     drvTrn.stopAndReset();
-                    robot.colorSensor.enableLed(false);
                     DbgLog.msg("SJH: FOUND LINE");
+                    turnColorOff();
+                    drvTrn.setCurrPt(ept);
                     break;
                 }
                 else if(robot.leftMotor.getCurrentPosition()  - lpos > (int)(segCounts * 1.2) ||
                         robot.rightMotor.getCurrentPosition() - rpos > (int)(segCounts * 1.2))
                 {
                     drvTrn.stopAndReset();
-                    DbgLog.msg("SJH: REACHED OVERRUN PT");
-                    robot.colorSensor.enableLed(false);
-                    DbgLog.msg("SJH: Backing up a bit");
+                    DbgLog.msg("SJH: REACHED OVERRUN PT - Backing up a bit");
+                    turnColorOff();
                     drvTrn.driveDistanceLinear(3.0, 0.3, Drivetrain.Direction.REVERSE);
+                    drvTrn.setCurrPt(ept);
                     break;
                 }
-                turnColorOff();
+
+                robot.waitForTick(5);
             }
-            //sleep(1500);
         }
         else
         {
@@ -383,22 +400,20 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
 
     private void turnColorOn()
     {
-        robot.colorSensor.getI2cController()
-                .registerForI2cPortReadyCallback(robot.colorSensor,
-                                                 robot.colorSensor.getPort());
+        ModernRoboticsI2cColorSensor cs = robot.colorSensor;
+        cs.getI2cController().registerForI2cPortReadyCallback(robot.colorSensor,
+                                                 robot.getColorPort());
 
-        robot.colorSensor.resetDeviceConfigurationForOpMode();
-        robot.colorSensor.enableLed(true);
-        sleep(100);
-        robot.colorSensor.enableLed(false);
-        sleep(100);
-        robot.colorSensor.enableLed(true);
+        sleep(50);
+        cs.enableLed(true);
     }
 
     private void turnColorOff()
     {
-        robot.colorSensor.getI2cController()
-                .deregisterForPortReadyCallback(robot.colorSensor.getPort());
+        ModernRoboticsI2cColorSensor cs = robot.colorSensor;
+        cs.enableLed(false);
+        sleep(50);
+        cs.getI2cController().deregisterForPortReadyCallback(robot.getColorPort());
     }
 
     private double getGryoFhdg()
@@ -493,7 +508,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
                 cHdg,
                 tHdg);
 
-        if(Math.abs(tHdg-cHdg) <= 1.0)
+        if(Math.abs(tHdg-cHdg) <= 2.0)
             return;
 
         timer.reset();
@@ -504,10 +519,78 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
                 tHdg, timer.time(), cHdg);
     }
 
+    private BeaconDetector.BeaconSide findPushSide(BeaconDetector.BeaconSide bSide,
+                                                   BeaconDetector.BeaconSide rSide)
+    {
+        BeaconDetector.BeaconSide pushSide = BeaconDetector.BeaconSide.UNKNOWN;
+
+        if      ( alliance == Field.Alliance.BLUE ) pushSide = bSide;
+        else if ( alliance == Field.Alliance.RED  ) pushSide = rSide;
+
+        DbgLog.msg("SJH: BEACON BSIDE %s RSIDE %s PSIDE %s", bSide, rSide, pushSide);
+        return pushSide;
+    }
+
+    private void setPusher(BeaconDetector.BeaconSide pushSide)
+    {
+        dashboard.displayPrintf(5, "BUTTON: %s", pushSide);
+        if (pushSide == BeaconDetector.BeaconSide.LEFT)
+        {
+            robot.pusher.setPosition(LFT_PUSH_POS);
+            DbgLog.msg("SJH: Pushing left button");
+        }
+        else if (pushSide == BeaconDetector.BeaconSide.RIGHT)
+        {
+            robot.pusher.setPosition(RGT_PUSH_POS);
+            DbgLog.msg("SJH: Pushing right button");
+        }
+        else
+        {
+            robot.pusher.setPosition(CTR_PUSH_POS);
+            DbgLog.msg("SJH: Not Pushing A Button");
+        }
+    }
+
+    private boolean do_findAndPushBeacon(boolean push)
+    {
+        DbgLog.msg("SJH: FIND BEACON ORDER!!!");
+        dashboard.displayPrintf(2, "STATE: %s", "BEACON FIND");
+        int timeout = 2000;
+        BeaconDetector.BeaconSide blueSide = BeaconDetector.BeaconSide.UNKNOWN;
+        BeaconDetector.BeaconSide redSide = BeaconDetector.BeaconSide.UNKNOWN;
+        BeaconDetector.BeaconSide pushSide = BeaconDetector.BeaconSide.UNKNOWN;
+
+        bd.startSensing();
+        sleep( 200 );
+
+        ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
+
+        while (opModeIsActive()                              &&
+               pushSide == BeaconDetector.BeaconSide.UNKNOWN &&
+               itimer.milliseconds() < timeout)
+        {
+            blueSide = bd.getBluePosSide();
+            redSide  = bd.getRedPosSide();
+            pushSide = findPushSide(blueSide, redSide);
+            robot.waitForTick(34);
+        }
+
+        setPusher(pushSide);
+        if(push && pushSide != BeaconDetector.BeaconSide.UNKNOWN)
+        {
+            double tgtDist = 9.5;
+            int dcount = drvTrn.driveDistanceLinear(tgtDist, 0.2, Drivetrain.Direction.FORWARD);
+            double actDist = drvTrn.countsToDistance(dcount);
+            drvTrn.driveDistanceLinear(actDist, 0.5, Drivetrain.Direction.REVERSE);
+        }
+
+        bd.stopSensing();
+
+        return pushSide != BeaconDetector.BeaconSide.UNKNOWN;
+    }
+
     private void do_findAndPushBeacon()
     {
-
-
         DbgLog.msg("SJH: /BEACON/ > THE HUNT FOR BEACON");
 
         String beaconStep = "FIND";
@@ -528,6 +611,9 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
         sleep( 500 );
 
         while(opModeIsActive() && !allDone ) {
+
+            curDistCount = ( robot.leftMotor.getCurrentPosition() +
+                                     robot.rightMotor.getCurrentPosition() ) / 2.0;
 
             switch ( beaconStep )
             {
@@ -574,18 +660,11 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
                     rDv = baseSpeed + zOff * xOff;
                     lDv = baseSpeed - zOff * xOff;
 
-                    robot.rightMotor.setPower( rDv );
-                    robot.leftMotor.setPower( lDv );
-
-                    curDistCount = ( robot.leftMotor.getCurrentPosition() + robot.rightMotor.getCurrentPosition() ) / 2.0;
-
-                    DbgLog.msg("SJH: /BEACON/FORWARD > r: %5.2f, l: %5.2f, err: %5.2f ", rDv, lDv, hErr );
-
                     // Good when the beacon is in view enough or at least
                     // some driving done.
                     if ( pushSide == BeaconDetector.BeaconSide.UNKNOWN &&
-                            blueSide != BeaconDetector.BeaconSide.UNKNOWN &&
-                            redSide != BeaconDetector.BeaconSide.UNKNOWN )
+                         blueSide != BeaconDetector.BeaconSide.UNKNOWN &&
+                         redSide  != BeaconDetector.BeaconSide.UNKNOWN )
                     {
                         if ( alliance == Field.Alliance.BLUE )
                         {
@@ -611,31 +690,40 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
 
                     }
 
-                    if ( zPos > 0.65 && drvTrn.countsToDistance( curDistCount ) > 5.0 )
+                    if ( (zPos > 0.65 ))
                     {
                         if ( pushSide == BeaconDetector.BeaconSide.UNKNOWN )
                         {
+                            lDv = 0.0;
+                            rDv = 0.0;
                             beaconStep = "BACKUP";
-                            bailPos = curDistCount;
                             DbgLog.msg("SJH: /BEACON/FORWARD > NO SIDE DETECTED, EXITING AT %5.2f ", bailPos );
                         }
                         else
                         {
+                            lDv = 0.0;
+                            rDv = 0.0;
                             beaconStep = "PUSH";
+                            drvTrn.resetLastPos();
                             DbgLog.msg("SJH: /BEACON/FORWARD > TIME TO PUSH BUTTON ON THE %s", pushSide );
                         }
                     }
                     else if ( bConf < 0.2 )
                     {
                         beaconStep = "BACKUP";
-                        bailPos = curDistCount;
                         DbgLog.msg("SJH: /BEACON/FORWARD > CONFIDENCE DROPPED UNDER THREASHOLD %5.2f", bConf );
                     }
                     else if ( drvTrn.countsToDistance( curDistCount ) > 5.0 && drvTrn.areDriveMotorsStuck() && drvTrn.isBusy() )
                     {
                         beaconStep = "BACKUP";
-                        bailPos = curDistCount;
                         DbgLog.msg("SJH: /BEACON/FORWARD > NOT MOVING? YIKES! %5.2f", curDistCount );
+                    }
+                    else
+                    {
+                        DbgLog.msg("SJH: /BEACON/FORWARD > r: %5.2f, l: %5.2f, %4.1f, err: %5.2f ",
+                                rDv, lDv, curDistCount, hErr );
+                        robot.rightMotor.setPower( rDv );
+                        robot.leftMotor.setPower( lDv );
                     }
 
                     break;
@@ -643,7 +731,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
                 case "PUSH":
 
                     DbgLog.msg("SJH: /BEACON/PUSH > GOING TO PUSH BUTTON" );
-                    robot.rightMotor.setPower( 0.25 );
+
+                    robot.leftMotor.setPower( 0.25 );
                     robot.rightMotor.setPower( 0.25 );
                     while ( !drvTrn.areDriveMotorsStuck() )
                         idle();
@@ -655,11 +744,9 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
 
                 case "BACKUP":
 
-                    DbgLog.msg("SJH: /BEACON/BACKUP > BACKING UP" );
-                    if ( bailPos > 0 )
-                        drvTrn.driveDistanceLinear( drvTrn.countsToDistance( bailPos ), 0.5, Drivetrain.Direction.REVERSE );
-                    else
-                        drvTrn.driveDistanceLinear( 22.0, 0.5, Drivetrain.Direction.REVERSE );
+                    DbgLog.msg("SJH: /BEACON/BACKUP > BACKING UP %4.1f", curDistCount );
+                    drvTrn.driveDistanceLinear( drvTrn.countsToDistance( curDistCount ),
+                            0.5, Drivetrain.Direction.REVERSE );
 
                     DbgLog.msg("SJH: /BEACON/BACKUP > BACKED UP" );
                     robot.pusher.setPosition(ZER_PUSH_POS);
@@ -675,8 +762,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
 
             }
 
-            sleep( 10 );
-            idle();
+            robot.waitForTick( 10 );
         }
 
         bd.stopSensing();
@@ -872,6 +958,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
     private int RED_THRESH = 15;
     private int GRN_THRESH = 15;
     private int BLU_THRESH = 15;
+
+    private int COLOR_THRESH = 25;
 
     private double delay = 0.0;
 }

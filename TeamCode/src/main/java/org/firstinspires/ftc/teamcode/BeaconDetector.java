@@ -35,20 +35,20 @@ public class BeaconDetector implements BeaconFinder
     private final static boolean DEBUG = false;
     private final static boolean POS_IS_Y = false;
 
-    private List<MatOfPoint> red_blobs = new ArrayList<MatOfPoint>();
-    private List<MatOfPoint> blue_blobs = new ArrayList<MatOfPoint>();
-    private List<MatOfPoint> white_blobs = new ArrayList<MatOfPoint>();
-    private List<MatOfPoint> black_blobs = new ArrayList<MatOfPoint>();
+    private List<MatOfPoint> red_blobs = new ArrayList<>();
+    private List<MatOfPoint> blue_blobs = new ArrayList<>();
+    private List<MatOfPoint> white_blobs = new ArrayList<>();
+    private List<MatOfPoint> black_blobs = new ArrayList<>();
 
-    private ArrayList<Rect> red_matches = new ArrayList<Rect>();
-    private ArrayList<Rect> blue_matches = new ArrayList<Rect>();
-    private ArrayList<Rect> white_matches = new ArrayList<Rect>();
+    private ArrayList<Rect> red_matches = new ArrayList<>();
+    private ArrayList<Rect> blue_matches = new ArrayList<>();
+    private ArrayList<Rect> white_matches = new ArrayList<>();
 
     private Rect red_box;
     private Rect blue_box;
     private Rect white_box;
     private Rect beacon_box;
-    private List<Rect> buttons = new ArrayList<Rect>();
+    private List<Rect> buttons = new ArrayList<>();
 
     private RingBuffer beaconConfBuf = new RingBuffer(20);
     private RingBuffer beaconPosXBuf = new RingBuffer(3);
@@ -141,10 +141,21 @@ public class BeaconDetector implements BeaconFinder
         double red_rt = rb.area() / wb.area();
         double blue_rt = bb.area() / wb.area();
 
+        double beac_aspect_factor =
+                Math.pow( Range.clip( sens_bcn_rt - actl_beac_rt, -1.0, 1.0 ) / actl_beac_rt, 2 );
+        double wb_ratio_factor =
+                Math.pow( Range.clip( 0.6 - beac_rt, -0.6, 0.6 ) * 1.67, 2 );
+        double rb_ratio_factor =
+                Math.pow( Range.clip( 0.4 - ( red_rt + blue_rt ) / 2, -0.4, 0.4 ) * 2.5, 2 );
+
+        DbgLog.msg("SJH: scoreFit beac_apsect_factor %4.3f" +
+                   "wb_ratio_factor %4.3f rb_ratio_factor %4.3f",
+                beac_aspect_factor, wb_ratio_factor, rb_ratio_factor);
+
         return Range.clip( 1 - Math.sqrt(
-                    ( Math.pow( Range.clip( sens_bcn_rt - actl_beac_rt, -1.0, 1.0 ) / actl_beac_rt, 2 ) +
-                            3 * Math.pow( Range.clip( 0.6 - beac_rt, -0.6, 0.6 ) * 1.67, 2 ) +
-                            2 * Math.pow( Range.clip( 0.4 - ( red_rt + blue_rt ) / 2, -0.4, 0.4 ) * 2.5, 2 )
+                    ( beac_aspect_factor +
+                      3 * wb_ratio_factor +
+                      2 * rb_ratio_factor
                     ) / 6.0 ), 0.0, 1.0 );
     }
 
@@ -284,7 +295,7 @@ public class BeaconDetector implements BeaconFinder
 
     private void findLum()
     {
-        List<Mat> channels = new ArrayList<Mat>();
+        List<Mat> channels = new ArrayList<>();
         Core.split( image, channels );
 
         Mat sat = channels.get( 1 );
@@ -310,7 +321,7 @@ public class BeaconDetector implements BeaconFinder
         zonedImg = image.clone();
         Core.merge( channels, zonedImg );
 
-        List<Mat> tmp = new ArrayList<Mat>();
+        List<Mat> tmp = new ArrayList<>();
         Core.split( image, tmp );
         Mat mask = image.clone();
 
@@ -329,7 +340,7 @@ public class BeaconDetector implements BeaconFinder
         buttons.clear();
         black_blobs.clear();
 
-        List<Mat> channels = new ArrayList<Mat>();
+        List<Mat> channels = new ArrayList<>();
         Core.split( zonedImg, channels );
 
         Mat s_value = channels.get( 2 );
@@ -348,7 +359,7 @@ public class BeaconDetector implements BeaconFinder
 //        Core.merge( channels, showImg );
 
         Mat hchy = new Mat();
-        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        List<MatOfPoint> contours = new ArrayList<>();
 
         Imgproc.findContours(d_value, contours, hchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
 
@@ -410,7 +421,7 @@ public class BeaconDetector implements BeaconFinder
     public void findWeightedPos( Mat img, List<MatOfPoint> calcCtr, ArrayList<Rect> boxMatches ) {
 
         Mat hchy = new Mat();
-        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        List<MatOfPoint> contours = new ArrayList<>();
 
         Imgproc.findContours(img, contours, hchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
 
