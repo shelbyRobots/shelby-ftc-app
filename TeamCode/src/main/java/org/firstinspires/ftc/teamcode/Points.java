@@ -48,10 +48,10 @@ class Points
         if(pushChoice == Field.BeaconChoice.NEAR ||
            pushChoice == Field.BeaconChoice.BOTH)
         {
-            if(useBecn)
+            if(!useFly2Light)
             {
-                addPoint(points, fwd, 0.9,  1.00, Segment.TargetType.ENCODER, none, PREP1_PT);
-                addPoint(points, fwd, 0.15,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
+                addPoint(points, fwd, 0.95,  1.00, Segment.TargetType.ENCODER, none, PREP1_PT);
+                addPoint(points, fwd, 0.20,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
             }
             else
             {
@@ -78,10 +78,10 @@ class Points
         if(pushChoice == Field.BeaconChoice.FAR ||
            pushChoice == Field.BeaconChoice.BOTH)
         {
-            if(useBecn)
+            if(!useFly2Light)
             {
-                addPoint(points, fwd, 0.9, 1.00, Segment.TargetType.ENCODER, none, PREP2_PT);
-                addPoint(points, fwd, 0.15, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
+                addPoint(points, fwd, 0.95, 1.00, Segment.TargetType.ENCODER, none, PREP2_PT);
+                addPoint(points, fwd, 0.20, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
             }
             else
             {
@@ -109,12 +109,14 @@ class Points
     Points(Field.StartPos startPos,
            Field.Alliance alliance,
            Field.BeaconChoice pushChoice,
-           Field.ParkChoice parkChoice)
+           Field.ParkChoice parkChoice,
+           boolean useFly2Light)
     {
         this.startPos     = startPos;
         this.alliance     = alliance;
         this.pushChoice   = pushChoice;
         this.parkChoice   = parkChoice;
+        this.useFly2Light = useFly2Light;
 
         Vector<Point2d> pts = initPoints();
         Vector<Point2d> points;
@@ -310,7 +312,7 @@ class Points
 
     private static final double TRGT1_Y = -12.0;
 
-    private static final double FUDGE = 0.0;
+    private static final double FUDGE = 1.0;
     private static final double TRGT2_Y =  36.0 - FUDGE;
     //private static final double PREP2_Y  = TRGT2_Y - 4.0;
     private static final double CTRPRKX = -12.0;
@@ -320,8 +322,8 @@ class Points
 
     private static final double SAFETY  =   0.0;
     private static final double SCAN_X  = -40.0;
-    private static final double BECN_X  = -50.5;
-    private static final double BECN2X  = -50.2;
+    private static final double BECN_X  = -51.5;
+    private static final double BECN2X  = -51.5;
     private static final double TOUCHX  = -56.0;
     private static final double TOUCH2  = -58.0;
     private static final double BMID_X  = -24.0;
@@ -381,6 +383,7 @@ class Points
     private Field.BeaconChoice pushChoice = Field.BeaconChoice.NEAR;
     private Field.ParkChoice   parkChoice = Field.ParkChoice.CENTER_PARK;
     private Field.Alliance     alliance   = Field.Alliance.RED;
-    private boolean            useBecn    = false;
+
     private boolean            usePreScan = false;
+    private boolean            useFly2Light = false;
 }
