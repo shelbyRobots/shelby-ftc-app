@@ -177,7 +177,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
             DEF_SHT_PWR = 0.75;
         }
 
-        Points pts = new Points(startPos, alliance, beaconChoice, parkChoice);
+        Points pts = new Points(startPos, alliance, beaconChoice, parkChoice, useFly2Light);
         pathSegs = pts.getSegments();
 
         initHdg = pathSegs[0].getFieldHeading();
@@ -234,6 +234,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
             DbgLog.msg("SJH: Starting segment %s at %4.2f", pathSegs[i].getName(),
                     getOpModeElapsedTime());
 
+            //noinspection ConstantConditions
             if (SkipNextSegment)
             {
                 SkipNextSegment = false;
@@ -298,8 +299,15 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
                     break;
 
                 case FIND_BEACON:
-                    do_findAndPushBeacon(true);
-                    //do_findAndPushBeacon();
+                    if(useFly2Light)
+                    {
+                        do_findAndPushBeacon();
+                    }
+                    else
+                    {
+                        do_findAndPushBeacon(true);
+                    }
+
                     break;
 
                 case RST_PUSHER:
@@ -736,7 +744,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
                     if ( pushSide == BeaconDetector.BeaconSide.UNKNOWN &&
                             blueSide != BeaconDetector.BeaconSide.UNKNOWN &&
                             redSide != BeaconDetector.BeaconSide.UNKNOWN &&
-                            driveStep == "ALIGN" )
+                            driveStep.equals("ALIGN") )
                     {
                         if ( alliance == Field.Alliance.BLUE )
                         {
@@ -762,7 +770,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
 
                     }
 
-                    if ( zPos > 0.9 || driveStep == "READY" )
+                    if ( zPos > 0.9 || driveStep.equals("READY") )
                     {
                         if ( pushSide == BeaconDetector.BeaconSide.UNKNOWN )
                         {
@@ -776,7 +784,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
                             DbgLog.msg("SJH: /BEACON/FORWARD > TIME TO PUSH BUTTON ON THE %s", pushSide );
                         }
                     }
-                    else if ( bConf < 0.2 && driveStep == "READY" )
+                    else if ( bConf < 0.2 && driveStep.equals("READY") )
                     {
                         beaconStep = "BACKUP";
                         bailPos = curDistCount;
@@ -886,9 +894,10 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
         FtcChoiceMenu parkMenu     = new FtcChoiceMenu("PARK:", pushMenu, this);
         FtcChoiceMenu allianceMenu = new FtcChoiceMenu("ALLIANCE:", parkMenu, this);
         FtcChoiceMenu teamMenu     = new FtcChoiceMenu("TEAM:", allianceMenu, this);
+        FtcChoiceMenu routeMenu    = new FtcChoiceMenu("FLY2LIGHT:", teamMenu, this);
         //FtcValueMenu powerMenu     = new FtcValueMenu("SHOOTPOWER:", teamMenu, this,
         //                                                    0.0, 1.0, 0.05, 0.55, "%5.2f");
-        FtcValueMenu delayMenu     = new FtcValueMenu("DELAY:", teamMenu, this,
+        FtcValueMenu delayMenu     = new FtcValueMenu("DELAY:", routeMenu, this,
                                                              0.0, 20.0, 1.0, 0.0, "%5.2f");
 
 //        strategyMenu.addChoice("Shoot_Push_ParkCenter",      Field.AutoStrategy.SHOOT_PUSH_PARKCNTR,    allianceMenu);
@@ -913,8 +922,11 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
         allianceMenu.addChoice("RED",  Field.Alliance.RED, teamMenu);
         allianceMenu.addChoice("BLUE", Field.Alliance.BLUE, teamMenu);
 
-        teamMenu.addChoice("Sonic", Team.SONIC, delayMenu);
-        teamMenu.addChoice("Snowman", Team.SNOWMAN, delayMenu);
+        teamMenu.addChoice("Sonic", Team.SONIC, routeMenu);
+        teamMenu.addChoice("Snowman", Team.SNOWMAN, routeMenu);
+
+        routeMenu.addChoice("TRUE",  Boolean.TRUE,  delayMenu);
+        routeMenu.addChoice("FALSE", Boolean.FALSE, delayMenu);
 
         //powerMenu.setChildMenu(delayMenu);
 
@@ -934,6 +946,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
         alliance = (Field.Alliance)allianceMenu.getCurrentChoiceObject();
         team = (Team)teamMenu.getCurrentChoiceObject();
         //DEF_SHT_PWR = powerMenu.getCurrentValue();
+        useFly2Light = (Boolean)routeMenu.getCurrentChoiceObject();
         delay = delayMenu.getCurrentValue();
 
         //dashboard.displayPrintf(0, "STRATEGY: %s", autoStrategy);
@@ -942,14 +955,17 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
         dashboard.displayPrintf(2, "PARK: %s", parkChoice);
         dashboard.displayPrintf(3, "ALLIANCE: %s", alliance);
         dashboard.displayPrintf(4, "TEAM: %s", team);
+        dashboard.displayPrintf(5, "FLY2LIGHT: %s", useFly2Light);
 
         DbgLog.msg("SJH: STARTPOS %s", startPos);
         DbgLog.msg("SJH: PUSH     %s", beaconChoice);
         DbgLog.msg("SJH: PARK     %s", parkChoice);
         DbgLog.msg("SJH: ALLIANCE %s", alliance);
         DbgLog.msg("SJH: TEAM     %s", team);
+        DbgLog.msg("SJH: FLY2LIGHT: %s", useFly2Light);
         DbgLog.msg("SJH: DELAY    %4.2f", delay);
     }
+
     public void onCameraViewStarted(int width, int height) {
         DbgLog.msg("SJH: CAMERA VIEW STARTED");
     }
@@ -1025,4 +1041,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
     private int COLOR_THRESH = 25;
 
     private double delay = 0.0;
+
+    private boolean useFly2Light = false;
 }

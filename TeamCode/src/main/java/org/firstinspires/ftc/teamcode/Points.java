@@ -48,7 +48,7 @@ class Points
         if(pushChoice == Field.BeaconChoice.NEAR ||
            pushChoice == Field.BeaconChoice.BOTH)
         {
-            if(useBecn)
+            if(!useFly2Light)
             {
                 addPoint(points, fwd, 0.95,  1.00, Segment.TargetType.ENCODER, none, PREP1_PT);
                 addPoint(points, fwd, 0.20,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
@@ -78,7 +78,7 @@ class Points
         if(pushChoice == Field.BeaconChoice.FAR ||
            pushChoice == Field.BeaconChoice.BOTH)
         {
-            if(useBecn)
+            if(!useFly2Light)
             {
                 addPoint(points, fwd, 0.95, 1.00, Segment.TargetType.ENCODER, none, PREP2_PT);
                 addPoint(points, fwd, 0.20, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
@@ -109,12 +109,14 @@ class Points
     Points(Field.StartPos startPos,
            Field.Alliance alliance,
            Field.BeaconChoice pushChoice,
-           Field.ParkChoice parkChoice)
+           Field.ParkChoice parkChoice,
+           boolean useFly2Light)
     {
         this.startPos     = startPos;
         this.alliance     = alliance;
         this.pushChoice   = pushChoice;
         this.parkChoice   = parkChoice;
+        this.useFly2Light = useFly2Light;
 
         Vector<Point2d> pts = initPoints();
         Vector<Point2d> points;
@@ -381,6 +383,7 @@ class Points
     private Field.BeaconChoice pushChoice = Field.BeaconChoice.NEAR;
     private Field.ParkChoice   parkChoice = Field.ParkChoice.CENTER_PARK;
     private Field.Alliance     alliance   = Field.Alliance.RED;
-    private boolean            useBecn    = true;
+
     private boolean            usePreScan = false;
+    private boolean            useFly2Light = false;
 }
