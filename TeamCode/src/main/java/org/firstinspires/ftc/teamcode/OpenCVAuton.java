@@ -28,9 +28,9 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
     private ShelbyBot   robot = new ShelbyBot();
     private Drivetrain drvTrn = new Drivetrain();
 
-    private boolean useMotor  = false;
+    private boolean useMotor  = true;
     private boolean gyroReady = false;
-    private boolean follow    = false;
+    private boolean follow    = true;
 
     public void runOpMode() {
 

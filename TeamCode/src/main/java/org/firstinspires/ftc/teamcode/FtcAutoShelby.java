@@ -666,7 +666,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
         BeaconDetector.BeaconSide redSide = BeaconDetector.BeaconSide.UNKNOWN;
         BeaconDetector.BeaconSide pushSide = BeaconDetector.BeaconSide.UNKNOWN;
         boolean allDone = false;
-        double baseSpeed = 0.4;
+        double baseSpeed = 0.35;
         double bConf, zPos, xPos, nPos = 0, rDv = 0, lDv = 0;
         double tPow1 = 0, tPow2 = 0, nAng = 0, dDist = 0;
         double cHdg, hErr, nOff;
