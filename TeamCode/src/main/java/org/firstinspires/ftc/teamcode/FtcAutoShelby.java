@@ -7,7 +7,9 @@ import android.widget.TextView;
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cColorSensor;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DeviceInterfaceModule;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.util.RobotLog;
@@ -134,9 +136,10 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
             robot.rightMotor != null &&
             robot.gyro       != null)
         {
+            LinearOpMode inst = this;
             drvTrn.init(robot.leftMotor, robot.rightMotor, robot.gyro);
             drvTrn.setOpMode(getInstance());
-            robot.setOpMode(getInstance());
+            robot.setOpMode(inst);
 
             int lms = robot.leftMotor.getMaxSpeed();
             int rms = robot.rightMotor.getMaxSpeed();
@@ -305,7 +308,12 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
                     }
                     else
                     {
-                        do_findAndPushBeacon(true);
+                        do_findAndPushBeacon(true, curSeg);
+                    }
+                    if(robot.dim != null)
+                    {
+                        robot.dim.setLED(0, false); robot.dim.setLED(1, false);
+                        robot.dim.setLED(0, false); robot.dim.setLED(0, false);
                     }
 
                     break;
@@ -530,12 +538,31 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
     private BeaconDetector.BeaconSide findPushSide(BeaconDetector.BeaconSide bSide,
                                                    BeaconDetector.BeaconSide rSide)
     {
+        int blue_led = 0;
+        int red_led  = 1;
+
         BeaconDetector.BeaconSide pushSide = BeaconDetector.BeaconSide.UNKNOWN;
 
         if (bSide == rSide) return pushSide;
 
         if      ( alliance == Field.Alliance.BLUE ) pushSide = bSide;
         else if ( alliance == Field.Alliance.RED  ) pushSide = rSide;
+
+        if(robot.dim != null)
+        {
+            if(pushSide == bSide)
+            {
+                robot.dim.setLED(blue_led, true);  robot.dim.setLED(red_led, false);
+            }
+            else if(pushSide == rSide)
+            {
+                robot.dim.setLED(blue_led, false); robot.dim.setLED(red_led, true);
+            }
+            else
+            {
+                robot.dim.setLED(blue_led, false); robot.dim.setLED(red_led, false);
+            }
+        }
 
         DbgLog.msg("SJH: BEACON BSIDE %s RSIDE %s PSIDE %s", bSide, rSide, pushSide);
         return pushSide;
@@ -561,7 +588,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
         }
     }
 
-    private boolean do_findAndPushBeacon(boolean push)
+    private boolean do_findAndPushBeacon(boolean push, Segment seg)
     {
         DbgLog.msg("SJH: FIND BEACON ORDER!!!");
         dashboard.displayPrintf(2, "STATE: %s", "BEACON FIND");
@@ -589,9 +616,38 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
         if(push && pushSide != BeaconDetector.BeaconSide.UNKNOWN)
         {
             double tgtDist = 9.5;
-            int dcount = drvTrn.driveDistanceLinear(tgtDist, 0.2, Drivetrain.Direction.FORWARD);
+            Point2d touchStart = seg.getTgtPt();
+            double touchX = touchStart.getX();
+            double touchY = touchStart.getY();
+
+            int targetHdg;
+            if (alliance == Field.Alliance.RED)
+            {
+                touchX -= tgtDist;
+                targetHdg = 180;
+            }
+            else
+            {
+                touchY += tgtDist;
+                targetHdg = 90;
+            }
+
+            Point2d touchEnd = new Point2d("TCHEND", touchX, touchY);
+
+            boolean drivePoint = false;
+            int dcount;
+            if(drivePoint) //driveToPointLinear will correct hdg
+            {
+                dcount = drvTrn.driveToPointLinear(touchEnd, 0.2, Drivetrain.Direction.FORWARD, targetHdg);
+            }
+            else
+            {
+                dcount = drvTrn.driveDistanceLinear(tgtDist, 0.2, Drivetrain.Direction.FORWARD);
+            }
+
             double actDist = drvTrn.countsToDistance(dcount);
             drvTrn.driveDistanceLinear(actDist, 0.5, Drivetrain.Direction.REVERSE);
+            drvTrn.setCurrPt(touchStart);
         }
 
         bd.stopSensing();

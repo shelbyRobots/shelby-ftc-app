@@ -38,6 +38,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.Range;
 
+import ftclib.FtcOpMode;
+
 @TeleOp(name="Telop Tank", group="Tele")
 //@Disabled
 public class TeleopTank_Driver extends LinearOpMode
@@ -91,6 +93,8 @@ public class TeleopTank_Driver extends LinearOpMode
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Say", "Hello Driver");    //
         telemetry.update();
+
+        robot.setOpMode(this);
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();

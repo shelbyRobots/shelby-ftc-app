@@ -3,8 +3,11 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cColorSensor;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DeviceInterfaceModule;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -31,7 +34,7 @@ import ftclib.FtcOpMode;
  */
 class ShelbyBot
 {
-    private FtcOpMode op = null;
+    private LinearOpMode op = null;
     /* Public OpMode members. */
     DcMotor  leftMotor   = null;
     DcMotor  rightMotor  = null;
@@ -43,6 +46,8 @@ class ShelbyBot
     Servo    flicker     = null;
     ModernRoboticsI2cGyro gyro       = null;
     ModernRoboticsI2cColorSensor colorSensor = null;
+
+    DeviceInterfaceModule dim = null;
 
     final static int    ENCODER_CPR = 1120;     //Encoder Counts per Revolution
 
@@ -68,6 +73,9 @@ class ShelbyBot
         flicker     = hwMap.servo.get("flicker");
         gyro        = (ModernRoboticsI2cGyro)hwMap.gyroSensor.get("gyro");
         colorSensor = (ModernRoboticsI2cColorSensor)hwMap.colorSensor.get("color");
+
+        //fix name of DIM
+        dim = hwMap.deviceInterfaceModule.get("dim");
 
         // FORWARD for CCW drive shaft rotation if using AndyMark motors
         // REVERSE for  CW drive shaft rotation if using AndyMark motors
@@ -120,7 +128,7 @@ class ShelbyBot
         return colorPort;
     }
 
-    void setOpMode(FtcOpMode op)
+    void setOpMode(LinearOpMode op)
     {
         this.op = op;
     }

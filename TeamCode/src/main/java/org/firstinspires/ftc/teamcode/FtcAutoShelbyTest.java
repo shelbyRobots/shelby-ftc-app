@@ -124,7 +124,7 @@ public class FtcAutoShelbyTest extends FtcOpMode implements FtcMenu.MenuButtons
             DEF_SHT_PWR = 0.85;
         }
 
-        Points pts = new Points(startPos, alliance, beaconChoice, parkChoice);
+        Points pts = new Points(startPos, alliance, beaconChoice, parkChoice, false);
         pathSegs = pts.getSegments();
 
         initHdg = pathSegs[0].getFieldHeading();
