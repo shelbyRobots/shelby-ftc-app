@@ -1097,7 +1097,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
     private int GRN_THRESH = 15;
     private int BLU_THRESH = 15;
 
-    private int COLOR_THRESH = 25;
+    private int COLOR_THRESH = 40;
 
     private double delay = 0.0;
 
