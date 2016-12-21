@@ -73,7 +73,7 @@ public class TeleopTank_Driver extends LinearOpMode
 
         DcMotor.ZeroPowerBehavior zeroPwr = DcMotor.ZeroPowerBehavior.FLOAT;
 
-        double shoot_scale = 0.9;
+        double shoot_scale = 0.75;
 
         double elev;
         double sweep;

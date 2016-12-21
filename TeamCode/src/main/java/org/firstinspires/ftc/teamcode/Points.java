@@ -187,8 +187,8 @@ class Points
             //Adjust distance to wall at BECN or SCAN Pts for BLUE
             //Note:  This is done in "red space", so adding a positive value to X
             //       will move farther from the wall
-            if(rpt.getName().equals("BECN1_PT") || rpt.getName().equals("BECN2_PT") ||
-               rpt.getName().equals("SCAN1_PT") || rpt.getName().equals("SCAN2_PT"))
+            if(rpt.getName().equals("BECN1") || rpt.getName().equals("BECN2") ||
+               rpt.getName().equals("SCAN1") || rpt.getName().equals("SCAN2"))
             {
                 rpt.setX(rpt.getX() + blueBecnScanAdjust);
             }
@@ -319,9 +319,9 @@ class Points
     private static final double ASHOOTX =   8.9;
     private static final double ASHOOTY = -56.6;
 
-    private static final double TRGT1_Y = -13.0;
+    private static final double TRGT1_Y = -15.0;
 
-    private static final double blueBecnScanAdjust = 0.0;
+    private static final double blueBecnScanAdjust = 08.0;
     private static final double FUDGE = 4.0;
     private static final double TRGT2_Y =  36.0 - FUDGE;
     private static final double CTRPRKX = -12.0;

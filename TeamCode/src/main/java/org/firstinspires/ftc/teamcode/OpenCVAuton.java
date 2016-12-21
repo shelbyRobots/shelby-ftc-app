@@ -133,7 +133,7 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
             if (useMotor)
             {
                 if ( follow ) {
-                    if ( bd.getBeaconConf() > 0.35 && bd.getBeaconPosZ() < 0.7 ) {
+                    if ( bd.getBeaconConf() > 0.25 && bd.getBeaconPosZ() < 0.7 ) {
                         zOff = 1.0 - bd.getBeaconPosZ();
                         xOff = bd.getBeaconPosX();
                         robot.rightMotor.setPower( baseSpeed + zOff * xOff * 0.0025 );

@@ -678,8 +678,15 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
 
         while( opModeIsActive() && !allDone ) {
 
-            cHdg = getGryoFhdg() % 90;
-            hErr = Math.abs( cHdg ) < 45 ? cHdg : Math.signum( cHdg ) * ( 90 - Math.abs( cHdg ) );
+            double desHdg = 180;
+            if (alliance == Field.Alliance.BLUE) {
+                desHdg = 90;
+                cHdg = getGryoFhdg(); // % 90;
+                hErr = desHdg - cHdg;
+            }else{
+                cHdg = getGryoFhdg() % 90;
+                hErr = Math.abs( cHdg ) < 45 ? cHdg : Math.signum( cHdg ) * ( 90 - Math.abs( cHdg ) );
+            }
 
             curDistCount = (robot.leftMotor.getCurrentPosition() + robot.rightMotor.getCurrentPosition()) / 2.0;
 
@@ -721,15 +728,13 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
                             nPos = xPos / 17.7 + nOff;
                             nAng = Math.atan( nPos / 12.0 );
                             dDist = 6.0 / Math.cos( nAng );
-                            tPow1 = 2.0 * ( nAng - Math.toRadians( hErr ) ) / Math.PI;
-                            tPow2 = 2.0 * ( nAng - Math.toRadians( hErr ) ) / Math.PI;
+                            tPow1 = Range.clip(2.0 * ( nAng - Math.toRadians( hErr ) ) / Math.PI, 0.0, 0.15);
+                            tPow2 = Range.clip(2.0 * ( nAng - Math.toRadians( hErr ) ) / Math.PI, 0.0, 0.15);
 
                             rDv = Range.clip( baseSpeed + tPow1, -1.0, 1.0 );
                             lDv = Range.clip( baseSpeed - tPow1, -1.0, 1.0 );
 
                             DbgLog.msg("SJH: /BEACON/INIT > nOff: %5.2f, nPos: %5.2f, nAng: %5.2f, dDist: %5.2f", nOff, nPos, nAng, dDist );
-
-                            drvTrn.resetLastPos();
 
                             robot.rightMotor.setPower(rDv);
                             robot.leftMotor.setPower(lDv);
@@ -739,6 +744,12 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
 
                         case "CENTER":
 
+                            if(firstInState)
+                            {
+                                firstInState = false;
+                                drvTrn.resetLastPos();
+                            }
+
                             DbgLog.msg("SJH: /BEACON/CENTER > r: %5.2f, l: %5.2f, d: %5.2f, a: %5.2f", rDv, lDv, drvTrn.countsToDistance(curDistCount), hErr );
 
                             if (drvTrn.countsToDistance(curDistCount) > dDist) {
@@ -746,12 +757,11 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
                                 rDv = Range.clip( baseSpeed - tPow2, -1.0, 1.0 );
                                 lDv = Range.clip( baseSpeed + tPow2, -1.0, 1.0 );
 
-                                drvTrn.resetLastPos();
-
                                 robot.rightMotor.setPower(rDv);
                                 robot.leftMotor.setPower(lDv);
 
                                 driveStep = "ALIGN";
+                                firstInState = true;
                             }
 
                             break;
@@ -763,8 +773,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
                             if ( drvTrn.countsToDistance(curDistCount) > dDist * 1.8 )
                             {
                                 driveStep = "DRIVE";
-
-                                drvTrn.resetLastPos();
 
                                 robot.rightMotor.setPower(0.25);
                                 robot.leftMotor.setPower(0.25);
@@ -787,7 +795,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
                                 driveStep = "READY";
 
                                 sleep(100);
-                                drvTrn.resetLastPos();
 
                                 robot.rightMotor.setPower(0);
                                 robot.leftMotor.setPower(0);
@@ -803,7 +810,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
                     if ( pushSide == BeaconDetector.BeaconSide.UNKNOWN &&
                             blueSide != BeaconDetector.BeaconSide.UNKNOWN &&
                             redSide != BeaconDetector.BeaconSide.UNKNOWN &&
-                            driveStep.equals("ALIGN") )
+                                 (driveStep.equals("ALIGN") || driveStep.equals("DRIVE")))
                     {
                         if ( alliance == Field.Alliance.BLUE )
                         {
@@ -849,7 +856,8 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
                         bailPos = curDistCount;
                         DbgLog.msg("SJH: /BEACON/FORWARD > CONFIDENCE DROPPED UNDER THREASHOLD %5.2f", bConf );
                     }
-                    else if ( drvTrn.countsToDistance( curDistCount ) > 18.0 && drvTrn.areDriveMotorsStuck() && drvTrn.isBusy() )
+                    else if ( drvTrn.countsToDistance( curDistCount ) > 10.0 &&
+                              drvTrn.areDriveMotorsStuck() && drvTrn.isBusy() )
                     {
                         beaconStep = "BACKUP";
                         bailPos = curDistCount;
@@ -860,14 +868,21 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
 
                 case "PUSH":
 
+                    if(firstInState)
+                    {
+                        firstInState = false;
+                        drvTrn.resetLastPos();
+                    }
+
                     DbgLog.msg("SJH: /BEACON/PUSH > GOING TO PUSH BUTTON" );
                     robot.rightMotor.setPower( 0.25 );
                     robot.leftMotor.setPower( 0.25 );
-                    while ( !drvTrn.areDriveMotorsStuck() )
+                    while ( opModeIsActive() && !drvTrn.areDriveMotorsStuck() )
                         idle();
 
                     DbgLog.msg("SJH: /BEACON/PUSH > PUSHED THE BUTTON" );
                     beaconStep = "BACKUP";
+                    firstInState = true;
 
                     break;
 
@@ -1051,7 +1066,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
 
     private final static double ZER_PUSH_POS = 0.1;
     private final static double RGT_PUSH_POS = 0.15;
-    private final static double LFT_PUSH_POS = 0.85;
+    private final static double LFT_PUSH_POS = 0.90;
     private final static double CTR_PUSH_POS = 0.1;
 
     //private final static double DEF_DRV_PWR  = 0.7;
@@ -1102,4 +1117,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
     private double delay = 0.0;
 
     private boolean useFly2Light = false;
+
+    private boolean firstInState = true;
 }
