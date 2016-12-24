@@ -679,16 +679,15 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
         while( opModeIsActive() && !allDone ) {
 
             double desHdg = 180;
-            if (alliance == Field.Alliance.BLUE) {
-                desHdg = 90;
-                cHdg = getGryoFhdg(); // % 90;
-                hErr = desHdg - cHdg;
-            }else{
-                cHdg = getGryoFhdg() % 90;
-                hErr = Math.abs( cHdg ) < 45 ? cHdg : Math.signum( cHdg ) * ( 90 - Math.abs( cHdg ) );
-            }
+            if (alliance == Field.Alliance.BLUE) desHdg = 90;
 
-            curDistCount = (robot.leftMotor.getCurrentPosition() + robot.rightMotor.getCurrentPosition()) / 2.0;
+            cHdg = getGryoFhdg();
+            if(cHdg < 0) cHdg += 360.0;
+            //TODO: Determine which direction should go with sign of hErr
+            hErr = desHdg - cHdg;
+
+            curDistCount = (robot.leftMotor.getCurrentPosition() +
+                            robot.rightMotor.getCurrentPosition()) / 2.0;
 
             switch ( beaconStep )
             {
