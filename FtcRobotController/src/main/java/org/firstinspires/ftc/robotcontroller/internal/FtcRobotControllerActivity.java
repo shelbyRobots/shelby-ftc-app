@@ -37,7 +37,9 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.net.wifi.WifiManager;
@@ -69,6 +71,7 @@ import com.qualcomm.ftccommon.FtcRobotControllerSettingsActivity;
 import com.qualcomm.ftccommon.LaunchActivityConstantsList;
 import com.qualcomm.ftccommon.ProgrammingModeController;
 import com.qualcomm.ftccommon.Restarter;
+import org.firstinspires.ftc.ftccommon.external.SoundPlayingRobotMonitor;
 import com.qualcomm.ftccommon.UpdateUI;
 import com.qualcomm.ftccommon.configuration.EditParameters;
 import com.qualcomm.ftccommon.configuration.FtcLoadFileActivity;
@@ -87,7 +90,6 @@ import com.qualcomm.robotcore.wifi.NetworkConnectionFactory;
 import com.qualcomm.robotcore.wifi.NetworkType;
 import com.qualcomm.robotcore.wifi.WifiDirectAssistant;
 
-import org.firstinspires.ftc.ftccommon.external.SoundPlayingRobotMonitor;
 import org.firstinspires.ftc.robotcore.internal.AppUtil;
 import org.firstinspires.inspection.RcInspectionActivity;
 
@@ -256,6 +258,7 @@ public class FtcRobotControllerActivity extends Activity {
 
     wifiLock.acquire();
     callback.networkConnectionUpdate(WifiDirectAssistant.Event.DISCONNECTED);
+    readNetworkType(NETWORK_TYPE_FILENAME);
     bindToService();
   }
 
@@ -296,7 +299,6 @@ public class FtcRobotControllerActivity extends Activity {
   protected void onResume() {
     super.onResume();
     RobotLog.vv(TAG, "onResume()");
-    readNetworkType(NETWORK_TYPE_FILENAME);
   }
 
   @Override
@@ -362,6 +364,12 @@ public class FtcRobotControllerActivity extends Activity {
     String fileContents = readFile(networkTypeFile);
     networkType = NetworkConnectionFactory.getTypeFromString(fileContents);
     programmingModeController.setCurrentNetworkType(networkType);
+
+    // update the preferences
+    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+    SharedPreferences.Editor editor = preferences.edit();
+    editor.putString(NetworkConnectionFactory.NETWORK_CONNECTION_TYPE, networkType.toString());
+    editor.commit();
   }
 
   private String readFile(File file) {
@@ -489,7 +497,13 @@ public class FtcRobotControllerActivity extends Activity {
     HardwareFactory factory;
     RobotConfigFile file = cfgFileMgr.getActiveConfigAndUpdateUI();
     HardwareFactory hardwareFactory = new HardwareFactory(context);
-    hardwareFactory.setXmlPullParser(file.getXml());
+    try {
+      hardwareFactory.setXmlPullParser(file.getXml());
+    } catch (Resources.NotFoundException e) {
+      file = RobotConfigFile.noConfig(cfgFileMgr);
+      hardwareFactory.setXmlPullParser(file.getXml());
+      cfgFileMgr.setActiveConfigAndUpdateUI(false, file);
+    }
     factory = hardwareFactory;
 
     eventLoop = new FtcEventLoop(factory, createOpModeRegister(), callback, this, programmingModeController);
