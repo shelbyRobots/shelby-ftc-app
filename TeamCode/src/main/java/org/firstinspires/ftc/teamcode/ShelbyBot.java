@@ -1,12 +1,12 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cColorSensor;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DeviceInterfaceModule;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -17,8 +17,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-
-import ftclib.FtcOpMode;
 
 /**
  * This is NOT an opmode.
@@ -62,6 +60,7 @@ class ShelbyBot
     /* Initialize standard Hardware interfaces */
     public void init(HardwareMap hwMap)
     {
+        this.hwMap = hwMap;
         // Define and Initialize Motors
         leftMotor   = hwMap.dcMotor.get("leftdrive");
         rightMotor  = hwMap.dcMotor.get("rightdrive");
@@ -123,6 +122,53 @@ class ShelbyBot
         }
     }
 
+    void setDriveDir (driveDir ddir)
+    {
+        if(this.ddir == ddir)
+        {
+            return;
+        }
+
+        this.ddir = ddir;
+
+        DbgLog.msg("SJH: Changing to " + ddir);
+
+        if(ddir == driveDir.INTAKE)
+        {
+            leftMotor   = hwMap.dcMotor.get("leftdrive");
+            rightMotor  = hwMap.dcMotor.get("rightdrive");
+            leftMotor.setDirection(DcMotor.Direction.FORWARD);
+            rightMotor.setDirection(DcMotor.Direction.REVERSE);
+        }
+        else
+        {
+            leftMotor   = hwMap.dcMotor.get("rightdrive");
+            rightMotor  = hwMap.dcMotor.get("leftdrive");
+            leftMotor.setDirection(DcMotor.Direction.FORWARD);
+            rightMotor.setDirection(DcMotor.Direction.REVERSE);
+        }
+    }
+
+    void invertDriveDir()
+    {
+        if(ddir == driveDir.INTAKE)
+        {
+            DbgLog.msg("SJH: Changing from INTAKE FWD to NONINTAKE FWD");
+            setDriveDir(driveDir.NONINTAKE);
+        }
+        else
+        {
+            DbgLog.msg("SJH: Changing from NONINTAKE FWD to INTAKE FWD");
+            setDriveDir(driveDir.INTAKE);
+        }
+    }
+
+    enum driveDir
+    {
+       INTAKE,
+       NONINTAKE
+    }
+
     int getColorPort()
     {
         return colorPort;
@@ -140,7 +186,6 @@ class ShelbyBot
      * The function looks at the elapsed cycle time, and sleeps for the remaining time interval.
      *
      * @param periodMs  Length of wait cycle in mSec.
-     * @throws InterruptedException
      */
     void waitForTick(long periodMs)
     {
@@ -169,6 +214,8 @@ class ShelbyBot
     private static final float CAMERA_Z_IN_BOT = 0f; //15.5f * MM_PER_INCH;
 
     private int colorPort = 0;
+    private driveDir ddir = driveDir.INTAKE;
+    private HardwareMap hwMap = null;
 
     //With phone laid flat in portrait mode with screen up:
     //The phone axis is 0,0,0 at Camera (using front camera)

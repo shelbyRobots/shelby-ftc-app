@@ -319,7 +319,7 @@ class Points
     private static final double ASHOOTX =   8.9;
     private static final double ASHOOTY = -56.6;
 
-    private static final double TRGT1_Y = -15.0;
+    private static final double TRGT1_Y = -12.0;
 
     private static final double blueBecnScanAdjust = 08.0;
     private static final double FUDGE = 4.0;
@@ -331,8 +331,8 @@ class Points
 
     private static final double SAFETY  =   0.0;
     private static final double SCAN_X  = -38.0;
-    private static final double BECN_X  = -51.5;
-    private static final double BECN2X  = -51.5;
+    private static final double BECN_X  = -49.5;
+    private static final double BECN2X  = -49.5;
     private static final double TOUCHX  = -56.0;
     private static final double TOUCH2  = -58.0;
     private static final double BMID_X  = -24.0;

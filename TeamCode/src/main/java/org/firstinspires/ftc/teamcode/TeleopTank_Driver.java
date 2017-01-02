@@ -38,8 +38,6 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.Range;
 
-import ftclib.FtcOpMode;
-
 @TeleOp(name="Telop Tank", group="Tele")
 //@Disabled
 public class TeleopTank_Driver extends LinearOpMode
@@ -48,25 +46,29 @@ public class TeleopTank_Driver extends LinearOpMode
     @Override
     public void runOpMode() throws InterruptedException
     {
-        double left;
-        double right;
-        double shooter;
-        boolean shoot_pressed;
-        boolean flicker_pressed;
+        double left;                             //driver  left joy
+        double right;                            //driver right joy
+        double shooter;                          //operator right trigger float
+        boolean shoot_pressed;                   //operator right trigger boolean
+        boolean flicker_pressed;                 //driver a button
         boolean last_shoot_pressed = false;
         boolean last_flicker_pressed = false;
         boolean flickertoggle = false;
-        boolean d_down_last = false;
+        boolean d_down_last = false;             //operator dpad -> adjust shoot power
         boolean d_up_last = false;
-        boolean b_pressed;
+        boolean b_pressed;                       //driver b button -> brake/float toggle
         boolean b_pressed_last = false;
+        boolean invert_drive_pressed;            //driver y button -> toggle front/back
+        boolean last_invert_drive_pressed = false;
+        boolean switch_mode_pressed;             //driver x button -> temporary test for motor mode
+        boolean last_switch_mode_pressed = false;
 
-        boolean lpush;
-        boolean rpush;
+        boolean lpush;                           //driver left trigger -> move pusher left
+        boolean rpush;                           //driver left trigger -> move pusher right
         boolean lpush_last = false;
         boolean rpush_last = false;
 
-        boolean lbump;
+        boolean lbump;                           //operator left bumper -> auto shoot
         boolean lbump_last = false;
 
         Input_Shaper ishaper = new Input_Shaper();
@@ -87,6 +89,10 @@ public class TeleopTank_Driver extends LinearOpMode
             robot.rightMotor != null &&
             robot.gyro       != null)
         {
+            robot.leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            robot.rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            robot.leftMotor.setMaxSpeed(4000);
+            robot.rightMotor.setMaxSpeed(4000);
             dtrn.init(robot.leftMotor, robot.rightMotor, robot.gyro);
         }
 
@@ -204,6 +210,34 @@ public class TeleopTank_Driver extends LinearOpMode
 //                DbgLog.msg("SJH DONE AUTOSHOOT");
             }
             lbump_last = lbump;
+
+            invert_drive_pressed = gamepad1.y;
+            if(invert_drive_pressed && !last_invert_drive_pressed)
+            {
+                robot.invertDriveDir();
+            }
+            last_invert_drive_pressed = invert_drive_pressed;
+
+            switch_mode_pressed = gamepad1.x;
+            if(switch_mode_pressed && !last_switch_mode_pressed)
+            {
+                DcMotor.RunMode currMode = robot.leftMotor.getMode();
+                if(currMode == DcMotor.RunMode.RUN_USING_ENCODER)
+                {
+                    robot.leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                    robot.rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                    robot.leftMotor.setMaxSpeed(4000);
+                    robot.rightMotor.setMaxSpeed(4000);
+                }
+                else
+                {
+                    robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                    robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                    robot.leftMotor.setMaxSpeed(2650);
+                    robot.rightMotor.setMaxSpeed(2650);
+                }
+            }
+            last_switch_mode_pressed = switch_mode_pressed;
 
             telemetry.addData("left : ",  "%.2f", left);
             telemetry.addData("right : ", "%.2f", right);
