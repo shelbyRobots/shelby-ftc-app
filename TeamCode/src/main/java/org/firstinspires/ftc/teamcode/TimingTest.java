@@ -171,8 +171,8 @@ public class TimingTest extends LinearOpMode
         lrWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rrWheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        lrWheel.setMaxSpeed(3000);
-        rrWheel.setMaxSpeed(3000);
+        //lrWheel.setMaxSpeed(3000);
+        //rrWheel.setMaxSpeed(3000);
 
         gyro = (ModernRoboticsI2cGyro)hardwareMap.gyroSensor.get("gyro");
         gyro.resetZAxisIntegrator();

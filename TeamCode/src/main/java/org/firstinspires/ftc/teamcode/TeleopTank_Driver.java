@@ -91,8 +91,8 @@ public class TeleopTank_Driver extends LinearOpMode
         {
             robot.leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             robot.rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            robot.leftMotor.setMaxSpeed(4000);
-            robot.rightMotor.setMaxSpeed(4000);
+            //robot.leftMotor.setMaxSpeed(4000);
+            //robot.rightMotor.setMaxSpeed(4000);
             dtrn.init(robot.leftMotor, robot.rightMotor, robot.gyro);
         }
 
@@ -226,15 +226,15 @@ public class TeleopTank_Driver extends LinearOpMode
                 {
                     robot.leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
                     robot.rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-                    robot.leftMotor.setMaxSpeed(4000);
-                    robot.rightMotor.setMaxSpeed(4000);
+                    //robot.leftMotor.setMaxSpeed(4000);
+                    //robot.rightMotor.setMaxSpeed(4000);
                 }
                 else
                 {
                     robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                     robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                    robot.leftMotor.setMaxSpeed(2650);
-                    robot.rightMotor.setMaxSpeed(2650);
+                    //robot.leftMotor.setMaxSpeed(2650);
+                    //robot.rightMotor.setMaxSpeed(2650);
                 }
             }
             last_switch_mode_pressed = switch_mode_pressed;
