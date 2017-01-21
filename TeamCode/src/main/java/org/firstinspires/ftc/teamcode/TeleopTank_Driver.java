@@ -63,8 +63,8 @@ public class TeleopTank_Driver extends LinearOpMode
         boolean switch_mode_pressed;             //driver x button -> temporary test for motor mode
         boolean last_switch_mode_pressed = false;
 
-        boolean lpush;                           //driver left trigger -> move pusher left
-        boolean rpush;                           //driver left trigger -> move pusher right
+        boolean lpush;                           //driver left trigger -> move lpusher left
+        boolean rpush;                           //driver left trigger -> move lpusher right
         boolean lpush_last = false;
         boolean rpush_last = false;
 
@@ -93,7 +93,7 @@ public class TeleopTank_Driver extends LinearOpMode
             robot.rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             //robot.leftMotor.setMaxSpeed(4000);
             //robot.rightMotor.setMaxSpeed(4000);
-            dtrn.init(robot.leftMotor, robot.rightMotor, robot.gyro);
+            dtrn.init(robot);
         }
 
         // Send telemetry message to signify robot waiting;
@@ -147,17 +147,6 @@ public class TeleopTank_Driver extends LinearOpMode
                     shooter_motors(0.0);
             }
             last_shoot_pressed = shoot_pressed;
-
-            if(flicker_pressed && !last_flicker_pressed)
-            {
-                flickertoggle = !flickertoggle;
-
-                if(flickertoggle)
-                    robot.flicker.setPosition(0.7);
-                else
-                    robot.flicker.setPosition(0.0);
-            }
-            last_flicker_pressed = flicker_pressed;
 
             lpush = gamepad1.left_trigger  > 0.1;
             rpush = gamepad1.right_trigger > 0.1;
@@ -264,17 +253,8 @@ public class TeleopTank_Driver extends LinearOpMode
 
     private void do_pushButton(ButtonSide bside)
     {
-        DbgLog.msg("SJH: PUSH BUTTON!!!");
-        if (bside == ButtonSide.LEFT)
-        {
-            robot.pusher.setPosition(LEFT_POS);
-            DbgLog.msg("SJH: Pushing left button");
-        }
-        else if (bside == ButtonSide.RIGHT)
-        {
-            robot.pusher.setPosition(RIGHT_POS);
-            DbgLog.msg("SJH: Pushing right button");
-        }
+        robot.lpusher.setPosition(L_UP_PUSH_POS);
+        robot.rpusher.setPosition(R_UP_PUSH_POS);
     }
 
     //This line of text has no use. It can be deleted.
@@ -286,8 +266,10 @@ public class TeleopTank_Driver extends LinearOpMode
         RIGHT
     }
 
-    private static final double LEFT_POS        = 0.9;
-    private static final double RIGHT_POS       = 0.1;
+    private final static double L_DN_PUSH_POS = 0.1;
+    private final static double R_DN_PUSH_POS = 0.1;
+    private final static double L_UP_PUSH_POS = 0.1;
+    private final static double R_UP_PUSH_POS = 0.1;
 
     private ShelbyBot robot = new ShelbyBot();
     private Drivetrain dtrn = new Drivetrain();

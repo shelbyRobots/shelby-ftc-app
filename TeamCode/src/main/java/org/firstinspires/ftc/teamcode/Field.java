@@ -12,20 +12,15 @@ public class Field
 
     enum AutoStrategy
     {
-        SHOOT_PUSH_PARKCRNR,
-        SHOOT_PUSH_PARKCNTR,
-        SHOOT_PARKCRNR,
-        SHOOT_PARKCNTR,
-        ANGSHOOT_PUSH_PARKCRNR,
-        ANGSHOOT_PUSH_PARKCNTR,
-        ANGSHOOT_PARKCRNR,
-        ANGSHOOT_PARKCNTR
+        SHOOT_PUSH_PARK,
+        SHOOT_PARK
     }
 
     enum StartPos
     {
-        START_A,
-        START_B,
+        START_A_SWEEPER,
+        START_B_SWEEPER,
+        START_R_PUSHER,
         START_TEST
     }
 
@@ -40,7 +35,8 @@ public class Field
     enum ParkChoice
     {
         CENTER_PARK,
-        CORNER_PARK
+        CORNER_PARK,
+        DEFEND_PARK
     }
 
     //  X axis parallel to red  alliance wall point toward    blue alliance

@@ -8,15 +8,18 @@ class Points
 {
     private Vector<Point2d> initPoints()
     {
-        Point2d start_pt = START_PT;
-        Point2d presh_pt = PRSHT_PT;
-        Point2d shoot_pt = SHOOT_PT;
+        Point2d start_pt = ASTART_PT;
+        Point2d shoot_pt = ASHOOT_PT;
 
-        if(startPos == Field.StartPos.START_B)
+        if(startPos == Field.StartPos.START_B_SWEEPER)
         {
-            start_pt = ASTART_PT;
-            presh_pt = APRSHT_PT;
-            shoot_pt = ASHOOT_PT;
+            start_pt = BSTART_PT;
+            shoot_pt = BSHOOT_PT;
+        }
+        else if(startPos == Field.StartPos.START_R_PUSHER)
+        {
+            start_pt = RSTART_PT;
+            shoot_pt = RSHOOT_PT;
         }
 
         Point2d park_pt = CTRPRKPT;
@@ -24,12 +27,16 @@ class Points
         {
             park_pt = CRNPRKPT;
         }
+        else if(parkChoice == Field.ParkChoice.DEFEND_PARK)
+        {
+            park_pt = DFNPRKPT;
+        }
 
         Vector<Point2d> points = new Vector<>(MAX_SEGMENTS);
 
         //convenience declarations to make call params shorter
-        Segment.SegDir fwd = Segment.SegDir.FORWARD;
-        Segment.SegDir rev = Segment.SegDir.REVERSE;
+        ShelbyBot.DriveDir fwd = ShelbyBot.DriveDir.PUSHER;
+        ShelbyBot.DriveDir rev = ShelbyBot.DriveDir.SWEEPER;
         Segment.Action none   = Segment.Action.NOTHING;
         Segment.Action shoot  = Segment.Action.SHOOT;
         Segment.Action scan   = Segment.Action.SCAN_IMAGE;
@@ -39,38 +46,47 @@ class Points
 
         //SHOOT PTS
         points.add(start_pt);
-        if(startPos == Field.StartPos.START_B)
+
+        if(startPos == Field.StartPos.START_B_SWEEPER)
         {
-            addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER, none, presh_pt);
+            addPoint(points, rev, 0.3, 1.00, Segment.TargetType.ENCODER, none, BPRSHT_PT);
         }
-        addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER,  shoot, shoot_pt);
+
+        if(startPos != Field.StartPos.START_R_PUSHER)
+        {
+            addPoint(points, rev, 0.5, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
+        }
 
         if(pushChoice == Field.BeaconChoice.NEAR ||
            pushChoice == Field.BeaconChoice.BOTH)
         {
             if(!useFly2Light)
             {
-                addPoint(points, fwd, 0.95,  1.00, Segment.TargetType.ENCODER, none, PREP1_PT);
+                if(startPos != Field.StartPos.START_R_PUSHER)
+                {
+                    addPoint(points, fwd, 0.95, 1.00, Segment.TargetType.ENCODER, none, CLRA1_PT);
+                }
+                else
+                {
+                    addPoint(points, fwd, 0.95, 1.00, Segment.TargetType.ENCODER, none, CLRR1_PT);
+                }
                 addPoint(points, fwd, 0.20,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
             }
             else
             {
-                if(usePreScan)
-                {
-                    addPoint(points, fwd, 0.9, 1.00, Segment.TargetType.ENCODER, none, PREB1_PT);
-                    addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.COLOR, beacon, SCAN1_PT);
-                }
-                else
-                {
-                    addPoint(points, fwd, 0.95, 1.00, Segment.TargetType.ENCODER, beacon, SCAN1_PT);
-                }
+                addPoint(points, fwd, 0.95, 1.00, Segment.TargetType.ENCODER, beacon, SCAN1_PT);
+            }
+
+            if(startPos == Field.StartPos.START_R_PUSHER)
+            {
+                addPoint(points, rev, 0.5, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
             }
 
             //addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   push, PRSS1_PT);
             //addPoint(points, rev, 0.8, 1.00, Segment.TargetType.ENCODER,  reset, RVRS1_PT);
         }
 
-        if(pushChoice == Field.BeaconChoice.FAR && startPos == Field.StartPos.START_B)
+        if(pushChoice == Field.BeaconChoice.FAR && startPos == Field.StartPos.START_B_SWEEPER)
         {
             addPoint(points, fwd, 0.9, 1.00, Segment.TargetType.ENCODER, none, B_MID_PT);
         }
@@ -80,20 +96,12 @@ class Points
         {
             if(!useFly2Light)
             {
-                addPoint(points, fwd, 0.95, 1.00, Segment.TargetType.ENCODER, none, PREP2_PT);
+                addPoint(points, fwd, 0.95, 1.00, Segment.TargetType.ENCODER, none, CLR_2_PT);
                 addPoint(points, fwd, 0.20, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
             }
             else
             {
-                if(usePreScan)
-                {
-                    addPoint(points, fwd, 0.9, 1.00, Segment.TargetType.ENCODER, none, PREB2_PT);
-                    addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.COLOR, beacon, SCAN2_PT);
-                }
-                else
-                {
-                    addPoint(points, fwd, 0.95, 1.00, Segment.TargetType.ENCODER, beacon, SCAN2_PT);
-                }
+                addPoint(points, fwd, 0.95, 1.00, Segment.TargetType.ENCODER, beacon, SCAN2_PT);
             }
 
             //addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   push, PRSS2_PT);
@@ -133,7 +141,7 @@ class Points
     }
 
     private void addPoint(Vector<Point2d> points,
-                          Segment.SegDir dir,
+                          ShelbyBot.DriveDir dir,
                           double speed,
                           double tune,
                           Segment.TargetType targetType,
@@ -162,7 +170,7 @@ class Points
         return segSpeeds;
     }
 
-    final Vector<Segment.SegDir> getSegDirs()
+    final Vector<ShelbyBot.DriveDir> getSegDirs()
     {
         return segDirs;
     }
@@ -234,7 +242,7 @@ class Points
                 curSeg.setPostTurn(nfhdg);
                 DbgLog.msg("SJH: Segment %s setting postTurn %4.2f", sname, nfhdg);
             }
-            if(sname.equals("SHOOT") || sname.equals("ASHOOT"))
+            if(sname.equals("ASHOOT") || sname.equals("BSHOOT"))
             {
                 if (alliance == Field.Alliance.BLUE )
                 {
@@ -303,80 +311,88 @@ class Points
     private final static double DEF_DRV_TUNER = 1.0;
 
     private final static double REAR_OFFSET = ShelbyBot.REAR_OFFSET;
-    private final static double FRNT_OFFSET = 13.5;
+    private final static double FRNT_OFFSET = ShelbyBot.FRNT_OFFSET;
 
     private static final double S_WALL = Field.S_WALL_Y;
     private static final double W_WALL = Field.W_WALL_X;
 
-    private static final double STARTX  =  -12.0;
-    private static final double STARTY  =  -66.5;
-    private static final double AIMERY  =  -64.0;
-    private static final double SHOOTY  =  -60.5;
+    private static final double BECN1_Y = -12.0;
+    private static final double FUDGE   =  0.0;
+    private static final double BECN2_Y =  36.0 - FUDGE;
+
+    private static final double ASTARTX =  -12.0;
+    private static final double ASTARTY =  S_WALL + REAR_OFFSET;
+    private static final double AIMERY  =  ASTARTY + 3.0;
+    private static final double ASHOOTY =  -24.0 - FRNT_OFFSET;
     private static final double AIMTOX  =  -12.0;
     private static final double AIMTOY  =  -10.5;
 
-    private static final double ASTARTX =  12.0;
-    private static final double ASHOOTX =   8.9;
-    private static final double ASHOOTY = -56.6;
+    private static final double BSTARTX =  12.0;
+    private static final double BSHOOTX =   0.0;
+    private static final double BSHOOTY =  ASHOOTY;
 
-    private static final double TRGT1_Y = -12.0;
+    private static final double RSTARTX =  -24.0;
+    private static final double RSTARTY =  ASTARTY;
+    private static final double RSHOOTX = -24.0 - FRNT_OFFSET;
+    private static final double RSHOOTY = BECN1_Y;
 
-    private static final double blueBecnScanAdjust = 08.0;
-    private static final double FUDGE = 4.0;
-    private static final double TRGT2_Y =  36.0 - FUDGE;
+    private static final double blueBecnScanAdjust = 0.0;
+
     private static final double CTRPRKX = -12.0;
     private static final double CTRPRKY = -12.0;
     private static final double CRNPRKX = -48.0;
     private static final double CRNPRKY = -40.0;
+    private static final double DFNPRKX = -12.0;
+    private static final double DFNPRKY =  48.0;
 
+    private static final double BECNOFF =   2.0;
     private static final double SAFETY  =   0.0;
     private static final double SCAN_X  = -38.0;
-    private static final double BECN_X  = -49.5;
-    private static final double BECN2X  = -49.5;
-    private static final double TOUCHX  = -56.0;
-    private static final double TOUCH2  = -58.0;
+    private static final double BECN_X  = -51.0;
+    private static final double BECN2X  = -51.0;
+    private static final double TOUCHX  =  W_WALL + BECNOFF + REAR_OFFSET;
+    private static final double TOUCH2  =  W_WALL + BECNOFF + REAR_OFFSET;
+
     private static final double BMID_X  = -24.0;
     private static final double BMID_Y  = -24.0;
 
     private static final double PCT     = 0.92;
-    private static final double PREP1_X = PCT*(BECN_X  - STARTX) + STARTX;
-    private static final double PREP1_Y = PCT*(TRGT1_Y - SHOOTY) + SHOOTY;
+    private static final double CLRA1_X = PCT*(BECN_X  - ASTARTX) + ASTARTX;
+    private static final double CLRA1_Y = PCT*(BECN1_Y - ASHOOTY) + ASHOOTY;
+    private static final double CLRR1_X = PCT*(BECN_X  - RSTARTX) + RSTARTX;
+    private static final double CLRR1_Y = PCT*(BECN1_Y - RSHOOTY) + RSHOOTY;
 
-    private static final double PREP2_X = PCT*(BECN2X  - BECN_X) + BECN_X;
-    private static final double PREP2_Y = PCT*(TRGT2_Y - TRGT1_Y) + TRGT1_Y;
+    private static final double CLR_2_X = PCT*(BECN2X  - BECN_X) + BECN_X;
+    private static final double CLR_2_Y = PCT*(BECN2_Y - BECN1_Y) + BECN1_Y;
 
-    private static final double PREBC1X = PCT*(SCAN_X - STARTX) + STARTX;
-    private static final double PREBC1Y = PCT*(TRGT1_Y - SHOOTY) + SHOOTY;
-
-    private static final double PREBC2X = PCT*(SCAN_X - SCAN_X) + SCAN_X;
-    private static final double PREBC2Y = PCT*(TRGT2_Y - TRGT1_Y) + TRGT1_Y;
-
-    private Point2d START_PT = new Point2d("START", STARTX, STARTY);
-    private Point2d PRSHT_PT = new Point2d("PRSHT", STARTX, AIMERY);
-    private Point2d SHOOT_PT = new Point2d("SHOOT", STARTX, SHOOTY);
+    private Point2d ASTART_PT = new Point2d("ASTART", ASTARTX, ASTARTY);
+    private Point2d ASHOOT_PT = new Point2d("ASHOOT", ASTARTX, ASHOOTY);
 
     private Point2d BASKET_PT = new Point2d("BASKET", AIMTOX, AIMTOY);
 
-    private Point2d ASTART_PT = new Point2d("ASTART", ASTARTX, STARTY);
-    private Point2d APRSHT_PT = new Point2d("APRSHT", ASTARTX, AIMERY);
-    private Point2d ASHOOT_PT = new Point2d("ASHOOT", ASHOOTX, ASHOOTY);
+    private Point2d BSTART_PT = new Point2d("BSTART", BSTARTX, ASTARTY);
+    private Point2d BPRSHT_PT = new Point2d("BPRSHT", BSTARTX, AIMERY);
+    private Point2d BSHOOT_PT = new Point2d("BSHOOT", BSHOOTX, BSHOOTY);
 
-    private Point2d SCAN1_PT = new Point2d("SCAN1", SCAN_X, TRGT1_Y);
-    private Point2d PREP1_PT = new Point2d("PREP1", PREP1_X, PREP1_Y);
-    private Point2d PREB1_PT = new Point2d("PREB1", PREBC1X, PREBC1Y);
-    private Point2d BECN1_PT = new Point2d("BECN1", BECN_X, TRGT1_Y);
-    private Point2d PRSS1_PT = new Point2d("PRSS1", TOUCHX, TRGT1_Y);
-    private Point2d RVRS1_PT = new Point2d("RVRS1", BECN_X, TRGT1_Y);
-    private Point2d SCAN2_PT = new Point2d("SCAN2", SCAN_X, TRGT2_Y);
-    private Point2d PREP2_PT = new Point2d("PREP2", PREP2_X, PREP2_Y);
-    private Point2d PREB2_PT = new Point2d("PREB2", PREBC2X, PREBC2Y);
-    private Point2d BECN2_PT = new Point2d("BECN2", BECN2X, TRGT2_Y);
-    private Point2d PRSS2_PT = new Point2d("PRSS2", TOUCH2, TRGT2_Y);
-    private Point2d RVRS2_PT = new Point2d("RVRS2", BECN_X, TRGT2_Y);
+    private Point2d RSTART_PT = new Point2d("RSTART", RSTARTX, RSTARTY);
+    private Point2d RSHOOT_PT = new Point2d("RSHOOT", RSHOOTX, RSHOOTY);
+
+    private Point2d SCAN1_PT = new Point2d("SCAN1", SCAN_X, BECN1_Y);
+    private Point2d CLRA1_PT = new Point2d("CLRA1", CLRA1_X, CLRA1_Y);
+    private Point2d CLRR1_PT = new Point2d("CLRE1", CLRR1_X, CLRR1_Y);
+    private Point2d BECN1_PT = new Point2d("BECN1", BECN_X, BECN1_Y);
+    private Point2d PRSS1_PT = new Point2d("PRSS1", TOUCHX, BECN1_Y);
+    private Point2d RVRS1_PT = new Point2d("RVRS1", BECN_X, BECN1_Y);
+    private Point2d SCAN2_PT = new Point2d("SCAN2", SCAN_X, BECN2_Y);
+    private Point2d CLR_2_PT = new Point2d("CLR_2", CLR_2_X, CLR_2_Y);
+    private Point2d BECN2_PT = new Point2d("BECN2", BECN2X, BECN2_Y);
+    private Point2d PRSS2_PT = new Point2d("PRSS2", TOUCH2, BECN2_Y);
+    private Point2d RVRS2_PT = new Point2d("RVRS2", BECN_X, BECN2_Y);
     private Point2d B_MID_PT = new Point2d("B_MID", BMID_X, BMID_Y);
 
     private Point2d CTRPRKPT = new Point2d("CTRPRK", CTRPRKX, CTRPRKY);
     private Point2d CRNPRKPT = new Point2d("CRNPRK", CRNPRKX, CRNPRKY);
+    private Point2d DFNPRKPT = new Point2d("DFNPRK", DFNPRKX, DFNPRKY);
 
     private final static int    MAX_SEGMENTS = 16;
 
@@ -384,11 +400,11 @@ class Points
 
     private Vector<Segment.Action> actions = new Vector<>(MAX_SEGMENTS);
     private Vector<Double> segSpeeds = new Vector<>(MAX_SEGMENTS);
-    private Vector<Segment.SegDir> segDirs = new Vector<>(MAX_SEGMENTS);
+    private Vector<ShelbyBot.DriveDir> segDirs = new Vector<>(MAX_SEGMENTS);
     private Vector<Double> tuners = new Vector<>(MAX_SEGMENTS);
     private Vector<Segment.TargetType> ttypes = new Vector<>(MAX_SEGMENTS);
 
-    private Field.StartPos     startPos   = Field.StartPos.START_A;
+    private Field.StartPos     startPos   = Field.StartPos.START_A_SWEEPER;
     private Field.BeaconChoice pushChoice = Field.BeaconChoice.NEAR;
     private Field.ParkChoice   parkChoice = Field.ParkChoice.CENTER_PARK;
     private Field.Alliance     alliance   = Field.Alliance.RED;

@@ -6,6 +6,8 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
+import java.util.Date;
+
 import ftclib.FtcOpMode;
 
 class Drivetrain
@@ -169,7 +171,7 @@ class Drivetrain
 
     void driveToPointLinear(Point2d tgtPt, double pwr, Direction dir)
     {
-        int tHdg = getGryoFhdg();
+        int tHdg = robot.getGyroFhdg();
 
         driveToPointLinear(tgtPt, pwr, dir, tHdg);
     }
@@ -210,7 +212,7 @@ class Drivetrain
         if(error * lastGyroError < 0) //error sign changed - we passed target
         {
             DbgLog.msg("SJH: ctrTurnGryo overshot lastErr %5.2f error %5.2f hdg %d tgt %d",
-                    lastGyroError, error, getGryoFhdg(), ihdg);
+                    lastGyroError, error, robot.getGyroFhdg(), ihdg);
         }
 
         if (Math.abs(error) <= TURN_TOLERANCE)
@@ -247,7 +249,7 @@ class Drivetrain
         {
             ptmr.reset();
             DbgLog.msg("SJH: TGT %d CHDG %d ERR %d STR %4.2f L %4.2f R %4.2f",
-                    (int) hdg, getGryoFhdg(),
+                    (int) hdg, robot.getGyroFhdg(),
                     (int) error, steer, leftSpeed, rightSpeed);
         }
         return onTarget;
@@ -277,17 +279,6 @@ class Drivetrain
                 right_drive.getCurrentPosition());
 
         stopAndReset();
-    }
-
-    private int getGryoFhdg()
-    {
-        int cHdg = gyro.getIntegratedZValue() +
-                           (int)Math.round(initHdg);
-
-        while (cHdg <= -180) cHdg += 360;
-        while (cHdg >   180) cHdg -= 360;
-
-        return cHdg;
     }
 
     void ctrTurnToHeading(double tgtHdg, double pwr)
@@ -321,7 +312,7 @@ class Drivetrain
     void ctrTurnLinearGyro(double angle, double pwr, int pass)
     {
         angle = Math.round(angle);
-        int curHdg = getGryoFhdg();
+        int curHdg = robot.getGyroFhdg();
         int tgtHdg = (int)angle + curHdg;
         while(tgtHdg > 180)   tgtHdg -= 360;
         while(tgtHdg <= -180) tgtHdg += 360;
@@ -342,7 +333,7 @@ class Drivetrain
               !op.isStopRequested())
         {
             waitForTick(10);
-            curHdg = getGryoFhdg();
+            curHdg = robot.getGyroFhdg();
             hDiff = tgtHdg - curHdg;
             if (Math.abs(hDiff) > 180) hDiff = 360 - Math.abs(hDiff);
             if(ptmr.seconds() > printTimeout) ptmr.reset();
@@ -428,21 +419,31 @@ class Drivetrain
         this.op = op;
     }
 
-    void setGryoReady(boolean gryoReady)
+    void setGryoReady(boolean gyroReady)
     {
-        this.gyroReady = gryoReady;
+        this.gyroReady = gyroReady;
     }
 
-    public void init(DcMotor lft_drv, DcMotor rgt_drv, ModernRoboticsI2cGyro gyro)
+    public void init(ShelbyBot robot)
     {
         DbgLog.msg("SJH CPI: %5.2f", CPI);
         frame = 0;
-        left_drive  = lft_drv;
-        right_drive = rgt_drv;
-        this.gyro = gyro;
+        left_drive  = robot.leftMotor;
+        right_drive = robot.rightMotor;
+        this.gyro   = robot.gyro;
 
         left_drive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         right_drive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        if(logData)
+        {
+            Date day = new Date();
+            dl = new DataLogger(day.toString() + "autonomousData");
+            dl.addField("Gyro");
+            dl.addField("LENC");
+            dl.addField("RENC");
+            dl.newLine();
+        }
     }
 
     private void waitForTick(long periodMs)
@@ -492,8 +493,9 @@ class Drivetrain
 
         if (ptmr.seconds() > printTimeout)
         {
+            logData();
             DbgLog.msg("SJH %4d lpwr: %5.3f rpwr: %5.3f err: %5.3f str %5.3f rt %5.3f chdg %d thdg %d",
-                    frame, ldp, rdp, err, steer, rt.seconds(), getGryoFhdg(), thdg);
+                    frame, ldp, rdp, err, steer, rt.seconds(), robot.getGyroFhdg(), thdg);
         }
     }
 
@@ -584,7 +586,7 @@ class Drivetrain
     private int getGyroError(int tgtHdg)
     {
         int robotError;
-        int gHdg = getGryoFhdg();
+        int gHdg = robot.getGyroFhdg();
         robotError = tgtHdg - gHdg;
         while (robotError > 180)  robotError -= 360;
         while (robotError <= -180) robotError += 360;
@@ -687,7 +689,7 @@ class Drivetrain
                     left_drive.getCurrentPosition(),
                     right_drive.getCurrentPosition(),
                     noMoveTimer.seconds(),
-                    getGryoFhdg());
+                    robot.getGyroFhdg());
         }
 
         return (left_drive.isBusy() && right_drive.isBusy());   //true if both are busy
@@ -697,6 +699,17 @@ class Drivetrain
     public void setDrvTuner(double dtnr)
     {
         CPI = ENCODER_CPR * GEAR_RATIO / (CIRCUMFERENCE * dtnr);
+    }
+
+    public void logData()
+    {
+        if(logData) {
+            //Write sensor values to the data logger
+            dl.addField(robot.getGyroFhdg());
+            dl.addField((float) left_drive.getCurrentPosition());
+            dl.addField((float) right_drive.getCurrentPosition());
+            dl.newLine();
+        }
     }
 
     private static double DRV_TUNER = 1.00;
@@ -719,6 +732,7 @@ class Drivetrain
 
     public enum Direction {FORWARD, REVERSE}
 
+    private ShelbyBot robot;
     private DcMotor left_drive;
     private DcMotor right_drive;
     public ModernRoboticsI2cGyro gyro;
@@ -755,4 +769,7 @@ class Drivetrain
     private boolean useDterm = false;
 
     private ElapsedTime gyroFrameTime = new ElapsedTime();
+
+    private DataLogger dl;
+    private boolean logData = true;
 }

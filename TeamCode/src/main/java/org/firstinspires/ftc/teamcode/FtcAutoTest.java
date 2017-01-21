@@ -177,7 +177,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
             robot.rightMotor != null &&
             robot.gyro       != null)
         {
-            drvTrn.init(robot.leftMotor, robot.rightMotor, robot.gyro);
+            drvTrn.init(robot);
             drvTrn.setOpMode(getInstance());
             DbgLog.msg("SJH: Starting gyro calibration");
             robot.gyro.calibrate();
@@ -216,7 +216,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         tseg.setPostTurn(testPost + initHdg);
         tseg.setDrvTuner(testK);
         drvTrn.setDrvTuner(testK);
-        tseg.setDir(Segment.SegDir.FORWARD);
+        tseg.setDir(ShelbyBot.DriveDir.SWEEPER);
         tseg.setTgtType(Segment.TargetType.TIME);
         tseg.setAction(Segment.Action.NOTHING);
 
@@ -224,7 +224,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         drvTrn.setCurrPt(currPoint);
         drvTrn.setInitHdg(initHdg);
 
-        robot.pusher.setPosition(ZER_PUSH_POS);
+        robot.lpusher.setPosition(ZER_PUSH_POS);
 
         timer.reset();
         DbgLog.msg("SJH Start %s. Time: %6.3f", currPoint, timer.time());
@@ -305,7 +305,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
 
                     break;
                 case RST_PUSHER:
-                    robot.pusher.setPosition(ZER_PUSH_POS);
+                    robot.lpusher.setPosition(ZER_PUSH_POS);
                     break;
                 case NOTHING:
                     break;
@@ -319,7 +319,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         Point2d spt = seg.getStrtPt();
         Point2d ept = seg.getTgtPt();
         double  fhd = seg.getFieldHeading();
-        Segment.SegDir dir = seg.getDir();
+        ShelbyBot.DriveDir dir = seg.getDir();
         double speed = seg.getSpeed();
 
         RobotLog.ii("SJH", "Drive %s %s %s %6.2f %3.2f %s",
@@ -329,28 +329,18 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
                 "DRIVE", snm, spt, ept, fhd, speed, dir);
 
         Drivetrain.Direction ddir = Drivetrain.Direction.FORWARD;
-        if (dir == Segment.SegDir.REVERSE) ddir = Drivetrain.Direction.REVERSE;
+        
         timer.reset();
         Point2d pt = seg.getTgtPt();
         drvTrn.driveToPointLinear(pt, speed, ddir);
         RobotLog.ii("SJH", "Completed move %s. Time: %6.3f HDG: %5.2f",
-                seg.getName(), timer.time(), getGryoFhdg());
-    }
-
-    private double getGryoFhdg()
-    {
-        double cHdg = robot.gyro.getIntegratedZValue() + initHdg;
-
-        while (cHdg <= -180.0) cHdg += 360.0;
-        while (cHdg >   180.0) cHdg -= 360.0;
-
-        return cHdg;
+                seg.getName(), timer.time(), robot.getGyroFhdg());
     }
 
     private void doEncoderPostTurn(double fHdg)
     {
         if(!opModeIsActive() || isStopRequested()) return;
-        double cHdg = getGryoFhdg();
+        double cHdg = robot.getGyroFhdg();
         double tHdg = Math.round(fHdg);
         double angle = tHdg - cHdg;
         DbgLog.msg("SJH: doEncoderPostTurn CHDG %4.1f THDG %4.1f",
@@ -365,15 +355,14 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
         timer.reset();
         drvTrn.ctrTurnLinear(angle, DEF_ENCTRN_PWR);
-        cHdg = getGryoFhdg();
+        cHdg = robot.getGyroFhdg();
         DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f CHDG: %5.2f",
                 angle, timer.time(), cHdg);
     }
 
     private void doEncoderTurn(Segment seg)
     {
-        if (seg.getDir() == Segment.SegDir.REVERSE) return;
-        double cHdg = getGryoFhdg();
+        double cHdg = robot.getGyroFhdg();
         double tHdg = seg.getFieldHeading();
         double angle = tHdg - cHdg;
         DbgLog.msg("SJH: doEncoderTurn %s CHDG %4.1f THDG %4.1f",
@@ -390,7 +379,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         timer.reset();
         drvTrn.ctrTurnLinear(angle,DEF_ENCTRN_PWR);
         //drvTrn.ctrTurnLinearGyro(angle,DEF_TRN_PWR);
-        cHdg = getGryoFhdg();
+        cHdg = robot.getGyroFhdg();
         DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f CHDG: %5.2f",
                 angle, timer.time(), cHdg);
     }
@@ -398,7 +387,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
     private void doPostTurn(double fHdg)
     {
         if(!opModeIsActive() || isStopRequested()) return;
-        double cHdg = getGryoFhdg();
+        double cHdg = robot.getGyroFhdg();
         double tHdg = Math.round(fHdg);
 
         DbgLog.msg("SJH: do post GyroTurn CHDG %4.1f THDG %4.1f",
@@ -411,7 +400,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         timer.reset();
         drvTrn.ctrTurnToHeading(tHdg, DEF_GYRTRN_PWR);
 
-        cHdg = getGryoFhdg();
+        cHdg = robot.getGyroFhdg();
         DbgLog.msg("SJH Completed post turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
                 tHdg, timer.time(), cHdg);
     }
@@ -419,9 +408,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
     private void doTurn(Segment seg)
     {
         double tHdg = seg.getFieldHeading();
-        if(seg.getDir() == Segment.SegDir.REVERSE)
-            return;
-        double cHdg = getGryoFhdg();
+        double cHdg = robot.getGyroFhdg();
 
         DbgLog.msg("SJH: doGyroTurn %s CHDG %4.1f THDG %4.1f",
                 seg.getName(),
@@ -433,7 +420,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
 
         timer.reset();
         drvTrn.ctrTurnToHeading(tHdg, DEF_ENCTRN_PWR);
-        cHdg = getGryoFhdg();
+        cHdg = robot.getGyroFhdg();
         DbgLog.msg("SJH Completed turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
                 tHdg, timer.time(), cHdg);
     }
@@ -554,17 +541,17 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         dashboard.displayPrintf(2, "STATE: %s", "BUTTON PUSH");
         if (bside == ButtonSide.LEFT)
         {
-            robot.pusher.setPosition(LFT_PUSH_POS);
+            robot.lpusher.setPosition(LFT_PUSH_POS);
             DbgLog.msg("SJH: Pushing left button");
         }
         else if (bside == ButtonSide.RIGHT)
         {
-            robot.pusher.setPosition(RGT_PUSH_POS);
+            robot.lpusher.setPosition(RGT_PUSH_POS);
             DbgLog.msg("SJH: Pushing right button");
         }
         else
         {
-            robot.pusher.setPosition(CTR_PUSH_POS);
+            robot.lpusher.setPosition(CTR_PUSH_POS);
             DbgLog.msg("SJH: Not Pushing A Button");
 
         }
@@ -629,8 +616,8 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         FtcValueMenu  testSpdMenu  = new FtcValueMenu("SPEED:", testPostMenu, this, 0.0, 1.0, 0.1, 0.5,  "%4.2f");
         FtcValueMenu  testKMenu    = new FtcValueMenu("K:",     testSpdMenu,  this, 0.5, 1.5, 0.01, 1.0, "%4.2f");
 
-        startPosMenu.addChoice("Start_A", Field.StartPos.START_A, pushMenu);
-        startPosMenu.addChoice("Start_B", Field.StartPos.START_B, pushMenu);
+        startPosMenu.addChoice("Start_A", Field.StartPos.START_A_SWEEPER, pushMenu);
+        startPosMenu.addChoice("Start_B", Field.StartPos.START_B_SWEEPER, pushMenu);
         startPosMenu.addChoice("Start_TEST", Field.StartPos.START_TEST, testMaxMenu);
         pushMenu.addChoice("BOTH", Field.BeaconChoice.BOTH, parkMenu);
         pushMenu.addChoice("NEAR", Field.BeaconChoice.NEAR, parkMenu);
@@ -766,10 +753,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
     private static Point2d curPos;
     private static double  curHdg;
 
-    private static Field.AutoStrategy autoStrategy =
-            Field.AutoStrategy.SHOOT_PARKCNTR;
-
-    private static Field.StartPos startPos = Field.StartPos.START_A;
+    private static Field.StartPos startPos = Field.StartPos.START_A_SWEEPER;
     private static Field.BeaconChoice beaconChoice = Field.BeaconChoice.NEAR;
     private static Field.ParkChoice parkChoice = Field.ParkChoice.CENTER_PARK;
     private static Field.Alliance alliance = Field.Alliance.RED;

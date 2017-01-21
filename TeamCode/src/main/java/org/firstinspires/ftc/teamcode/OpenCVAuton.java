@@ -37,7 +37,7 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
         if ( useMotor ) {
             robot.init(hardwareMap);
 
-            drvTrn.init(robot.leftMotor, robot.rightMotor, robot.gyro);
+            drvTrn.init(robot);
 
             DbgLog.msg("SJH: Starting gyro calibration");
             robot.gyro.calibrate();
@@ -158,7 +158,7 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
                             redSide = BeaconDetector.BeaconSide.UNKNOWN;
                             pushSide = BeaconDetector.BeaconSide.UNKNOWN;
 
-                            robot.pusher.setPosition(0.1);
+                            robot.lpusher.setPosition(0.1);
 
                             curDistCount = 0.0;
                             drvTrn.stopAndReset();
@@ -268,11 +268,11 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
                         switch ( pushSide ){
 
                             case LEFT:
-                                robot.pusher.setPosition(0.85);
+                                robot.lpusher.setPosition(0.85);
                                 break;
 
                             case RIGHT:
-                                robot.pusher.setPosition(0.15);
+                                robot.lpusher.setPosition(0.15);
                                 break;
                         }
 
