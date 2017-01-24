@@ -1,9 +1,8 @@
 package org.firstinspires.ftc.teamcode;
 
-import android.provider.ContactsContract;
-
 import com.qualcomm.ftccommon.DbgLog;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -16,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class LedDetector 
+public class LedDetector implements ImageProcessor
 {
     private Mat hsvImage;
     private Mat zonedImg;
@@ -40,25 +39,31 @@ public class LedDetector
 
     private int numLeds = 0;
 
+    private Telemetry telemetry = null;
+
     private int skipCnt = 0;
     private static final int SKIP = 50;
 
     static
     {
-        if (!OpenCVLoader.initDebug()) {
-            DbgLog.error("SJH: OpenCVLoader error"); //Handle opencv loader issue
+        if (!OpenCVLoader.initDebug())
+        {
+            DbgLog.error("SJH: OpenCVLoader error");
         }
     }
 
     @SuppressWarnings("WeakerAccess")
     public LedDetector() {}
 
-    public void startSensing() {
+    @Override
+    public void startSensing()
+    {
         firstCalcsDone = false;
         sensingActive = true;
     }
 
-    public void stopSensing() {
+    public void stopSensing()
+    {
         firstCalcsDone = false;
         sensingActive = false;
     }
@@ -79,9 +84,35 @@ public class LedDetector
         firstCalcsDone = true;
     }
 
+    public Mat draw()
+    {
+        Mat out = hsvImage.clone();
+        Imgproc.cvtColor( showImg, out, A2RGB, 4 );
+        if ( !sensingActive || !firstCalcsDone ) return out;
+
+        for ( Rect ledRect : leds )
+        {
+            Imgproc.rectangle( out, ledRect.tl(), ledRect.br(), new Scalar(0,255,0), 4 );
+        }
+
+        return out;
+    }
+
     public void logDebug()
     {
         DbgLog.msg("SJH: Num LEDs: %4d", numLeds);
+    }
+
+    public void setTelemetry(Telemetry telemetry)
+    {
+        this.telemetry = telemetry;
+    }
+
+    public void logTelemetry()
+    {
+        if(telemetry == null) return;
+
+        telemetry.addData("#LEDs", "%4d", getNumLEDs());
     }
 
     public synchronized int getNumLEDs() { return numLeds; }
@@ -128,7 +159,9 @@ public class LedDetector
         Mat hchy = new Mat();
         List<MatOfPoint> contours = new ArrayList<>();
 
-        Imgproc.findContours(d_value, contours, hchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+        Imgproc.findContours(d_value, contours,
+                             hchy, Imgproc.RETR_EXTERNAL,
+                             Imgproc.CHAIN_APPROX_SIMPLE);
 
         // Find max contour area
         Rect bounded_box;
@@ -151,19 +184,5 @@ public class LedDetector
                 DbgLog.msg("SJH : LED at %5d, %5d", ledX, ledY);
             }
         }
-    }
-
-    public Mat draw()
-    {
-        Mat out = hsvImage.clone();
-        Imgproc.cvtColor( showImg, out, A2RGB, 4 );
-        if ( !sensingActive || !firstCalcsDone ) return out;
-
-        for ( Rect ledRect : leds )
-        {
-            Imgproc.rectangle( out, ledRect.tl(), ledRect.br(), new Scalar(0,255,0), 4 );
-        }
-
-        return out;
     }
 }

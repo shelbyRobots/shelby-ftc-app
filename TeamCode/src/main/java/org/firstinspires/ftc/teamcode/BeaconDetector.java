@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.util.Range;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
@@ -22,7 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 
 
-public class BeaconDetector implements BeaconFinder
+public class BeaconDetector implements BeaconFinder, ImageProcessor
 {
     private final static double MIN_COLOR_ZONE_AREA = 0.2; 	    // fraction of total image area
 
@@ -35,6 +36,8 @@ public class BeaconDetector implements BeaconFinder
 
     private final static boolean DEBUG = false;
     private final static boolean POS_IS_Y = false;
+
+    private Telemetry telemetry = null;
 
     private List<MatOfPoint> red_blobs = new ArrayList<>();
     private List<MatOfPoint> blue_blobs = new ArrayList<>();
@@ -64,13 +67,6 @@ public class BeaconDetector implements BeaconFinder
 
     private boolean sensingActive = false;
     private boolean firstCalcsDone = false;
-
-    enum BeaconSide
-    {
-        UNKNOWN,
-        LEFT,
-        RIGHT
-    }
 
     static
     {
@@ -130,6 +126,22 @@ public class BeaconDetector implements BeaconFinder
                 beaconPosZ,
                 redPosSide,
                 bluePosSide);
+    }
+
+    public void logTelemetry()
+    {
+        if(telemetry == null) return;
+
+        telemetry.addData( "CONF", "%5.2f", getBeaconConf() );
+        telemetry.addData( "X", "%5.2f",  getBeaconPosX() );
+        telemetry.addData( "Z", "%5.2f", getBeaconPosZ() );
+        telemetry.addData( "RED", "%s",  getRedPosSide() );
+        telemetry.addData( "BLUE", "%s", getBluePosSide() );
+    }
+
+    public void setTelemetry(Telemetry telemetry)
+    {
+        this.telemetry = telemetry;
     }
 
     public synchronized BeaconSide getRedPosSide() { return redPosSide; }
@@ -486,7 +498,7 @@ public class BeaconDetector implements BeaconFinder
         }
     }
 
-    public Mat drawBeacon() {
+    public Mat draw() {
 
         Mat out = image.clone();
         Imgproc.cvtColor( showImg, out, Imgproc.COLOR_HSV2RGB, 4 );

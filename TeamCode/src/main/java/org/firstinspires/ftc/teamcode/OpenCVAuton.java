@@ -1,38 +1,31 @@
 package org.firstinspires.ftc.teamcode;
 
-import android.app.Activity;
-
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
-
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.JavaCameraView;
-import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.android.OpenCVLoader;
-import org.opencv.core.Core;
-import org.opencv.core.Mat;
 
 /**
  * Core OpMode class containing most OpenCV functionality
  */
 @SuppressWarnings("WeakerAccess")
 @Autonomous(name="OpenCVAuton", group ="Test")
-public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.CvCameraViewListener2 {
-    private JavaCameraView openCVCamera;
-
-    private BeaconDetector bd = new BeaconDetector();
+public class OpenCVAuton extends OpenCvCameraOpMode
+{
+    private BeaconFinder bd;
     private ShelbyBot   robot = new ShelbyBot();
     private Drivetrain drvTrn = new Drivetrain();
 
-    private boolean useMotor  = true;
+    private boolean useMotor  = false;
     private boolean gyroReady = false;
     private boolean follow    = true;
 
-    public void runOpMode() {
+    public void runOpMode()
+    {
+        initOpenCv();
+
+        imgProc = new BeaconDetector();
+        bd = (BeaconFinder) imgProc;
 
         if ( useMotor ) {
             robot.init(hardwareMap);
@@ -66,38 +59,13 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
             drvTrn.setGryoReady(gyroReady);
         }
 
-        BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(hardwareMap.appContext) {
-            @Override
-            public void onManagerConnected(int status) {
-                switch (status) {
-                    case LoaderCallbackInterface.SUCCESS: {
-                        openCVCamera.enableView();
-                    }
-                    break;
-                    default: {
-                        super.onManagerConnected(status);
-                    }
-                    break;
-                }
-            }
-        };
-
-        openCVCamera = (JavaCameraView) ((Activity) hardwareMap.appContext).findViewById(R.id.surfaceView);
-        openCVCamera.setVisibility(CameraBridgeViewBase.VISIBLE);
-        openCVCamera.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_FRONT);
-        openCVCamera.setCvCameraViewListener(this);
-
-        if (!OpenCVLoader.initDebug()) {
-            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, hardwareMap.appContext, mLoaderCallback);
-        } else {
-            mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
-        }
+        imgProc.setTelemetry(telemetry);
 
         waitForStart();
 
-        BeaconDetector.BeaconSide blueSide = BeaconDetector.BeaconSide.UNKNOWN;
-        BeaconDetector.BeaconSide redSide = BeaconDetector.BeaconSide.UNKNOWN;
-        BeaconDetector.BeaconSide pushSide = BeaconDetector.BeaconSide.UNKNOWN;
+        BeaconFinder.BeaconSide blueSide = BeaconFinder.BeaconSide.UNKNOWN;
+        BeaconFinder.BeaconSide redSide  = BeaconFinder.BeaconSide.UNKNOWN;
+        BeaconFinder.BeaconSide pushSide = BeaconFinder.BeaconSide.UNKNOWN;
 
         double baseSpeed = 0.4;
 
@@ -111,23 +79,18 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
         if ( useMotor )
             robot.gyro.resetZAxisIntegrator();
 
-        bd.startSensing();
+        imgProc.startSensing();
 
         sleep( 200 );
 
-        while(opModeIsActive()) {
+        while(opModeIsActive())
+        {
+            imgProc.logDebug();
+            imgProc.logTelemetry();
 
-            bd.logDebug();
-
-            telemetry.addData( "CONF", "%5.2f", bd.getBeaconConf() );
-            telemetry.addData( "X", "%5.2f", bd.getBeaconPosX() );
-            telemetry.addData( "Z", "%5.2f", bd.getBeaconPosZ() );
-            telemetry.addData( "RED", "%s", bd.getRedPosSide() );
-            telemetry.addData( "BLUE", "%s", bd.getBluePosSide() );
             telemetry.addData( "RDV", "%5.2f", rDv );
             telemetry.addData( "LDV", "%5.2f", lDv );
             telemetry.addData( "DIST", "%5.2f", (double) drvTrn.countsToDistance(curDistCount) );
-
             telemetry.update();
 
             if (useMotor)
@@ -154,16 +117,16 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
                     switch (beaconStep) {
                         case "INIT":
 
-                            blueSide = BeaconDetector.BeaconSide.UNKNOWN;
-                            redSide = BeaconDetector.BeaconSide.UNKNOWN;
-                            pushSide = BeaconDetector.BeaconSide.UNKNOWN;
+                            blueSide = BeaconFinder.BeaconSide.UNKNOWN;
+                            redSide  = BeaconFinder.BeaconSide.UNKNOWN;
+                            pushSide = BeaconFinder.BeaconSide.UNKNOWN;
 
                             robot.lpusher.setPosition(0.1);
 
                             curDistCount = 0.0;
                             drvTrn.stopAndReset();
 
-                            cHdg = getGryoFhdg() % 90;
+                            cHdg = robot.getGyroFhdg() % 90;
                             hErr = Math.abs( cHdg ) < 45 ? cHdg : Math.signum( cHdg ) * ( 90 - Math.abs( cHdg ) );
 
                             xPos = bd.getBeaconPosX();
@@ -188,7 +151,7 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
 
                         case "CENTER":
 
-                            cHdg = getGryoFhdg() % 90;
+                            cHdg = robot.getGyroFhdg() % 90;
                             hErr = Math.abs( cHdg ) < 45 ? cHdg : Math.signum( cHdg ) * ( 90 - Math.abs( cHdg ) );
 
                             curDistCount = (robot.leftMotor.getCurrentPosition() + robot.rightMotor.getCurrentPosition()) / 2.0;
@@ -210,7 +173,7 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
 
                         case "ALIGN":
 
-                            cHdg = getGryoFhdg() % 90;
+                            cHdg = robot.getGyroFhdg() % 90;
                             hErr = Math.abs( cHdg ) < 45 ? cHdg : Math.signum( cHdg ) * ( 90 - Math.abs( cHdg ) );
 
                             curDistCount = (robot.leftMotor.getCurrentPosition() + robot.rightMotor.getCurrentPosition()) / 2.0;
@@ -230,7 +193,7 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
 
                         case "DRIVE":
 
-                            cHdg = getGryoFhdg() % 90;
+                            cHdg = robot.getGyroFhdg() % 90;
                             hErr = Math.abs( cHdg ) < 45 ? cHdg : Math.signum( cHdg ) * ( 90 - Math.abs( cHdg ) );
 
                             curDistCount = (robot.leftMotor.getCurrentPosition() + robot.rightMotor.getCurrentPosition()) / 2.0;
@@ -254,14 +217,14 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
                     }
 
                     blueSide = bd.getBluePosSide();
-                    redSide = bd.getRedPosSide();
+                    redSide  = bd.getRedPosSide();
 
                     // Good when the beacon is in view enough or at least
                     // some driving done.
-                    if ( pushSide == BeaconDetector.BeaconSide.UNKNOWN &&
-                            blueSide != BeaconDetector.BeaconSide.UNKNOWN &&
-                            redSide != BeaconDetector.BeaconSide.UNKNOWN &&
-                            beaconStep == "ALIGN" )
+                    if ( pushSide == BeaconFinder.BeaconSide.UNKNOWN &&
+                         blueSide != BeaconFinder.BeaconSide.UNKNOWN &&
+                         redSide  != BeaconFinder.BeaconSide.UNKNOWN &&
+                         beaconStep.equals("ALIGN") )
                     {
                         pushSide = redSide;
 
@@ -287,45 +250,13 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
                         robot.leftMotor.setPower(0);
                         DbgLog.msg("SJH: /BEACON/FORWARD > NOT MOVING? YIKES! %5.2f", curDistCount );
                     }
-
                 }
             }
 
             sleep( 10 );
         }
 
-        bd.stopSensing();
-
-        if (openCVCamera != null) {
-            openCVCamera.disableView();
-        }
-    }
-
-    private double getGryoFhdg()
-    {
-        double cHdg = robot.gyro.getIntegratedZValue();
-
-        while (cHdg <= -180.0) cHdg += 360.0;
-        while (cHdg >   180.0) cHdg -= 360.0;
-
-        return cHdg;
-    }
-
-    public void onCameraViewStarted(int width, int height) {
-        DbgLog.msg("SJH: CAMERA VIEW STARTED");
-    }
-
-    public void onCameraViewStopped() {
-        DbgLog.msg("SJH: CAMERA VIEW STOPPED");
-    }
-
-    public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        Mat rgb = inputFrame.rgba();
-        Mat flip = rgb.clone();
-
-        Core.flip(rgb, flip, 1);
-        bd.setImage( flip );
-
-        return bd.drawBeacon();
+        imgProc.stopSensing();
+        cleanupCamera();
     }
 }

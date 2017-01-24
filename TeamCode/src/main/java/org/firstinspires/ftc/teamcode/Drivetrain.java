@@ -2,13 +2,12 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import java.util.Date;
-
-import ftclib.FtcOpMode;
 
 class Drivetrain
 {
@@ -113,7 +112,7 @@ class Drivetrain
                 ldrive_end, rdrive_end);
 
         stopAndReset();
-        return((int)(ldrive_end + rdrive_end)/2);
+        return((ldrive_end + rdrive_end)/2);
     }
 
     void driveToPoint(Point2d tgtPt, double pwr, Direction dir)
@@ -166,7 +165,7 @@ class Drivetrain
         stopAndReset();
         DbgLog.msg("SJH: driveToPointLinear end - set currPt to %s", tgtPt);
         currPt = tgtPt;
-        return ((int)(ldrive_end + rdrive_end)/2);
+        return ((ldrive_end + rdrive_end)/2);
     }
 
     void driveToPointLinear(Point2d tgtPt, double pwr, Direction dir)
@@ -414,7 +413,7 @@ class Drivetrain
         this.initHdg = initHdg;
     }
 
-    void setOpMode(FtcOpMode op)
+    void setOpMode(LinearOpMode op)
     {
         this.op = op;
     }
@@ -760,7 +759,7 @@ class Drivetrain
 
     private double minSpeed = 0.2;
 
-    private FtcOpMode op = null;
+    private LinearOpMode op = null;
 
     private boolean usePosStop = true;
 

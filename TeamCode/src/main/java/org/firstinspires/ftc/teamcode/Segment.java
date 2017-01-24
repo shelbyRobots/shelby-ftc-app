@@ -27,6 +27,7 @@ class Segment
     {
         return fldHdg;
     }
+
     String getName()
     {
         return name;
