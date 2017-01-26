@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Titan Robotics Club (http://www.titanrobotics.com)
+ * Copyright (c) 2015 Titan Robotics Club (http://www.titanrobotics.com)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,71 +22,72 @@
 
 package ftclib;
 
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cRangeSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+
 import trclib.TrcDbgTrace;
+import trclib.TrcFilter;
 import trclib.TrcSensor;
-import trclib.TrcSensorDataSource;
 import trclib.TrcUtil;
 
 /**
- * This class implements the Modern Robotics Range Sensor extending FtcMRI2cDevice that implements
- * the common features of all Modern Robotics I2C devices.
+ * This class implements the Modern Range sensor extending TrcAnalogInput. It provides implementation of the abstract
+ * methods in TrcAnalogInput.
  */
-public class FtcMRRangeSensor extends FtcMRI2cDevice implements TrcSensorDataSource
+public class FtcMRRangeSensor extends TrcSensor<FtcMRRangeSensor.DataType>
 {
     private static final String moduleName = "FtcMRRangeSensor";
     private static final boolean debugEnabled = false;
+    private static final boolean tracingEnabled = false;
+    private static final TrcDbgTrace.TraceLevel traceLevel = TrcDbgTrace.TraceLevel.API;
+    private static final TrcDbgTrace.MsgLevel msgLevel = TrcDbgTrace.MsgLevel.INFO;
     private TrcDbgTrace dbgTrace = null;
 
-    public static final int DEF_I2CADDRESS          = 0x28;     //8-bit address.
+    public enum DataType
+    {
+        DISTANCE_INCH,
+        ULTRASONIC_CM,
+        OPTICAL_CM,
+        ULTRASONIC_RAW,
+        OPTICAL_RAW,
+        RAW_LIGHT_DETECTED,
+        LIGHT_DETECTED
+    }   //enum DataType
 
-    //
-    // I2C registers.
-    //
-    private static final int REG_ULTRSONIC_DISTANCE = 0x04;
-    private static final int REG_OPTICAL_DISTANCE   = 0x05;
-
-    private static final int READ_START             = REG_ULTRSONIC_DISTANCE;
-    private static final int READ_END               = REG_OPTICAL_DISTANCE;
-    private static final int READ_LENGTH            = (READ_END - READ_START + 1);
-
-    private int readerId = -1;
+    public ModernRoboticsI2cRangeSensor sensor;
 
     /**
      * Constructor: Creates an instance of the object.
      *
      * @param hardwareMap specifies the global hardware map.
      * @param instanceName specifies the instance name.
-     * @param i2cAddress specifies the I2C address of the device.
-     * @param addressIs7Bit specifies true if the I2C address is a 7-bit address, false if it is 8-bit.
+     * @param filters specifies an array of filter objects, one for each axis, to filter sensor data. If no filter
+     *                is used, this can be set to null.
      */
-    public FtcMRRangeSensor(HardwareMap hardwareMap, String instanceName, int i2cAddress, boolean addressIs7Bit)
+    public FtcMRRangeSensor(HardwareMap hardwareMap, String instanceName, TrcFilter[] filters)
     {
-        super(hardwareMap, instanceName, i2cAddress, addressIs7Bit);
+        super(instanceName, 1, filters);
 
         if (debugEnabled)
         {
-            dbgTrace = new TrcDbgTrace(
-                    moduleName + "." + instanceName,
-                    false,
-                    TrcDbgTrace.TraceLevel.API,
-                    TrcDbgTrace.MsgLevel.INFO);
+            dbgTrace = new TrcDbgTrace(moduleName + "." + instanceName, tracingEnabled, traceLevel, msgLevel);
         }
 
-        readerId = addReader(instanceName, READ_START, READ_LENGTH);
+        sensor = hardwareMap.get(ModernRoboticsI2cRangeSensor.class, instanceName);
     }   //FtcMRRangeSensor
 
     /**
      * Constructor: Creates an instance of the object.
      *
      * @param instanceName specifies the instance name.
-     * @param i2cAddress specifies the I2C address of the device.
-     * @param addressIs7Bit specifies true if the I2C address is a 7-bit address, false if it is 8-bit.
+     * @param filters specifies an array of filter objects, one for each axis, to filter sensor data. If no filter
+     *                is used, this can be set to null.
      */
-    public FtcMRRangeSensor(String instanceName, int i2cAddress, boolean addressIs7Bit)
+    public FtcMRRangeSensor(String instanceName, TrcFilter[] filters)
     {
-        this(FtcOpMode.getInstance().hardwareMap, instanceName, i2cAddress, addressIs7Bit);
+        this(FtcOpMode.getInstance().hardwareMap, instanceName, filters);
     }   //FtcMRRangeSensor
 
     /**
@@ -96,88 +97,72 @@ public class FtcMRRangeSensor extends FtcMRI2cDevice implements TrcSensorDataSou
      */
     public FtcMRRangeSensor(String instanceName)
     {
-        this(instanceName, DEF_I2CADDRESS, false);
+        this(instanceName, null);
     }   //FtcMRRangeSensor
 
     /**
-     * This method returns the ultrasonic distance.
-     *
-     * @return ultrasonic distance.
+     * This method calibrates the sensor.
      */
-    public TrcSensor.SensorData getUltrasonicDistance()
+    public void calibrate()
     {
-        final String funcName = "getUltrasonicDistance";
-        byte[] regData = getData(readerId);
-        TrcSensor.SensorData data = new TrcSensor.SensorData(
-                getDataTimestamp(readerId), TrcUtil.bytesToInt(regData[REG_ULTRSONIC_DISTANCE - READ_START]));
-
-        if (debugEnabled)
-        {
-            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
-            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API,
-                               "=(timestamp=%.3f,value=%d)", data.timestamp, (Integer)data.value);
-        }
-
-        return data;
-    }   //getUltrasonicDistance
-
-    /**
-     * This method returns the optical distance.
-     *
-     * @return optical distance.
-     */
-    public TrcSensor.SensorData getOpticalDistance()
-    {
-        final String funcName = "getOpticalDistance";
-        byte[] regData = getData(readerId);
-        TrcSensor.SensorData data = new TrcSensor.SensorData(
-                getDataTimestamp(readerId), TrcUtil.bytesToInt(regData[REG_OPTICAL_DISTANCE - READ_START]));
-
-        if (debugEnabled)
-        {
-            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
-            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API,
-                               "=(timestamp=%.3f,value=%d)", data.timestamp, (Integer)data.value);
-        }
-
-        return data;
-    }   //getOpticalDistance
+        calibrate(DataType.DISTANCE_INCH);
+    }   //calibrate
 
     //
-    // Implements TrcSensorDataSource interface.
+    // Implements TrcAnalogInput abstract methods.
     //
 
     /**
-     * This method returns the sensor data of the specified index.
+     * This method returns the raw sensor data of the specified type.
      *
      * @param index specifies the data index.
-     * @return sensor data of the specified index.
+     * @param dataType specifies the data type.
+     * @return raw sensor data of the specified index and type.
      */
     @Override
-    public TrcSensor.SensorData getSensorData(int index)
+    public SensorData<Double> getRawData(int index, DataType dataType)
     {
-        final String funcName = "getSensorData";
-        TrcSensor.SensorData data = null;
+        final String funcName = "getRawData";
+        SensorData<Double> data = null;
 
-        switch (index)
+        switch (dataType)
         {
-            case 0:
-                data = getUltrasonicDistance();
+            case DISTANCE_INCH:
+                data = new SensorData<>(TrcUtil.getCurrentTime(), sensor.getDistance(DistanceUnit.INCH));
                 break;
 
-            case 1:
-                data = getOpticalDistance();
+            case ULTRASONIC_CM:
+                data = new SensorData<>(TrcUtil.getCurrentTime(), sensor.cmUltrasonic());
                 break;
+
+            case OPTICAL_CM:
+                data = new SensorData<>(TrcUtil.getCurrentTime(), sensor.cmOptical());
+                break;
+
+            case ULTRASONIC_RAW:
+                data = new SensorData<>(TrcUtil.getCurrentTime(), (double) sensor.rawUltrasonic());
+                break;
+
+            case OPTICAL_RAW:
+                data = new SensorData<>(TrcUtil.getCurrentTime(), (double) sensor.rawOptical());
+                break;
+
+            case RAW_LIGHT_DETECTED:
+                data = new SensorData<>(TrcUtil.getCurrentTime(), sensor.getRawLightDetected());
+                break;
+
+            case LIGHT_DETECTED:
+                data = new SensorData<>(TrcUtil.getCurrentTime(), sensor.getLightDetected());
         }
 
         if (debugEnabled)
         {
-            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API, "index=%d", index);
+            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
             dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API,
-                               "=(time=%.3f,value=%d)", data.timestamp, data.value);
+                               "=(timestamp:%.3f,value=%f)", data.timestamp, data.value);
         }
 
         return data;
-    }   //getSensorData
+    }   //getRawData
 
 }   //class FtcMRRangeSensor

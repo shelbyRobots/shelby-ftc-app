@@ -22,23 +22,36 @@
 
 package trclib;
 
-import hallib.HalGyro;
-import hallib.HalMotorController;
 import hallib.HalRobotDrive;
 
+/**
+ * This class implements a platform independent drive base extending the HalRobotDrive class. HalRobotDrive class
+ * provides all the generic drive methods. However, in FRC, those drive methods are provided by WPILib and there is
+ * no support in FTC. So by moving those methods to HalRobotDrive, the FRC version of that class would just extend
+ * WPILib and the FTC version would implement the methods.
+ */
 public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
 {
     private static final String moduleName = "TrcDriveBase";
     private static final boolean debugEnabled = false;
+    private static final boolean tracingEnabled = false;
+    private static final TrcDbgTrace.TraceLevel traceLevel = TrcDbgTrace.TraceLevel.API;
+    private static final TrcDbgTrace.MsgLevel msgLevel = TrcDbgTrace.MsgLevel.INFO;
     private TrcDbgTrace dbgTrace = null;
 
-    private HalMotorController leftFrontMotor;
-    private HalMotorController leftMidMotor;
-    private HalMotorController leftRearMotor;
-    private HalMotorController rightFrontMotor;
-    private HalMotorController rightMidMotor;
-    private HalMotorController rightRearMotor;
-    private HalGyro gyro;
+    private TrcMotor leftFrontMotor;
+    private TrcMotor leftMidMotor;
+    private TrcMotor leftRearMotor;
+    private TrcMotor rightFrontMotor;
+    private TrcMotor rightMidMotor;
+    private TrcMotor rightRearMotor;
+    private TrcGyro gyro;
+
+    private double prevLeftFrontPos = 0.0;
+    private double prevLeftRearPos = 0.0;
+    private double prevRightFrontPos = 0.0;
+    private double prevRightRearPos = 0.0;
+    private double stallStartTime = 0.0;
 
     private int numMotors = 0;
     private double xPos;
@@ -52,22 +65,24 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
     private double ySpeed;
     private double turnSpeed;
 
-    private void commonInit(
-            HalMotorController leftFrontMotor,
-            HalMotorController leftMidMotor,
-            HalMotorController leftRearMotor,
-            HalMotorController rightFrontMotor,
-            HalMotorController rightMidMotor,
-            HalMotorController rightRearMotor,
-            HalGyro gyro)
+    /**
+     * This method is called by different constructors to do common initialization.
+     *
+     * @param leftFrontMotor specifies the left front motor of the drive base.
+     * @param leftMidMotor specifies the left mid motor of a 6-wheel drive base.
+     * @param leftRearMotor specifies the left rear motor of the drive base.
+     * @param rightFrontMotor specifies the right front motor of the drive base.
+     * @param rightMidMotor specifies the right mid motor of a 6-wheel drive base.
+     * @param rightRearMotor specifies the right rear motor of the drive base.
+     * @param gyro specifies the gyro. If none, it can be set to null.
+     */
+    private void commonInit(TrcMotor leftFrontMotor, TrcMotor leftMidMotor, TrcMotor leftRearMotor,
+                            TrcMotor rightFrontMotor, TrcMotor rightMidMotor, TrcMotor rightRearMotor,
+                            TrcGyro gyro)
     {
         if (debugEnabled)
         {
-            dbgTrace = new TrcDbgTrace(
-                    moduleName,
-                    false,
-                    TrcDbgTrace.TraceLevel.API,
-                    TrcDbgTrace.MsgLevel.INFO);
+            dbgTrace = new TrcDbgTrace(moduleName, tracingEnabled, traceLevel, msgLevel);
         }
 
         this.leftFrontMotor = leftFrontMotor;
@@ -84,32 +99,28 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
         resetPosition();
 
         TrcTaskMgr taskMgr = TrcTaskMgr.getInstance();
-        taskMgr.registerTask(
-                moduleName,
-                this,
-                TrcTaskMgr.TaskType.START_TASK);
-        taskMgr.registerTask(
-                moduleName,
-                this,
-                TrcTaskMgr.TaskType.STOP_TASK);
-        taskMgr.registerTask(
-                moduleName,
-                this,
-                TrcTaskMgr.TaskType.PRECONTINUOUS_TASK);
+        taskMgr.registerTask(moduleName, this, TrcTaskMgr.TaskType.STOP_TASK);
+        taskMgr.registerTask(moduleName, this, TrcTaskMgr.TaskType.PRECONTINUOUS_TASK);
     }   //commonInit
 
-    public TrcDriveBase(
-            HalMotorController leftFrontMotor,
-            HalMotorController leftMidMotor,
-            HalMotorController leftRearMotor,
-            HalMotorController rightFrontMotor,
-            HalMotorController rightMidMotor,
-            HalMotorController rightRearMotor,
-            HalGyro gyro)
+    /**
+     * Constructor: Create an instance of the object.
+     *
+     * @param leftFrontMotor specifies the left front motor of the drive base.
+     * @param leftMidMotor specifies the left mid motor of a 6-wheel drive base.
+     * @param leftRearMotor specifies the left rear motor of the drive base.
+     * @param rightFrontMotor specifies the right front motor of the drive base.
+     * @param rightMidMotor specifies the right mid motor of a 6-wheel drive base.
+     * @param rightRearMotor specifies the right rear motor of the drive base.
+     * @param gyro specifies the gyro. If none, it can be set to null.
+     */
+    public TrcDriveBase(TrcMotor leftFrontMotor, TrcMotor leftMidMotor, TrcMotor leftRearMotor,
+                        TrcMotor rightFrontMotor, TrcMotor rightMidMotor, TrcMotor rightRearMotor,
+                        TrcGyro gyro)
     {
         super(leftFrontMotor, leftMidMotor, leftRearMotor, rightFrontMotor, rightMidMotor, rightRearMotor);
-        if (leftFrontMotor == null || leftMidMotor == null || leftRearMotor == null
-                || rightFrontMotor == null || rightMidMotor == null || rightRearMotor == null)
+        if (leftFrontMotor == null || leftMidMotor == null || leftRearMotor == null ||
+            rightFrontMotor == null || rightMidMotor == null || rightRearMotor == null)
         {
             throw new IllegalArgumentException("All 6 motors must not be null.");
         }
@@ -117,23 +128,34 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
         commonInit(leftFrontMotor, leftMidMotor, leftRearMotor, rightFrontMotor, rightMidMotor, rightRearMotor, gyro);
     }   //TrcDriveBase
 
-    public TrcDriveBase(
-            HalMotorController leftFrontMotor,
-            HalMotorController leftMidMotor,
-            HalMotorController leftRearMotor,
-            HalMotorController rightFrontMotor,
-            HalMotorController rightMidMotor,
-            HalMotorController rightRearMotor)
+    /**
+     * Constructor: Create an instance of the object.
+     *
+     * @param leftFrontMotor specifies the left front motor of the drive base.
+     * @param leftMidMotor specifies the left mid motor of a 6-wheel drive base.
+     * @param leftRearMotor specifies the left rear motor of the drive base.
+     * @param rightFrontMotor specifies the right front motor of the drive base.
+     * @param rightMidMotor specifies the right mid motor of a 6-wheel drive base.
+     * @param rightRearMotor specifies the right rear motor of the drive base.
+     */
+    public TrcDriveBase(TrcMotor leftFrontMotor, TrcMotor leftMidMotor, TrcMotor leftRearMotor,
+                        TrcMotor rightFrontMotor, TrcMotor rightMidMotor, TrcMotor rightRearMotor)
     {
         this(leftFrontMotor, leftMidMotor, leftRearMotor, rightFrontMotor, rightMidMotor, rightRearMotor, null);
     }   //TrcDriveBase
 
-    public TrcDriveBase(
-            HalMotorController leftFrontMotor,
-            HalMotorController leftRearMotor,
-            HalMotorController rightFrontMotor,
-            HalMotorController rightRearMotor,
-            HalGyro gyro)
+    /**
+     * Constructor: Create an instance of the 4-wheel drive base.
+     *
+     * @param leftFrontMotor specifies the left front motor of the drive base.
+     * @param leftRearMotor specifies the left rear motor of the drive base.
+     * @param rightFrontMotor specifies the right front motor of the drive base.
+     * @param rightRearMotor specifies the right rear motor of the drive base.
+     * @param gyro specifies the gyro. If none, it can be set to null.
+     */
+    public TrcDriveBase(TrcMotor leftFrontMotor, TrcMotor leftRearMotor,
+                        TrcMotor rightFrontMotor, TrcMotor rightRearMotor,
+                        TrcGyro gyro)
     {
         super(leftFrontMotor, null, leftRearMotor, rightFrontMotor, null, rightRearMotor);
         if (leftFrontMotor == null || leftRearMotor == null || rightFrontMotor == null || rightRearMotor == null)
@@ -144,19 +166,28 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
         commonInit(leftFrontMotor, null, leftRearMotor, rightFrontMotor, null, rightRearMotor, gyro);
     }   //TrcDriveBase
 
-    public TrcDriveBase(
-            HalMotorController leftFrontMotor,
-            HalMotorController leftRearMotor,
-            HalMotorController rightFrontMotor,
-            HalMotorController rightRearMotor)
+    /**
+     * Constructor: Create an instance of the 4-wheel drive base.
+     *
+     * @param leftFrontMotor specifies the left front motor of the drive base.
+     * @param leftRearMotor specifies the left rear motor of the drive base.
+     * @param rightFrontMotor specifies the right front motor of the drive base.
+     * @param rightRearMotor specifies the right rear motor of the drive base.
+     */
+    public TrcDriveBase(TrcMotor leftFrontMotor, TrcMotor leftRearMotor,
+                        TrcMotor rightFrontMotor, TrcMotor rightRearMotor)
     {
         this(leftFrontMotor, leftRearMotor, rightFrontMotor, rightRearMotor, null);
     }   //TrcDriveBase
 
-    public TrcDriveBase(
-            HalMotorController leftMotor,
-            HalMotorController rightMotor,
-            HalGyro gyro)
+    /**
+     * Constructor: Create an instance of the 2-wheel drive base.
+     *
+     * @param leftMotor specifies the left rear motor of the drive base.
+     * @param rightMotor specifies the right rear motor of the drive base.
+     * @param gyro specifies the gyro. If none, it can be set to null.
+     */
+    public TrcDriveBase(TrcMotor leftMotor, TrcMotor rightMotor, TrcGyro gyro)
     {
         super(null, null, leftMotor, null, null, rightMotor);
         if (leftMotor == null || rightMotor == null)
@@ -167,17 +198,26 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
         commonInit(null, null, leftMotor, null, null, rightMotor, gyro);
     }   //TrcDriveBase
 
-    public TrcDriveBase(HalMotorController leftMotor, HalMotorController rightMotor)
+    /**
+     * Constructor: Create an instance of the 2-wheel drive base.
+     *
+     * @param leftMotor specifies the left rear motor of the drive base.
+     * @param rightMotor specifies the right rear motor of the drive base.
+     */
+    public TrcDriveBase(TrcMotor leftMotor, TrcMotor rightMotor)
     {
         this(leftMotor, rightMotor, null);
     }   //TrcDriveBase
 
+    /**
+     * This method resets the drive base position odometry. This includes the motor encoders, the gyro heading and
+     * all the cached values.
+     */
     public void resetPosition()
     {
         final String funcName = "resetPosition";
 
         if (debugEnabled)
-
         {
             dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
         }
@@ -231,6 +271,12 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
         }
     }   //resetPosition
 
+    /**
+     * This method sets the X position scale. The raw position from the encoder is in encoder counts. By setting the
+     * scale factor, one could make getPosition to return unit in inches, for example.
+     *
+     * @param scale specifies the X position scale.
+     */
     public void setXPositionScale(double scale)
     {
         final String funcName = "setXPositionScale";
@@ -244,6 +290,12 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
         this.xScale = scale;
     }   //setXPositionScale
 
+    /**
+     * This method sets the Y position scale. The raw position from the encoder is in encoder counts. By setting the
+     * scale factor, one could make getPosition to return unit in inches, for example.
+     *
+     * @param scale specifies the Y position scale.
+     */
     public void setYPositionScale(double scale)
     {
         final String funcName = "setYPositionScale";
@@ -257,6 +309,13 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
         this.yScale = scale;
     }   //setYPositionScale
 
+    /**
+     * This method sets the rotation scale. This class supports getting the drive base heading even without the gyro
+     * by using the difference of the left and right encoders. Again, this would be in encoder counts. By setting
+     * the rotation scale, one could get a good approximation of the heading in degrees using encoders only.
+     *
+     * @param scale specifies the rotation scale.
+     */
     public void setRotationScale(double scale)
     {
         final String funcName = "setRotationScale";
@@ -270,6 +329,11 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
         this.rotScale = scale;
     }   //setRotationScale
 
+    /**
+     * This method returns the X position in scaled unit.
+     *
+     * @return X position.
+     */
     public double getXPosition()
     {
         final String funcName = "getXPosition";
@@ -277,14 +341,17 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
         if (debugEnabled)
         {
             dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
-            dbgTrace.traceExit(
-                    funcName, TrcDbgTrace.TraceLevel.API,
-                    "=%f", xPos);
+            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API, "=%f", xPos);
         }
 
         return xPos;
     }   //getXPosition
 
+    /**
+     * This method returns the Y position in scaled unit.
+     *
+     * @return Y position.
+     */
     public double getYPosition()
     {
         final String funcName = "getYPosition";
@@ -292,14 +359,17 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
         if (debugEnabled)
         {
             dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
-            dbgTrace.traceExit(
-                    funcName, TrcDbgTrace.TraceLevel.API,
-                    "=%f", yPos);
+            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API, "=%f", yPos);
         }
 
         return yPos;
     }   //getYPosition
 
+    /**
+     * This method returns the rotation position in scaled unit.
+     *
+     * @return rotation position.
+     */
     public double getRotatePosition()
     {
         final String funcName = "getRotatePosition";
@@ -307,14 +377,17 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
         if (debugEnabled)
         {
             dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
-            dbgTrace.traceExit(
-                    funcName, TrcDbgTrace.TraceLevel.API,
-                    "=%f", rotPos);
+            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API, "=%f", rotPos);
         }
 
         return rotPos;
     }   //getRotatePosition
 
+    /**
+     * This method returns the gyro heading of the drive base in degrees.
+     *
+     * @return gyro heading.
+     */
     public double getHeading()
     {
         final String funcName = "getHeading";
@@ -322,14 +395,17 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
         if (debugEnabled)
         {
             dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
-            dbgTrace.traceExit(
-                    funcName, TrcDbgTrace.TraceLevel.API,
-                    "=%f", heading);
+            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API, "=%f", heading);
         }
 
         return heading;
     }   //getHeading
 
+    /**
+     * This method returns the drive base speed in the X direction.
+     *
+     * @return X speed.
+     */
     public double getXSpeed()
     {
         final String funcName = "getXSpeed";
@@ -337,14 +413,17 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
         if (debugEnabled)
         {
             dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
-            dbgTrace.traceExit(
-                    funcName, TrcDbgTrace.TraceLevel.API,
-                    "=%f", xSpeed);
+            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API, "=%f", xSpeed);
         }
 
         return xSpeed;
     }   //getXSpeed
 
+    /**
+     * This method returns the drive base speed in the Y direction.
+     *
+     * @return Y speed.
+     */
     public double getYSpeed()
     {
         final String funcName = "getYSpeed";
@@ -352,14 +431,17 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
         if (debugEnabled)
         {
             dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
-            dbgTrace.traceExit(
-                    funcName, TrcDbgTrace.TraceLevel.API,
-                    "=%f", ySpeed);
+            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API, "=%f", ySpeed);
         }
 
         return ySpeed;
     }   //getYSpeed
 
+    /**
+     * This method returns the drive base turn speed.
+     *
+     * @return turn speed.
+     */
     public double getTurnSpeed()
     {
         final String funcName = "getTurnSpeed";
@@ -367,23 +449,44 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
         if (debugEnabled)
         {
             dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
-            dbgTrace.traceExit(
-                    funcName, TrcDbgTrace.TraceLevel.API,
-                    "=%f", turnSpeed);
+            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API, "=%f", turnSpeed);
         }
 
         return turnSpeed;
     }   //getTurnSpeed
 
+    /**
+     * This method checks if all motors on the drive base have been stalled for at least the specified stallTime.
+     *
+     * @param stallTime specifies the stall time.
+     * @return true if the drive base is stalled, false otherwise.
+     */
+    public boolean isStalled(double stallTime)
+    {
+        final String funcName = "isStalled";
+        boolean stalled = TrcUtil.getCurrentTime() - stallStartTime > stallTime;
+
+        if (debugEnabled)
+        {
+            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API, "stallTime=%.3f", stallTime);
+            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API, "=%s", Boolean.toString(stalled));
+        }
+
+        return stalled;
+    }   //isStalled
+
+    /**
+     * This method enables/disables brake mode of the drive base.
+     *
+     * @param enabled specifies true to enable brake mode, false to disable it.
+     */
     public void setBrakeMode(boolean enabled)
     {
         final String funcName = "setBrakeMode";
 
         if (debugEnabled)
         {
-            dbgTrace.traceEnter(
-                    funcName, TrcDbgTrace.TraceLevel.API,
-                    "enabled=%s", Boolean.toString(enabled));
+            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API, "enabled=%s", Boolean.toString(enabled));
             dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API);
         }
 
@@ -418,6 +521,9 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
         }
     }   //setBrakeMode
 
+    /**
+     * This methods stops the drive base.
+     */
     public void stop()
     {
         final String funcName = "stop";
@@ -442,26 +548,13 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
     @Override
     public void startTask(TrcRobot.RunMode runMode)
     {
-        final String funcName = "startTask";
-
-        if (debugEnabled)
-        {
-            dbgTrace.traceEnter(
-                    funcName, TrcDbgTrace.TraceLevel.TASK,
-                    "mode=%s", runMode.toString());
-        }
-
-        if (runMode != TrcRobot.RunMode.DISABLED_MODE)
-        {
-            resetPosition();
-        }
-
-        if (debugEnabled)
-        {
-            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.TASK);
-        }
     }   //startTask
 
+    /**
+     * This method is called when the competition mode is about to end.
+     *
+     * @param runMode specifies the competition mode that is about to end (e.g. Autonomous, TeleOp, Test).
+     */
     @Override
     public void stopTask(TrcRobot.RunMode runMode)
     {
@@ -469,9 +562,7 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
 
         if (debugEnabled)
         {
-            dbgTrace.traceEnter(
-                    funcName, TrcDbgTrace.TraceLevel.TASK,
-                    "mode=%s", runMode.toString());
+            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.TASK, "mode=%s", runMode.toString());
         }
 
         if (runMode != TrcRobot.RunMode.DISABLED_MODE)
@@ -495,6 +586,11 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
     {
     }   //postPeriodicTask
 
+    /**
+     * This method is called periodically to monitor the encoders and gyro to update the odometry data.
+     *
+     * @param runMode specifies the competition mode that is running. (e.g. Autonomous, TeleOp, Test).
+     */
     @Override
     public void preContinuousTask(TrcRobot.RunMode runMode)
     {
@@ -502,9 +598,7 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
 
         if (debugEnabled)
         {
-            dbgTrace.traceEnter(
-                    funcName, TrcDbgTrace.TraceLevel.TASK,
-                    "mode=%s", runMode.toString());
+            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.TASK, "mode=%s", runMode.toString());
         }
 
         //
@@ -619,6 +713,25 @@ public class TrcDriveBase extends HalRobotDrive implements TrcTaskMgr.Task
             heading = (Double)gyro.getZHeading().value;
             turnSpeed = (Double)gyro.getZRotationRate().value;
         }
+        else
+        {
+            heading = rotPos;
+        }
+
+        double lfPower = leftFrontMotor != null? leftFrontMotor.getPower(): 0.0;
+        double rfPower = rightFrontMotor != null? rightFrontMotor.getPower(): 0.0;
+        double lrPower = leftRearMotor != null? leftRearMotor.getPower(): 0.0;
+        double rrPower = rightRearMotor != null? rightRearMotor.getPower(): 0.0;
+        if (lfEnc != prevLeftFrontPos || rfEnc != prevRightFrontPos ||
+            lrEnc != prevLeftRearPos || rrEnc != prevRightRearPos ||
+            lfPower == 0.0 && rfPower == 0.0 && lrPower == 0.0 && rrPower == 0.0)
+        {
+            stallStartTime = TrcUtil.getCurrentTime();
+        }
+        prevLeftFrontPos = lfEnc;
+        prevRightFrontPos = rfEnc;
+        prevLeftRearPos = lrEnc;
+        prevRightRearPos = rrEnc;
 
         if (debugEnabled)
         {

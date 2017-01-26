@@ -25,62 +25,55 @@ package ftclib;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
-import hallib.HalUtil;
 import trclib.TrcDbgTrace;
 import trclib.TrcFilter;
 import trclib.TrcGyro;
+import trclib.TrcUtil;
 
 /**
- * This class implements the Modern Robotics gyro extending TrcGyro.
- * It provides implementation of the abstract methods in TrcGyro.
- * The Modern Robotics gyro supports 3 axes: x, y and z. It provides
- * rotation rate data for all 3 axes. However, it only provides heading
- * data for the z-axis and the heading data is wrap-around.
+ * This class implements the Modern Robotics gyro extending TrcGyro. It provides implementation of the abstract
+ * methods in TrcGyro. The Modern Robotics gyro supports 3 axes: x, y and z. It provides rotation rate data for
+ * all 3 axes. However, it only provides heading data for the z-axis and the heading data is wrap-around.
  */
 public class FtcMRGyro extends TrcGyro
 {
     private static final String moduleName = "FtcMRGyro";
     private static final boolean debugEnabled = false;
+    private static final boolean tracingEnabled = false;
+    private static final TrcDbgTrace.TraceLevel traceLevel = TrcDbgTrace.TraceLevel.API;
+    private static final TrcDbgTrace.MsgLevel msgLevel = TrcDbgTrace.MsgLevel.INFO;
     private TrcDbgTrace dbgTrace = null;
 
     private ModernRoboticsI2cGyro gyro;
+    private FtcI2cDeviceState sensorState;
 
     /**
      * Constructor: Creates an instance of the object.
      *
      * @param hardwareMap specifies the global hardware map.
      * @param instanceName specifies the instance name.
-     * @param filters specifies an array of filters to use for filtering
-     *                sensor noise, one for each axis. Since we have 3 axes,
-     *                the array should have 3 elements. If no filters are
-     *                used, it can be set to null.
+     * @param filters specifies an array of filters to use for filtering sensor noise, one for each axis. Since we
+     *                have 3 axes, the array should have 3 elements. If no filters are used, it can be set to null.
      */
     public FtcMRGyro(HardwareMap hardwareMap, String instanceName, TrcFilter[] filters)
     {
-        super(instanceName,
-              3,
-              GYRO_HAS_X_AXIS | GYRO_HAS_Y_AXIS | GYRO_HAS_Z_AXIS,
-              filters);
+        super(instanceName, 3, GYRO_HAS_X_AXIS | GYRO_HAS_Y_AXIS | GYRO_HAS_Z_AXIS, filters);
 
         if (debugEnabled)
         {
-            dbgTrace = new TrcDbgTrace(moduleName + "." + instanceName,
-                                       false,
-                                       TrcDbgTrace.TraceLevel.API,
-                                       TrcDbgTrace.MsgLevel.INFO);
+            dbgTrace = new TrcDbgTrace(moduleName + "." + instanceName, tracingEnabled, traceLevel, msgLevel);
         }
 
         gyro = (ModernRoboticsI2cGyro)hardwareMap.gyroSensor.get(instanceName);
+        sensorState = new FtcI2cDeviceState(instanceName, gyro);
     }   //FtcMRGyro
 
     /**
      * Constructor: Creates an instance of the object.
      *
      * @param instanceName specifies the instance name.
-     * @param filters specifies an array of filters to use for filtering
-     *                sensor noise, one for each axis. Since we have 3 axes,
-     *                the array should have 3 elements. If no filters are
-     *                used, it can be set to null.
+     * @param filters specifies an array of filters to use for filtering sensor noise, one for each axis. Since we
+     *                have 3 axes, the array should have 3 elements. If no filters are used, it can be set to null.
      */
     public FtcMRGyro(String instanceName, TrcFilter[] filters)
     {
@@ -112,7 +105,7 @@ public class FtcMRGyro extends TrcGyro
         gyro.calibrate();
         while (gyro.isCalibrating())
         {
-            HalUtil.sleep(10);
+            TrcUtil.sleep(10);
         }
 
         if (debugEnabled)
@@ -120,6 +113,43 @@ public class FtcMRGyro extends TrcGyro
             dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API);
         }
     }   //calibrate
+
+    /**
+     * This method check if the range sensor is enabled.
+     *
+     * @return true if the device state indicates it is enabled, false otherwise.
+     */
+    public boolean isDeviceEnabled()
+    {
+        final String funcName = "isDeviceEnabled";
+        boolean enabled = sensorState.isEnabled();
+
+        if (debugEnabled)
+        {
+            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
+            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API, "=%s", Boolean.toString(enabled));
+        }
+
+        return enabled;
+    }   //isDeviceEnabled
+
+    /**
+     * This method is called to enable/disable the sensor so it is not hogging I2c bus bandwidth when not in use.
+     *
+     * @param enabled specifies true if enabling, false otherwise.
+     */
+    public void setDeviceEnabled(boolean enabled)
+    {
+        final String funcName = "setDeviceEnabled";
+
+        if (debugEnabled)
+        {
+            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API, "enabled=%s", Boolean.toString(enabled));
+            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API);
+        }
+
+        sensorState.setEnabled(enabled);
+    }   //setDeviceEnabled
 
     //
     // Overriding TrcGyro methods.
@@ -183,7 +213,7 @@ public class FtcMRGyro extends TrcGyro
      * @return raw data of the specified type for the x-axis.
      */
     @Override
-    public SensorData getRawXData(DataType dataType)
+    public SensorData<Double> getRawXData(DataType dataType)
     {
         final String funcName = "getRawXData";
         double value = 0.0;
@@ -195,7 +225,7 @@ public class FtcMRGyro extends TrcGyro
         {
             value = gyro.rawX();
         }
-        SensorData data = new SensorData(HalUtil.getCurrentTime(), value);
+        SensorData<Double> data = new SensorData<>(TrcUtil.getCurrentTime(), value);
 
         if (debugEnabled)
         {
@@ -214,7 +244,7 @@ public class FtcMRGyro extends TrcGyro
      * @return raw data of the specified type for the y-axis.
      */
     @Override
-    public SensorData getRawYData(DataType dataType)
+    public SensorData<Double> getRawYData(DataType dataType)
     {
         final String funcName = "getRawYData";
         double value = 0.0;
@@ -226,7 +256,7 @@ public class FtcMRGyro extends TrcGyro
         {
             value = gyro.rawY();
         }
-        SensorData data = new SensorData(HalUtil.getCurrentTime(), value);
+        SensorData<Double> data = new SensorData<>(TrcUtil.getCurrentTime(), value);
 
         if (debugEnabled)
         {
@@ -245,7 +275,7 @@ public class FtcMRGyro extends TrcGyro
      * @return raw data of the specified type for the z-axis.
      */
     @Override
-    public SensorData getRawZData(DataType dataType)
+    public SensorData<Double> getRawZData(DataType dataType)
     {
         final String funcName = "getRawZData";
         double value = 0.0;
@@ -258,7 +288,7 @@ public class FtcMRGyro extends TrcGyro
         {
             value = -gyro.getIntegratedZValue();
         }
-        SensorData data = new SensorData(HalUtil.getCurrentTime(), value);
+        SensorData<Double> data = new SensorData<>(TrcUtil.getCurrentTime(), value);
 
         if (debugEnabled)
         {
