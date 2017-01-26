@@ -38,7 +38,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
     {
         telemetry.addData("_","PLEASE WAIT - STARTING");
         telemetry.update();
-        dashboard = new HalDashboard(telemetry);
+        dashboard = HalDashboard.createInstance(telemetry);
+
         FtcRobotControllerActivity act = (FtcRobotControllerActivity)(hardwareMap.appContext);
         dashboard.setTextView((TextView)act.findViewById(R.id.textOpMode));
         setup();
@@ -111,6 +112,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
         imgProc = new BeaconDetector();
         bd = (BeaconFinder) imgProc;
+
 
         if (robot.leftMotor  != null &&
             robot.rightMotor != null &&
@@ -875,12 +877,18 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         // Create the menus.
         //
         //FtcChoiceMenu strategyMenu = new FtcChoiceMenu("STRATEGY:", null, this);
-        FtcChoiceMenu startPosMenu = new FtcChoiceMenu("START:", null, this);
-        FtcChoiceMenu pushMenu     = new FtcChoiceMenu("PUSH:", startPosMenu, this);
-        FtcChoiceMenu parkMenu     = new FtcChoiceMenu("PARK:", pushMenu, this);
-        FtcChoiceMenu allianceMenu = new FtcChoiceMenu("ALLIANCE:", parkMenu, this);
-        FtcChoiceMenu teamMenu     = new FtcChoiceMenu("TEAM:", allianceMenu, this);
-        FtcChoiceMenu routeMenu    = new FtcChoiceMenu("FLY2LIGHT:", teamMenu, this);
+        FtcChoiceMenu<Field.StartPos> startPosMenu =
+                new FtcChoiceMenu<>("START:", null, this);
+        FtcChoiceMenu<Field.BeaconChoice> pushMenu =
+                new FtcChoiceMenu<>("PUSH:", startPosMenu, this);
+        FtcChoiceMenu<Field.ParkChoice> parkMenu   =
+                new FtcChoiceMenu<>("PARK:", pushMenu, this);
+        FtcChoiceMenu<Field.Alliance> allianceMenu =
+                new FtcChoiceMenu<>("ALLIANCE:", parkMenu, this);
+        FtcChoiceMenu<Team> teamMenu               =
+                new FtcChoiceMenu<>("TEAM:", allianceMenu, this);
+        FtcChoiceMenu<Boolean> routeMenu           =
+                new FtcChoiceMenu<>("FLY2LIGHT:", teamMenu, this);
         //FtcValueMenu powerMenu     = new FtcValueMenu("SHOOTPOWER:", teamMenu, this,
         //                                                    0.0, 1.0, 0.05, 0.55, "%5.2f");
         FtcValueMenu delayMenu     = new FtcValueMenu("DELAY:", routeMenu, this,
@@ -911,18 +919,18 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         // Walk the menu tree starting with the strategy menu as the root
         // menu and get user choices.
         //
-        FtcMenu.walkMenuTree(startPosMenu);
+        FtcMenu.walkMenuTree(startPosMenu, this);
 
         //
         // Set choices variables.
         //
 
-        startPos = (Field.StartPos)startPosMenu.getCurrentChoiceObject();
-        beaconChoice = (Field.BeaconChoice)pushMenu.getCurrentChoiceObject();
-        parkChoice = (Field.ParkChoice)parkMenu.getCurrentChoiceObject();
-        alliance = (Field.Alliance)allianceMenu.getCurrentChoiceObject();
-        team = (Team)teamMenu.getCurrentChoiceObject();
-        useFly2Light = (Boolean)routeMenu.getCurrentChoiceObject();
+        startPos = startPosMenu.getCurrentChoiceObject();
+        beaconChoice = pushMenu.getCurrentChoiceObject();
+        parkChoice = parkMenu.getCurrentChoiceObject();
+        alliance = allianceMenu.getCurrentChoiceObject();
+        team = teamMenu.getCurrentChoiceObject();
+        useFly2Light = routeMenu.getCurrentChoiceObject();
         delay = delayMenu.getCurrentValue();
 
         dashboard.displayPrintf(0, "START: %s", startPos);
@@ -948,10 +956,10 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         SNOWMAN
     }
 
-    private final static double L_DN_PUSH_POS = 0.1;
-    private final static double R_DN_PUSH_POS = 0.9;
-    private final static double L_UP_PUSH_POS = 0.9;
-    private final static double R_UP_PUSH_POS = 0.1;
+    private final static double L_DN_PUSH_POS = 1.0;
+    private final static double R_DN_PUSH_POS = 0.0;
+    private final static double L_UP_PUSH_POS = 0.0;
+    private final static double R_UP_PUSH_POS = 1.0;
 
     private final static double DEF_ENCTRN_PWR  = 0.7;
     private final static double DEF_GYRTRN_PWR = 0.48;

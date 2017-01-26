@@ -5,6 +5,7 @@ import android.widget.TextView;
 
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.RobotLog;
@@ -13,7 +14,6 @@ import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity
 
 import ftclib.FtcChoiceMenu;
 import ftclib.FtcMenu;
-import ftclib.FtcOpMode;
 import ftclib.FtcValueMenu;
 import hallib.HalDashboard;
 
@@ -22,25 +22,23 @@ import hallib.HalDashboard;
 @SuppressWarnings({"unused", "ForLoopReplaceableByForEach", "UnusedAssignment"})
 @Autonomous(name="AutonTest", group="Auton")
 //@Disabled
-public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
+public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
 {
     public FtcAutoTest()
     {
         super();
     }
 
-    @Override
     public void initRobot()
     {
         telemetry.addData("_","PLEASE WAIT - STARTING");
         telemetry.update();
-        dashboard = getDashboard();
+        dashboard = HalDashboard.createInstance(telemetry);
         FtcRobotControllerActivity act = (FtcRobotControllerActivity)(hardwareMap.appContext);
         dashboard.setTextView((TextView)act.findViewById(R.id.textOpMode));
         setup();
     }
 
-    @Override
     public void startMode()
     {
         dashboard.clearDisplay();
@@ -140,11 +138,23 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
     }
 
     @Override
+    public void runOpMode()
+    {
+        initRobot();
+        while(!isStarted() && !isStopRequested())
+        {
+            runPeriodic(0.0);
+            sleep(10);
+        }
+        waitForStart();
+        startMode();
+        stopMode();
+    }
+
     public void runPeriodic(double elapsedTime)
     {
     }
 
-    @Override
     public void stopMode()
     {
         drvTrn.stopAndReset();
@@ -178,7 +188,7 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
             robot.gyro       != null)
         {
             drvTrn.init(robot);
-            drvTrn.setOpMode(getInstance());
+            drvTrn.setOpMode(this);
             DbgLog.msg("SJH: Starting gyro calibration");
             robot.gyro.calibrate();
 
@@ -605,16 +615,26 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         //
         // Create the menus.
         //
-        FtcChoiceMenu startPosMenu = new FtcChoiceMenu("START:", null, this);
-        FtcChoiceMenu pushMenu     = new FtcChoiceMenu("PUSH:", startPosMenu, this);
-        FtcChoiceMenu parkMenu     = new FtcChoiceMenu("PARK:", pushMenu, this);
-        FtcChoiceMenu allianceMenu = new FtcChoiceMenu("ALLIANCE:", parkMenu, this);
-        FtcChoiceMenu teamMenu     = new FtcChoiceMenu("TEAM:", allianceMenu, this);
-        FtcChoiceMenu testMaxMenu  = new FtcChoiceMenu("MAXSPD:", startPosMenu, this);
-        FtcValueMenu  testDistMenu = new FtcValueMenu("DIST:",  testMaxMenu,  this, 0.0, 60.0, 6.0, 48.0,  "%4.1f");
-        FtcValueMenu  testPostMenu = new FtcValueMenu("POST:",  testDistMenu, this, -90.0, 90.0, 2.5, 0.0,  "%4.1f");
-        FtcValueMenu  testSpdMenu  = new FtcValueMenu("SPEED:", testPostMenu, this, 0.0, 1.0, 0.1, 0.5,  "%4.2f");
-        FtcValueMenu  testKMenu    = new FtcValueMenu("K:",     testSpdMenu,  this, 0.5, 1.5, 0.01, 1.0, "%4.2f");
+        FtcChoiceMenu<Field.StartPos> startPosMenu =
+                new FtcChoiceMenu<>("START:", null, this);
+        FtcChoiceMenu<Field.BeaconChoice> pushMenu =
+                new FtcChoiceMenu<>("PUSH:", startPosMenu, this);
+        FtcChoiceMenu<Field.ParkChoice> parkMenu   =
+                new FtcChoiceMenu<>("PARK:", pushMenu, this);
+        FtcChoiceMenu<Field.Alliance> allianceMenu =
+                new FtcChoiceMenu<>("ALLIANCE:", parkMenu, this);
+        FtcChoiceMenu<Team> teamMenu               =
+                new FtcChoiceMenu<>("TEAM:", allianceMenu, this);
+        FtcChoiceMenu<Boolean> testMaxMenu         =
+                new FtcChoiceMenu<>("MAXSPD:", startPosMenu, this);
+        FtcValueMenu  testDistMenu =
+                new FtcValueMenu("DIST:",  testMaxMenu,  this, 0.0, 60.0, 6.0, 48.0,  "%4.1f");
+        FtcValueMenu  testPostMenu =
+                new FtcValueMenu("POST:",  testDistMenu, this, -90.0, 90.0, 2.5, 0.0,  "%4.1f");
+        FtcValueMenu  testSpdMenu  =
+                new FtcValueMenu("SPEED:", testPostMenu, this, 0.0, 1.0, 0.1, 0.5,  "%4.2f");
+        FtcValueMenu  testKMenu    =
+                new FtcValueMenu("K:",     testSpdMenu,  this, 0.5, 1.5, 0.01, 1.0, "%4.2f");
 
         startPosMenu.addChoice("Start_A", Field.StartPos.START_A_SWEEPER, pushMenu);
         startPosMenu.addChoice("Start_B", Field.StartPos.START_B_SWEEPER, pushMenu);
@@ -643,19 +663,20 @@ public class FtcAutoTest extends FtcOpMode implements FtcMenu.MenuButtons
         // Walk the menu tree starting with the strategy menu as the root
         // menu and get user choices.
         //
-        FtcMenu.walkMenuTree(startPosMenu);
+        FtcMenu.walkMenuTree(startPosMenu, this);
+
         //
         // Set choices variables.
         //
         //autoStrategy = (Field.AutoStrategy)strategyMenu.getCurrentChoiceObject();
 
-        startPos = (Field.StartPos)startPosMenu.getCurrentChoiceObject();
-        beaconChoice = (Field.BeaconChoice)pushMenu.getCurrentChoiceObject();
-        parkChoice = (Field.ParkChoice)parkMenu.getCurrentChoiceObject();
-        alliance = (Field.Alliance)allianceMenu.getCurrentChoiceObject();
-        team = (Team)teamMenu.getCurrentChoiceObject();
+        startPos = startPosMenu.getCurrentChoiceObject();
+        beaconChoice = pushMenu.getCurrentChoiceObject();
+        parkChoice = parkMenu.getCurrentChoiceObject();
+        alliance = allianceMenu.getCurrentChoiceObject();
+        team = teamMenu.getCurrentChoiceObject();
 
-        doMaxSpeedTest = (Boolean)testMaxMenu.getCurrentChoiceObject();
+        doMaxSpeedTest = testMaxMenu.getCurrentChoiceObject();
         testDist  = testDistMenu.getCurrentValue();
         testPost  = testPostMenu.getCurrentValue();
         testSpeed = testSpdMenu.getCurrentValue();

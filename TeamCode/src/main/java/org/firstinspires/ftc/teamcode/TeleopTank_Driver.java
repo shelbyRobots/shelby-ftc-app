@@ -266,10 +266,10 @@ public class TeleopTank_Driver extends LinearOpMode
         RIGHT
     }
 
-    private final static double L_DN_PUSH_POS = 0.1;
-    private final static double R_DN_PUSH_POS = 0.1;
-    private final static double L_UP_PUSH_POS = 0.1;
-    private final static double R_UP_PUSH_POS = 0.1;
+    private final static double L_DN_PUSH_POS = 1.0;
+    private final static double R_DN_PUSH_POS = 0.05;
+    private final static double L_UP_PUSH_POS = 0.05;
+    private final static double R_UP_PUSH_POS = 1.0;
 
     private ShelbyBot robot = new ShelbyBot();
     private Drivetrain dtrn = new Drivetrain();

@@ -323,7 +323,7 @@ class Points
     private static final double ASTARTX =  -12.0;
     private static final double ASTARTY =  S_WALL + REAR_OFFSET;
     private static final double AIMERY  =  ASTARTY + 3.0;
-    private static final double ASHOOTY =  -24.0 - FRNT_OFFSET;
+    private static final double ASHOOTY =  -27.0 - FRNT_OFFSET;
     private static final double AIMTOX  =  -12.0;
     private static final double AIMTOY  =  -10.5;
 
@@ -333,7 +333,7 @@ class Points
 
     private static final double RSTARTX =  -24.0;
     private static final double RSTARTY =  ASTARTY;
-    private static final double RSHOOTX = -24.0 - FRNT_OFFSET;
+    private static final double RSHOOTX = -27.0 - FRNT_OFFSET;
     private static final double RSHOOTY = BECN1_Y;
 
     private static final double blueBecnScanAdjust = 0.0;

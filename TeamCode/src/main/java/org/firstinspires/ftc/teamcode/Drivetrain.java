@@ -102,6 +102,8 @@ class Drivetrain
             if(ptmr.seconds() > printTimeout) ptmr.reset();
         }
 
+       logData();
+
         left_drive.setPower(0.0);
         right_drive.setPower(0.0);
 
@@ -142,6 +144,8 @@ class Drivetrain
                 op.opModeIsActive() &&
                 !op.isStopRequested())
         {
+            logData();
+
             if(gyroReady)
             {
                 makeGyroCorrections(pwr, tHdg);
@@ -268,6 +272,7 @@ class Drivetrain
               op.opModeIsActive() &&
               !op.isStopRequested())
         {
+            logData();
             //makeCorrections(pwr, tdir);
             waitForTick(10);
             if(ptmr.seconds() > printTimeout) ptmr.reset();
@@ -301,6 +306,7 @@ class Drivetrain
               op.opModeIsActive()       &&
               !op.isStopRequested())
         {
+            logData();
             op.idle();
             frame++;
             if(ptmr.seconds() > printTimeout) ptmr.reset();
@@ -331,6 +337,7 @@ class Drivetrain
               op.opModeIsActive() &&
               !op.isStopRequested())
         {
+            logData();
             waitForTick(10);
             curHdg = robot.getGyroFhdg();
             hDiff = tgtHdg - curHdg;
@@ -492,7 +499,6 @@ class Drivetrain
 
         if (ptmr.seconds() > printTimeout)
         {
-            logData();
             DbgLog.msg("SJH %4d lpwr: %5.3f rpwr: %5.3f err: %5.3f str %5.3f rt %5.3f chdg %d thdg %d",
                     frame, ldp, rdp, err, steer, rt.seconds(), robot.getGyroFhdg(), thdg);
         }
@@ -702,7 +708,12 @@ class Drivetrain
 
     public void logData()
     {
-        if(logData) {
+        if (datalogtimer.seconds() <0.01) return;
+
+        datalogtimer.reset();
+
+        if(logData)
+        {
             //Write sensor values to the data logger
             dl.addField(robot.getGyroFhdg());
             dl.addField((float) left_drive.getCurrentPosition());
@@ -716,9 +727,9 @@ class Drivetrain
     private final static double TURN_TOLERANCE = 1.0;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
-    private static double WHL_DIAMETER = 6.5; //Diameter of the wheel (inches)
+    private static double WHL_DIAMETER = 4.5; //Diameter of the wheel (inches)
     private final static int    ENCODER_CPR = ShelbyBot.ENCODER_CPR;
-    private final static double GEAR_RATIO  = 1;                   //Gear ratio
+    private final static double GEAR_RATIO  = 2;                   //Gear ratio
 
     private static double CIRCUMFERENCE = Math.PI * WHL_DIAMETER;
     private static double CPI = ENCODER_CPR * GEAR_RATIO / (CIRCUMFERENCE * DRV_TUNER);
@@ -768,7 +779,7 @@ class Drivetrain
     private boolean useDterm = false;
 
     private ElapsedTime gyroFrameTime = new ElapsedTime();
-
+    private ElapsedTime datalogtimer = new ElapsedTime();
     private DataLogger dl;
     private boolean logData = true;
 }
