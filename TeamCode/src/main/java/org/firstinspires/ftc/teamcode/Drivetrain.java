@@ -48,6 +48,8 @@ class Drivetrain
         right_drive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         left_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         right_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        lastLcnt = 0;
+        lastRcnt = 0;
     }
 
     void stopAndReset()
@@ -99,10 +101,10 @@ class Drivetrain
               op.opModeIsActive()    &&
               !op.isStopRequested())
         {
+            logData();
+            estimatePosition();
             if(ptmr.seconds() > printTimeout) ptmr.reset();
         }
-
-       logData();
 
         left_drive.setPower(0.0);
         right_drive.setPower(0.0);
@@ -145,6 +147,7 @@ class Drivetrain
                 !op.isStopRequested())
         {
             logData();
+            estimatePosition();
 
             if(gyroReady)
             {
@@ -273,6 +276,7 @@ class Drivetrain
               !op.isStopRequested())
         {
             logData();
+            estimatePosition();
             //makeCorrections(pwr, tdir);
             waitForTick(10);
             if(ptmr.seconds() > printTimeout) ptmr.reset();
@@ -307,6 +311,7 @@ class Drivetrain
               !op.isStopRequested())
         {
             logData();
+            estimatePosition();
             op.idle();
             frame++;
             if(ptmr.seconds() > printTimeout) ptmr.reset();
@@ -338,6 +343,7 @@ class Drivetrain
               !op.isStopRequested())
         {
             logData();
+            estimatePosition();
             waitForTick(10);
             curHdg = robot.getGyroFhdg();
             hDiff = tgtHdg - curHdg;
@@ -411,8 +417,33 @@ class Drivetrain
 
     void setCurrPt(Point2d curPt)
     {
-        DbgLog.msg("SJH: setCurrPt to %s", curPt);
+        DbgLog.msg("SJH: setCurrPt %s. estPos %s", curPt, estPos);
         currPt = curPt;
+        if(numPts == 0)
+        {
+            xPos = currPt.getX();
+            yPos = currPt.getY();
+            estHdg = robot.getGyroFhdg();
+        }
+        ++numPts;
+    }
+
+    void estimatePosition()
+    {
+        int curLcnt =  left_drive.getCurrentPosition();
+        int curRcnt = right_drive.getCurrentPosition();
+        int dCntL = curLcnt - lastLcnt;
+        int dCntR = curRcnt = lastRcnt;
+        double dX = (dCntL)/CPI * Math.cos(robot.getGyroFhdg());
+        double dY = (dCntR)/CPI * Math.sin(robot.getGyroFhdg());
+        xPos += dX;
+        yPos += dY;
+        estPos.setX(xPos);
+        estPos.setY(yPos);
+        double dH = (dCntR-dCntL)/CPI/robot.BOT_WIDTH;
+        estHdg += dH;
+        lastLcnt = curLcnt;
+        lastRcnt = curRcnt;
     }
 
     void setInitHdg(double initHdg)
@@ -758,6 +789,14 @@ class Drivetrain
 
     private double lposLast;
     private double rposLast;
+
+    private double xPos = 0.0;
+    private double yPos = 0.0;
+    private Point2d estPos = new Point2d(xPos, yPos);
+    private double  estHdg = 0.0;
+    private int lastLcnt = 0;
+    private int lastRcnt = 0;
+    private int numPts = 0;
 
     private double noMoveTimeout = 0.5;
     private double noDriveMoveTimeout = 0.35;

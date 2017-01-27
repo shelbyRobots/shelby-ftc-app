@@ -4,8 +4,8 @@ public interface BeaconFinder
 {
     LightOrder getLightOrder();
 
-    public BeaconDetector.BeaconSide getRedPosSide();
-    public BeaconDetector.BeaconSide getBluePosSide();
+    public BeaconSide getRedPosSide();
+    public BeaconSide getBluePosSide();
 
     public double getBeaconConf();
     public double getBeaconPosX();
