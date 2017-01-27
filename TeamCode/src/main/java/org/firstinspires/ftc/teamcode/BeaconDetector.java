@@ -27,32 +27,42 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
 {
     private final static double MIN_COLOR_ZONE_AREA = 0.2; 	    // fraction of total image area
 
-    private Mat image;
+    private Mat hsvImg;
     private Mat zonedImg;
+    private Mat tmpHsvImg;
+    private Mat tmp1Img;
     private Mat maskImg;
     private Mat showImg;
     private Mat cvImage;
     private Mat colorDiff;
+    private Mat onesImg;
+    private Mat zeroImg;
+    private Mat white;
+    private Mat out;
 
     private final static boolean DEBUG = false;
     private final static boolean POS_IS_Y = false;
 
     private Telemetry telemetry = null;
 
-    private List<MatOfPoint> red_blobs = new ArrayList<>();
-    private List<MatOfPoint> blue_blobs = new ArrayList<>();
-    private List<MatOfPoint> white_blobs = new ArrayList<>();
-    private List<MatOfPoint> black_blobs = new ArrayList<>();
+    private boolean channels_initialized = false;
 
-    private ArrayList<Rect> red_matches = new ArrayList<>();
-    private ArrayList<Rect> blue_matches = new ArrayList<>();
+    private List<Mat>        hsv_channels = new ArrayList<>();
+    private List<Mat>        rgb_channels = new ArrayList<>();
+    private List<MatOfPoint> red_blobs    = new ArrayList<>();
+    private List<MatOfPoint> blue_blobs   = new ArrayList<>();
+    private List<MatOfPoint> white_blobs  = new ArrayList<>();
+    private List<MatOfPoint> black_blobs  = new ArrayList<>();
+
+    private ArrayList<Rect> red_matches   = new ArrayList<>();
+    private ArrayList<Rect> blue_matches  = new ArrayList<>();
     private ArrayList<Rect> white_matches = new ArrayList<>();
+    private List<Rect> buttons            = new ArrayList<>();
 
     private Rect red_box;
     private Rect blue_box;
     private Rect white_box;
     private Rect beacon_box;
-    private List<Rect> buttons = new ArrayList<>();
 
     private RingBuffer beaconConfBuf = new RingBuffer(20);
     private RingBuffer beaconPosXBuf = new RingBuffer(3);
@@ -62,7 +72,7 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
     private double beaconPosX = 0;
     private double beaconPosZ = 0;
 
-    private BeaconSide redPosSide = BeaconSide.UNKNOWN;
+    private BeaconSide redPosSide  = BeaconSide.UNKNOWN;
     private BeaconSide bluePosSide = BeaconSide.UNKNOWN;
 
     private boolean sensingActive = false;
@@ -77,10 +87,13 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
 
     @SuppressWarnings("WeakerAccess")
     public BeaconDetector(Mat img ) {
+        this();
         setImage( img );
     }
 
-    public BeaconDetector() {}
+    public BeaconDetector()
+    {
+    }
 
     public void startSensing() {
         beaconConfBuf.clear();
@@ -100,18 +113,39 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
     {
         // Convert to HSV colorspace to make it easier to
         // threshold certain colors (ig red/blue)
-        image = new Mat();
-        colorDiff = new Mat();
+        if(hsvImg == null) hsvImg = new Mat();
 
-        Imgproc.cvtColor( img, image, Imgproc.COLOR_RGB2HSV, 4 );
-        showImg = image.clone();
+        Imgproc.cvtColor( img, hsvImg, Imgproc.COLOR_RGB2HSV, 4 );
 
-        List<Mat> channels = new ArrayList<>();
-        Core.split( img, channels );
-        Mat red = channels.get( 0 );
-        Mat blue = channels.get( 2 );
+        if(showImg == null) showImg = hsvImg.clone();
+        else hsvImg.copyTo(showImg);
+
+        if(!channels_initialized)
+        {
+           channels_initialized = true;
+           for(int c = 0; c < img.channels(); c++)
+           {
+              rgb_channels.add(new Mat());
+           }
+
+           for(int c = 0; c < hsvImg.channels(); c++)
+           {
+              hsv_channels.add(new Mat());
+           }
+        }
+
+        Core.split( img, rgb_channels );
+        Mat red = rgb_channels.get( 0 );
+        Mat blue = rgb_channels.get( 2 );
+
+        if(colorDiff == null) colorDiff = new Mat(red.rows(), red.cols(), red.type());
+
         Core.absdiff( red, blue, colorDiff );
-        Imgproc.threshold( colorDiff.clone(), colorDiff, 20, 255, Imgproc.THRESH_BINARY );
+
+        if(tmp1Img == null) tmp1Img = colorDiff.clone();
+        else colorDiff.copyTo(tmp1Img);
+
+        Imgproc.threshold( tmp1Img,  colorDiff, 20, 255, Imgproc.THRESH_BINARY );
 
         if ( !sensingActive ) return;
         findColors();
@@ -158,7 +192,7 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
         double actl_beac_rt = beac_w / beac_h;
         double sens_bcn_rt = wb.width / wb.height;
 
-        double beac_rt = wb.area() / ( image.cols() * image.rows() );
+        double beac_rt = wb.area() / ( hsvImg.cols() * hsvImg.rows() );
         double red_rt = rb.area() / wb.area();
         double blue_rt = bb.area() / wb.area();
 
@@ -189,19 +223,19 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
 
             if ( redPosSide == bluePosSide || beaconConf < 0.3 )
             {
-                redPosSide = BeaconSide.UNKNOWN;
+                redPosSide  = BeaconSide.UNKNOWN;
                 bluePosSide = BeaconSide.UNKNOWN;
             }
 
             return;
         }
 
-        double scrn_ctr = image.cols() / 2;
+        double scrn_ctr = hsvImg.cols() / 2;
         double beac_ctr = beacon_box.x + beacon_box.width / 2;
 
         beaconConf = beaconConfBuf.smooth( scoreFit( beacon_box, red_box, blue_box ) );
         beaconPosX = beaconPosXBuf.smooth( beac_ctr - scrn_ctr );
-        beaconPosZ = beaconPosZBuf.smooth( (double) beacon_box.width / (double) image.cols() );
+        beaconPosZ = beaconPosZBuf.smooth( (double) beacon_box.width / (double) hsvImg.cols() );
 
         // Keep in mind that we flip the image before
         // processing to make it easier to visualize
@@ -221,7 +255,7 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
 
         if ( redPosSide == bluePosSide || beaconConf < 0.3 )
         {
-            redPosSide = BeaconSide.UNKNOWN;
+            redPosSide  = BeaconSide.UNKNOWN;
             bluePosSide = BeaconSide.UNKNOWN;
         }
 
@@ -314,61 +348,61 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
         calcPosition();
     }
 
-    private void setDebugImg( Mat ch )
-    {
-        List<Mat> channels = new ArrayList<>();
-        Core.split( image, channels );
-
-        channels.set( 0, Mat.zeros( image.rows(), image.cols(), ch.type() ) );
-        channels.set( 1, Mat.zeros( image.rows(), image.cols(), ch.type() ) );
-        channels.set( 2, ch );
-
-        showImg = image.clone();
-        Core.merge( channels, showImg );
-    }
-
     private void findLum()
     {
-        List<Mat> channels = new ArrayList<>();
-        Core.split( image, channels );
+        Core.split( hsvImg, hsv_channels );
 
-        Mat sat = channels.get( 1 );
-        Mat lum = channels.get( 2 );
+        Mat sat = hsv_channels.get( 1 );
+        Mat lum = hsv_channels.get( 2 );
 
         double lumAvg = Core.mean( lum ).val[0];
 
-        Core.normalize( sat.clone(), sat, 120, 255, Core.NORM_MINMAX );
-        Core.normalize( lum.clone(), lum, 0, 180, Core.NORM_MINMAX );
+        if(tmp1Img == null) tmp1Img = sat.clone();
+        else sat.copyTo(tmp1Img);
 
-        Mat white = lum.clone();
-        Mat adj = lum.clone();
+        Core.normalize( tmp1Img, sat, 120, 255, Core.NORM_MINMAX );
+        lum.copyTo(tmp1Img);
+        Core.normalize( tmp1Img, lum,   0, 180, Core.NORM_MINMAX );
 
-        Imgproc.GaussianBlur( lum, adj, new Size(25,25), 25);
-        Imgproc.threshold( adj, white, 255 - lumAvg, 255, Imgproc.THRESH_BINARY ); //+ Imgproc.THRESH_OTSU
-        Imgproc.erode( white.clone(), white, Imgproc.getGaussianKernel( 5, 2 ) );
+        if(white == null) white = lum.clone();
 
-//        setDebugImg( white );
+        Imgproc.GaussianBlur( lum, tmp1Img, new Size(25,25), 25);
+        Imgproc.threshold( tmp1Img, white, 255 - lumAvg, 255, Imgproc.THRESH_BINARY ); 
+        //+ or Imgproc.THRESH_OTSU
+        white.copyTo(tmp1Img);
+        Imgproc.erode( tmp1Img, white, Imgproc.getGaussianKernel( 5, 2 ) );
 
         findWeightedPos( white, white_blobs, white_matches );
 
-        channels.set( 1, sat );
-        channels.set( 2, lum );
+        hsv_channels.set( 1, sat );
+        hsv_channels.set( 2, lum );
 
-        zonedImg = image.clone();
-        Core.merge( channels, zonedImg );
+        if(zonedImg == null)  zonedImg = new Mat(hsvImg.rows(), hsvImg.cols(), hsvImg.type());
+
+        Core.merge( hsv_channels, zonedImg );
+
+        if(tmpHsvImg == null)  tmpHsvImg = zonedImg.clone();
+        else                   zonedImg.copyTo(tmpHsvImg);
 
         List<Mat> tmp = new ArrayList<>();
-        Core.split( image, tmp );
-        Mat mask = image.clone();
+        Core.split( hsvImg, tmp );
 
-        Imgproc.dilate( white.clone(), white, Imgproc.getGaussianKernel( 5, 2 ) );
-        tmp.set( 0, Mat.ones( image.rows(), image.cols(), white.type() ) );
-        tmp.set( 1, Mat.ones( image.rows(), image.cols(), white.type() ) );
+        if(maskImg == null)  maskImg = new Mat(hsvImg.rows(), hsvImg.cols(), hsvImg.type());
+
+        if(onesImg == null)  
+           onesImg = Mat.ones( hsvImg.rows(), hsvImg.cols(), white.type() );
+        if(zeroImg == null)  
+           zeroImg = Mat.zeros( hsvImg.rows(), hsvImg.cols(), white.type() );
+
+        white.copyTo(tmp1Img);
+        Imgproc.dilate( tmp1Img, white, Imgproc.getGaussianKernel( 5, 2 ) );
+        tmp.set( 0, onesImg );
+        tmp.set( 1, onesImg );
         tmp.set( 2, white );
-        Core.merge( tmp, mask );
+        Core.merge( tmp, maskImg );
 
-        Core.multiply( zonedImg.clone(), mask, zonedImg );
-        //showImg = zonedImg.clone();
+        Core.multiply( tmpHsvImg, maskImg, zonedImg );
+        zonedImg.copyTo(showImg);
     }
 
     private void findButtons()
@@ -376,23 +410,24 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
         buttons.clear();
         black_blobs.clear();
 
-        List<Mat> channels = new ArrayList<>();
-        Core.split( zonedImg, channels );
+        Core.split( zonedImg, hsv_channels );
 
-        Mat s_value = channels.get( 2 );
-        Mat d_value = s_value.clone();
+        Mat d_value = hsv_channels.get( 2 );
+        d_value.copyTo(tmp1Img);
         //Mat inv = new Mat( d_value.rows(), d_value.cols(), d_value.type(), new Scalar( 255 ) );
-        //Imgproc.adaptiveThreshold( d_value.clone(), d_value, 255.0, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 15, 0 );
-        //Core.subtract( inv, d_value.clone(), d_value );
-        //Imgproc.GaussianBlur( d_value.clone(), d_value, new Size(15,15), 15);
-        Imgproc.threshold( d_value.clone(), d_value, 40, 255, Imgproc.THRESH_BINARY_INV ); // + Imgproc.THRESH_OTSU );
+        //Imgproc.adaptiveThreshold( tmp1Img, d_value, 255.0, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 15, 0 );
+        //d_value.copyTo(tmp1Img);
+        //Core.subtract( inv, tmp1Img, d_value );
+        //d_value.copyTo(tmp1Img);
+        //Imgproc.GaussianBlur( tmp1Img, d_value, new Size(15,15), 15);
+        //d_value.copyTo(tmp1Img);
+        Imgproc.threshold( tmp1Img, d_value, 40, 255, Imgproc.THRESH_BINARY_INV ); // + Imgproc.THRESH_OTSU );
 
-//        channels.set( 0, Mat.zeros( image.rows(), image.cols(), d_value.type() ) );
-//        channels.set( 1, Mat.zeros( image.rows(), image.cols(), d_value.type() ) );
-//        channels.set( 2, d_value );
+//        hsv_channels.set( 0, zeroImg);
+//        hsv_channels.set( 1, zeroImg);
+//        hsv_channels.set( 2, d_value );
 //
-//        showImg = zonedImg.clone();
-//        Core.merge( channels, showImg );
+//        Core.merge( hsv_channels, showImg );
 
         Mat hchy = new Mat();
         List<MatOfPoint> contours = new ArrayList<>();
@@ -430,8 +465,10 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
         // Threshold based on color.  White regions match the desired color.  Black do not.
         // We now have a binary image to work with.  Contour detection looks for white blobs
         Core.inRange( zonedImg, new Scalar( 105,100,100 ), new Scalar( 125,255,255 ), blue_areas );
-        Core.multiply( blue_areas.clone(), colorDiff, blue_areas );
-        Imgproc.dilate( blue_areas.clone(), blue_areas, new Mat() );
+        blue_areas.copyTo(tmpHsvImg);
+        Core.multiply( tmpHsvImg, colorDiff, blue_areas );
+        blue_areas.copyTo(tmpHsvImg);
+        Imgproc.dilate( tmpHsvImg, blue_areas, new Mat() );
 
         // There can be several blobs.  Find the largest that fills a certain amount
         // of the image.  These are crude heuristics but should be fine if we control
@@ -450,8 +487,10 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
         Core.inRange( zonedImg, new Scalar( 0,100,150 ), new Scalar( 10,255,255 ), red1);
         Core.inRange( zonedImg, new Scalar( 140,100,150 ), new Scalar( 179,255,255 ), red2);
         Core.bitwise_or(red1, red2, red_areas);
-        Core.multiply( red_areas.clone(), colorDiff, red_areas );
-        Imgproc.dilate( red_areas.clone(), red_areas, new Mat() );
+        red_areas.copyTo(tmpHsvImg);
+        Core.multiply( tmpHsvImg, colorDiff, red_areas );
+        red_areas.copyTo(tmpHsvImg);
+        Imgproc.dilate( tmpHsvImg, red_areas, new Mat() );
 
         findWeightedPos( red_areas, red_blobs, red_matches );
     }
@@ -500,7 +539,7 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
 
     public Mat draw() {
 
-        Mat out = image.clone();
+        if(out == null) out = hsvImg.clone();
         Imgproc.cvtColor( showImg, out, Imgproc.COLOR_HSV2RGB, 4 );
         if ( !sensingActive || !firstCalcsDone ) return out;
 
@@ -539,13 +578,11 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
         int inHeight = rgbImage.getHeight();
         int inWidth  = rgbImage.getWidth();
 
-        if (cvImage == null) cvImage = new Mat(inHeight, inWidth, cvt);
-        if (image == null)     image = new Mat(inHeight, inWidth, cvt);
+        if (cvImage == null)  cvImage  = new Mat(inHeight, inWidth, cvt);
+        if (hsvImg == null) hsvImg = new Mat(inHeight, inWidth, cvt);
 
         Utils.bitmapToMat(rgbImage, cvImage);
-        Imgproc.cvtColor(cvImage, image, Imgproc.COLOR_RGB2HSV, 4 );
-
-        findColors();
+        setImage(cvImage);
     }
 
 
@@ -554,3 +591,5 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
     }
 
 }
+
+
