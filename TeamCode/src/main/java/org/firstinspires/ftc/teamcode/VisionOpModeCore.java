@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -16,13 +17,11 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
 
-import ftclib.FtcOpMode;
-
 /**
  * Created by crazy on 1/21/2017.
  */
 
-public abstract class VisionOpModeCore extends FtcOpMode implements CameraBridgeViewBase.CvCameraViewListener2 {
+public abstract class VisionOpModeCore extends LinearOpMode implements CameraBridgeViewBase.CvCameraViewListener2 {
     private static final int initialMaxSize = 1000;
     public static JavaCameraView openCVCamera;
     private static boolean initialized = false;

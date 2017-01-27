@@ -13,40 +13,38 @@ import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
-import org.opencv.android.JavaCameraView;
-import org.opencv.core.Core;
-import org.opencv.core.Mat;
 
 import ftclib.FtcChoiceMenu;
 import ftclib.FtcMenu;
 import ftclib.FtcValueMenu;
 import hallib.HalDashboard;
 
-//import com.qualcomm.robotcore.eventloop.opmode.Disabled;
-
 @SuppressWarnings({"unused", "ForLoopReplaceableByForEach"})
 @Autonomous(name="AutonShelby", group="Auton")
 //@Disabled
-public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButtons
+public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuButtons
 {
     public FtcAutoShelby()
     {
         super();
     }
 
-    @Override
+    public static HalDashboard getDashboard()
+    {
+        return dashboard;
+    }
+
     public void initRobot()
     {
         telemetry.addData("_","PLEASE WAIT - STARTING");
         telemetry.update();
-        dashboard = getDashboard();
+        dashboard = HalDashboard.createInstance(telemetry);
+
         FtcRobotControllerActivity act = (FtcRobotControllerActivity)(hardwareMap.appContext);
         dashboard.setTextView((TextView)act.findViewById(R.id.textOpMode));
         setup();
-        initVision();
     }
 
-    @Override
     public void startMode()
     {
         dashboard.clearDisplay();
@@ -54,22 +52,32 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
     }
 
     @Override
+    public void runOpMode()
+    {
+        initRobot();
+        while(!isStarted() && !isStopRequested())
+        {
+            runPeriodic(0.0);
+            sleep(10);
+        }
+        waitForStart();
+        startMode();
+        stopMode();
+    }
+
     public void runPeriodic(double elapsedTime)
     {
         if(robot.gyro != null)
         {
-            dashboard.displayPrintf(6, "GHDG: %d",
-                    robot.gyro.getIntegratedZValue());
+            int chdg = robot.gyro.getIntegratedZValue();
+            dashboard.displayPrintf(6, "GHDG: %d", chdg);
+            DbgLog.msg("SJH INIT CHDG %d", chdg);
         }
     }
 
-    @Override
     public void stopMode()
     {
-        if (openCVCamera != null)
-        {
-            openCVCamera.disableView();
-        }
+        cleanupCamera();
 
         if(drvTrn != null) drvTrn.stopAndReset();
     }
@@ -94,18 +102,25 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
         DbgLog.msg("SJH:  I2cAddr %s", Integer.toHexString(robot.gyro.getI2cAddress().get8Bit()));
         DbgLog.msg("SJH:  I2cAddr %s", Integer.toHexString(robot.gyro.getI2cAddress().get7Bit()));
 
+        robot.colorSensor.enableLed(false);
         robot.colorSensor.enableLed(true);
-        sleep(50);
+        sleep(20);
 
         turnColorOff();
 
+        initOpenCv();
+
+        imgProc = new BeaconDetector();
+        bd = (BeaconFinder) imgProc;
+
+
         if (robot.leftMotor  != null &&
-            robot.rightMotor != null &&
-            robot.gyro       != null)
+                robot.rightMotor != null &&
+                robot.gyro       != null)
         {
             LinearOpMode inst = this;
-            drvTrn.init(robot.leftMotor, robot.rightMotor, robot.gyro);
-            drvTrn.setOpMode(getInstance());
+            drvTrn.init(robot);
+            drvTrn.setOpMode(this);
             robot.setOpMode(inst);
 
             int lms = robot.leftMotor.getMaxSpeed();
@@ -121,7 +136,7 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
             boolean gyroCalibTimedout = false;
             gyroTimer.reset();
             while (!isStopRequested() &&
-                   robot.gyro.isCalibrating())
+                    robot.gyro.isCalibrating())
             {
                 sleep(50);
                 if(gyroTimer.seconds() > gyroInitTimout)
@@ -140,7 +155,7 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
         }
 
         doMenus();
-        robot.pusher.setPosition(ZER_PUSH_POS);
+        robot.lpusher.setPosition(L_DN_PUSH_POS);
 
         if(team == Team.SNOWMAN)
         {
@@ -150,37 +165,27 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
         Points pts = new Points(startPos, alliance, beaconChoice, parkChoice, useFly2Light);
         pathSegs = pts.getSegments();
 
-        initHdg = pathSegs[0].getFieldHeading();
+        initHdg = (int)(Math.round(pathSegs[0].getFieldHeading()));
 
         DbgLog.msg("SJH ROUTE: \n" + pts.toString());
 
         Point2d currPoint = pathSegs[0].getStrtPt();
         drvTrn.setCurrPt(currPoint);
         drvTrn.setInitHdg(initHdg);
+        robot.setInitHdg(initHdg);
 
         DbgLog.msg("SJH Start %s.", currPoint);
         dashboard.displayPrintf(3, "PATH: Start at %s", currPoint);
 
-        DbgLog.msg("SJH IHDG %4.3f", initHdg);
+        DbgLog.msg("SJH IHDG %4d", initHdg);
 
-        ElapsedTime ptimer = new ElapsedTime();
-        double pTimeout = 0.1;
-        while(!isStarted() && !isStopRequested())
-        {
-            if(ptimer.seconds() > pTimeout)
-            {
-                DbgLog.msg("SJH INIT CHDG %d", robot.gyro.getIntegratedZValue());
-                dashboard.displayPrintf(6, "GHDG: %d",
-                        robot.gyro.getIntegratedZValue());
-                ptimer.reset();
-            }
-
-        }
+        imgProc.setTelemetry(telemetry);
     }
 
     private void do_main_loop()
     {
         timer.reset();
+        startTimer.reset();
 
         DbgLog.msg("SJH: STARTING AT %4.2f", timer.seconds());
 
@@ -202,7 +207,7 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
         {
             if(!opModeIsActive() || isStopRequested()) break;
             DbgLog.msg("SJH: Starting segment %s at %4.2f", pathSegs[i].getName(),
-                    getOpModeElapsedTime());
+                    startTimer.seconds());
 
             //noinspection ConstantConditions
             if (SkipNextSegment)
@@ -233,13 +238,17 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
             curPos = null;
 
             if(curSeg.getStrtPt().getX() == curSeg.getTgtPt().getX() &&
-               curSeg.getStrtPt().getY() == curSeg.getTgtPt().getY())
+                    curSeg.getStrtPt().getY() == curSeg.getTgtPt().getY())
             {
                 continue;
             }
 
-            doEncoderTurn(curSeg); //quick but rough
-            if(gyroReady) doTurn(curSeg); //fine tune using gyro
+            robot.setDriveDir(curSeg.getDir());
+
+            DbgLog.msg("SJH: ENCODER TURN %s", curSeg.getName());
+            doEncoderTurn(curSeg.getFieldHeading()); //quick but rough
+            DbgLog.msg("SJH: GYRO TURN %s", curSeg.getName());
+            doTurn(curSeg.getFieldHeading()); //fine tune using gyro
             DbgLog.msg("SJH: Setting drive tuner to %4.2f", curSeg.getDrvTuner());
             drvTrn.setDrvTuner(curSeg.getDrvTuner());
             doMove(curSeg);
@@ -247,9 +256,10 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
 
             if(usePostTurn && pturn != null)
             {
-                DbgLog.msg("SJH POST TURN %s", curSeg.getName());
-                doEncoderPostTurn(pturn);
-                if(gyroReady) doPostTurn(pturn);
+                DbgLog.msg("SJH ENCODER POST TURN %s", curSeg.getName());
+                doEncoderTurn(pturn);
+                DbgLog.msg("SJH: GRYO POST TURN %s", curSeg.getName());
+                doTurn(pturn);
             }
 
             if(!opModeIsActive() || isStopRequested())
@@ -286,7 +296,7 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
                     break;
 
                 case RST_PUSHER:
-                    robot.pusher.setPosition(ZER_PUSH_POS);
+                    robot.lpusher.setPosition(L_DN_PUSH_POS);
                     break;
 
                 case NOTHING:
@@ -302,7 +312,7 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
         Point2d spt = seg.getStrtPt();
         Point2d ept = seg.getTgtPt();
         double  fhd = seg.getFieldHeading();
-        Segment.SegDir dir = seg.getDir();
+        ShelbyBot.DriveDir dir = seg.getDir();
         double speed = seg.getSpeed();
         double fudge = seg.getDrvTuner();
         Segment.TargetType ttype = seg.getTgtType();
@@ -314,7 +324,7 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
                 "DRIVE", snm, spt, ept, fhd, speed, dir);
 
         Drivetrain.Direction ddir = Drivetrain.Direction.FORWARD;
-        if (dir == Segment.SegDir.REVERSE) ddir = Drivetrain.Direction.REVERSE;
+
         timer.reset();
 
         if(robot.colorSensor != null && seg.getTgtType() == Segment.TargetType.COLOR)
@@ -333,7 +343,7 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
             drvTrn.move(speed);
 
             while(opModeIsActive() &&
-                  !isStopRequested())
+                    !isStopRequested())
             {
                 int r = robot.colorSensor.red();
                 int g = robot.colorSensor.green();
@@ -367,25 +377,19 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
         }
         else
         {
-            int targetHdg = (int)Math.round(seg.getFieldHeading());
-            if(dir == Segment.SegDir.REVERSE)
-            {
-                targetHdg += 180;
-                while(targetHdg >   180) { targetHdg -= 180; }
-                while(targetHdg <= -180) { targetHdg += 180; }
-            }
+            int targetHdg = (int) Math.round(seg.getFieldHeading());
             drvTrn.driveToPointLinear(ept, speed, ddir, targetHdg);
         }
 
-        RobotLog.ii("SJH", "Completed move %s. Time: %6.3f HDG: %5.2f",
-                seg.getName(), timer.time(), getGryoFhdg());
+        RobotLog.ii("SJH", "Completed move %s. Time: %6.3f HDG: %4d",
+                seg.getName(), timer.time(), robot.getGyroFhdg());
     }
 
     private void turnColorOn()
     {
         ModernRoboticsI2cColorSensor cs = robot.colorSensor;
         cs.getI2cController().registerForI2cPortReadyCallback(robot.colorSensor,
-                                                 robot.getColorPort());
+                robot.getColorPort());
 
         sleep(50);
         cs.enableLed(true);
@@ -399,25 +403,13 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
         cs.getI2cController().deregisterForPortReadyCallback(robot.getColorPort());
     }
 
-    private double getGryoFhdg()
-    {
-        double cHdg = robot.gyro.getIntegratedZValue() + initHdg;
-
-        while (cHdg <= -180.0) cHdg += 360.0;
-        while (cHdg >   180.0) cHdg -= 360.0;
-
-        return cHdg;
-    }
-
-    private void doEncoderPostTurn(double fHdg)
+    private void doEncoderTurn(double fHdg)
     {
         if(!opModeIsActive() || isStopRequested()) return;
-        double cHdg = getGryoFhdg();
-        double tHdg = Math.round(fHdg);
+        int cHdg = robot.getGyroFhdg();
+        int tHdg = (int) Math.round(fHdg);
         double angle = tHdg - cHdg;
-        DbgLog.msg("SJH: doEncoderPostTurn CHDG %4.1f THDG %4.1f",
-                cHdg,
-                tHdg);
+        DbgLog.msg("SJH: doEncoderTurn CHDG %4d THDG %4d", cHdg, tHdg);
 
         while (angle <= -180.0) angle += 360.0;
         while (angle >   180.0) angle -= 360.0;
@@ -427,45 +419,19 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
         dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
         timer.reset();
         drvTrn.ctrTurnLinear(angle, DEF_ENCTRN_PWR);
-        cHdg = getGryoFhdg();
-        DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f CHDG: %5.2f",
+        cHdg = robot.getGyroFhdg();
+        DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f CHDG: %4d",
                 angle, timer.time(), cHdg);
     }
 
-    private void doEncoderTurn(Segment seg)
+    private void doTurn(double fHdg)
     {
+        if(!gyroReady) return;
         if(!opModeIsActive() || isStopRequested()) return;
-        if (seg.getDir() == Segment.SegDir.REVERSE) return;
-        double cHdg = getGryoFhdg();
-        double tHdg = Math.round(seg.getFieldHeading());
-        double angle = tHdg - cHdg;
-        DbgLog.msg("SJH: doEncoderTurn %s CHDG %4.1f THDG %4.1f",
-                seg.getName(),
-                cHdg,
-                tHdg);
+        int cHdg = robot.getGyroFhdg();
+        int tHdg = (int) Math.round(fHdg);
 
-        while (angle <= -180.0) angle += 360.0;
-        while (angle >   180.0) angle -= 360.0;
-        if(Math.abs(angle) <= 5.0) return;
-
-        DbgLog.msg("SJH: Turn %5.2f", angle);
-        dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
-        timer.reset();
-        drvTrn.ctrTurnLinear(angle, DEF_ENCTRN_PWR);
-        cHdg = getGryoFhdg();
-        DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f CHDG: %5.2f",
-                angle, timer.time(), cHdg);
-    }
-
-    private void doPostTurn(double fHdg)
-    {
-        if(!opModeIsActive() || isStopRequested()) return;
-        double cHdg = getGryoFhdg();
-        double tHdg = Math.round(fHdg);
-
-        DbgLog.msg("SJH: do post GyroTurn CHDG %4.1f THDG %4.1f",
-                cHdg,
-                tHdg);
+        DbgLog.msg("SJH: doGyroTurn CHDG %4d THDG %4d", cHdg, tHdg);
 
         if(Math.abs(tHdg-cHdg) <= 1.0)
             return;
@@ -473,42 +439,18 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
         timer.reset();
         drvTrn.ctrTurnToHeading(tHdg, DEF_GYRTRN_PWR);
 
-        cHdg = getGryoFhdg();
-        DbgLog.msg("SJH Completed post turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
+        cHdg = robot.getGyroFhdg();
+        DbgLog.msg("SJH Completed turnGyro %4d. Time: %6.3f CHDG: %4d",
                 tHdg, timer.time(), cHdg);
     }
 
-    private void doTurn(Segment seg)
-    {
-        if(!opModeIsActive() || isStopRequested()) return;
-        double cHdg = getGryoFhdg();
-        double tHdg = Math.round(seg.getFieldHeading());
-        if(seg.getDir() == Segment.SegDir.REVERSE)
-            return;
-
-        DbgLog.msg("SJH: doGyroTurn %s CHDG %4.1f THDG %4.1f",
-                seg.getName(),
-                cHdg,
-                tHdg);
-
-        if(Math.abs(tHdg-cHdg) <= 1.0)
-            return;
-
-        timer.reset();
-        drvTrn.ctrTurnToHeading(tHdg, DEF_GYRTRN_PWR);
-
-        cHdg = getGryoFhdg();
-        DbgLog.msg("SJH Completed turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
-                tHdg, timer.time(), cHdg);
-    }
-
-    private BeaconDetector.BeaconSide findPushSide(BeaconDetector.BeaconSide bSide,
-                                                   BeaconDetector.BeaconSide rSide)
+    private BeaconFinder.BeaconSide findPushSide(BeaconFinder.BeaconSide bSide,
+                                                 BeaconFinder.BeaconSide rSide)
     {
         int blue_led = 0;
         int red_led  = 1;
 
-        BeaconDetector.BeaconSide pushSide = BeaconDetector.BeaconSide.UNKNOWN;
+        BeaconFinder.BeaconSide pushSide = BeaconFinder.BeaconSide.UNKNOWN;
 
         if (bSide == rSide) return pushSide;
 
@@ -535,22 +477,25 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
         return pushSide;
     }
 
-    private void setPusher(BeaconDetector.BeaconSide pushSide)
+    private void setPusher(BeaconFinder.BeaconSide pushSide)
     {
         dashboard.displayPrintf(5, "BUTTON: %s", pushSide);
-        if (pushSide == BeaconDetector.BeaconSide.LEFT)
+        if (pushSide == BeaconFinder.BeaconSide.LEFT)
         {
-            robot.pusher.setPosition(LFT_PUSH_POS);
+            robot.lpusher.setPosition(L_UP_PUSH_POS);
+            robot.rpusher.setPosition(R_DN_PUSH_POS);
             DbgLog.msg("SJH: Pushing left button");
         }
-        else if (pushSide == BeaconDetector.BeaconSide.RIGHT)
+        else if (pushSide == BeaconFinder.BeaconSide.RIGHT)
         {
-            robot.pusher.setPosition(RGT_PUSH_POS);
+            robot.rpusher.setPosition(R_UP_PUSH_POS);
+            robot.lpusher.setPosition(L_DN_PUSH_POS);
             DbgLog.msg("SJH: Pushing right button");
         }
         else
         {
-            robot.pusher.setPosition(CTR_PUSH_POS);
+            robot.lpusher.setPosition(L_DN_PUSH_POS);
+            robot.rpusher.setPosition(R_DN_PUSH_POS);
             DbgLog.msg("SJH: Not Pushing A Button");
         }
     }
@@ -560,18 +505,18 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
         DbgLog.msg("SJH: FIND BEACON ORDER!!!");
         dashboard.displayPrintf(2, "STATE: %s", "BEACON FIND");
         int timeout = 2000;
-        BeaconDetector.BeaconSide blueSide = BeaconDetector.BeaconSide.UNKNOWN;
-        BeaconDetector.BeaconSide redSide = BeaconDetector.BeaconSide.UNKNOWN;
-        BeaconDetector.BeaconSide pushSide = BeaconDetector.BeaconSide.UNKNOWN;
+        BeaconFinder.BeaconSide blueSide = BeaconFinder.BeaconSide.UNKNOWN;
+        BeaconFinder.BeaconSide redSide  = BeaconFinder.BeaconSide.UNKNOWN;
+        BeaconFinder.BeaconSide pushSide = BeaconFinder.BeaconSide.UNKNOWN;
 
-        bd.startSensing();
+        imgProc.startSensing();
         sleep( 200 );
 
         ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
 
         while (opModeIsActive()                              &&
-               pushSide == BeaconDetector.BeaconSide.UNKNOWN &&
-               itimer.milliseconds() < timeout)
+                pushSide == BeaconFinder.BeaconSide.UNKNOWN   &&
+                itimer.milliseconds() < timeout)
         {
             blueSide = bd.getBluePosSide();
             redSide  = bd.getRedPosSide();
@@ -580,7 +525,7 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
         }
 
         setPusher(pushSide);
-        if(push && pushSide != BeaconDetector.BeaconSide.UNKNOWN)
+        if(push && pushSide != BeaconFinder.BeaconSide.UNKNOWN)
         {
             double tgtDist = 9.5;
             Point2d touchStart = seg.getTgtPt();
@@ -603,6 +548,7 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
 
             boolean drivePoint = false;
             int dcount;
+            //noinspection ConstantConditions
             if(drivePoint) //driveToPointLinear will correct hdg
             {
                 dcount = drvTrn.driveToPointLinear(touchEnd, 0.2, Drivetrain.Direction.FORWARD, targetHdg);
@@ -617,9 +563,9 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
             drvTrn.setCurrPt(touchStart);
         }
 
-        bd.stopSensing();
+        imgProc.stopSensing();
 
-        return pushSide != BeaconDetector.BeaconSide.UNKNOWN;
+        return pushSide != BeaconFinder.BeaconSide.UNKNOWN;
     }
 
     private void do_findAndPushBeacon()
@@ -629,9 +575,9 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
         String beaconStep = "FORWARD";
         String driveStep = "INIT";
 
-        BeaconDetector.BeaconSide blueSide = BeaconDetector.BeaconSide.UNKNOWN;
-        BeaconDetector.BeaconSide redSide = BeaconDetector.BeaconSide.UNKNOWN;
-        BeaconDetector.BeaconSide pushSide = BeaconDetector.BeaconSide.UNKNOWN;
+        BeaconFinder.BeaconSide blueSide = BeaconFinder.BeaconSide.UNKNOWN;
+        BeaconFinder.BeaconSide redSide  = BeaconFinder.BeaconSide.UNKNOWN;
+        BeaconFinder.BeaconSide pushSide = BeaconFinder.BeaconSide.UNKNOWN;
         boolean allDone = false;
         double baseSpeed = 0.35;
         double bConf, zPos, xPos, nPos = 0, rDv = 0, lDv = 0;
@@ -640,8 +586,7 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
         double curDistCount = 0.0;
         double bailPos = -1;
 
-        startVision();
-        bd.startSensing();
+        imgProc.startSensing();
         sleep( 500 );
 
         while( opModeIsActive() && !allDone ) {
@@ -649,19 +594,19 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
             double desHdg = 180;
             if (alliance == Field.Alliance.BLUE) desHdg = 90;
 
-            cHdg = getGryoFhdg();
+            cHdg = robot.getGyroFhdg();
             if(cHdg < 0) cHdg += 360.0;
-            //TODO: Determine which direction should go with sign of hErr
+            //Determine which direction should go with sign of hErr
             hErr = desHdg - cHdg;
 
             curDistCount = (robot.leftMotor.getCurrentPosition() +
-                            robot.rightMotor.getCurrentPosition()) / 2.0;
+                    robot.rightMotor.getCurrentPosition()) / 2.0;
 
             switch ( beaconStep )
             {
                 case "FIND":
 
-                    bd.logDebug();
+                    imgProc.logDebug();
 
                     if ( bd.getBeaconConf() > 0.25 )
                     {
@@ -678,7 +623,7 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
 
                 case "FORWARD":
 
-                    bd.logDebug();
+                    imgProc.logDebug();
 
                     blueSide = bd.getBluePosSide();
                     redSide = bd.getRedPosSide();
@@ -774,10 +719,10 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
 
                     // Good when the beacon is in view enough or at least
                     // some driving done.
-                    if ( pushSide == BeaconDetector.BeaconSide.UNKNOWN &&
-                            blueSide != BeaconDetector.BeaconSide.UNKNOWN &&
-                            redSide != BeaconDetector.BeaconSide.UNKNOWN &&
-                                 (driveStep.equals("ALIGN") || driveStep.equals("DRIVE")))
+                    if ( pushSide == BeaconFinder.BeaconSide.UNKNOWN &&
+                            blueSide != BeaconFinder.BeaconSide.UNKNOWN &&
+                            redSide != BeaconFinder.BeaconSide.UNKNOWN &&
+                            (driveStep.equals("ALIGN") || driveStep.equals("DRIVE")))
                     {
                         if ( alliance == Field.Alliance.BLUE )
                         {
@@ -791,11 +736,13 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
                         switch ( pushSide ){
 
                             case LEFT:
-                                robot.pusher.setPosition(LFT_PUSH_POS);
+                                robot.lpusher.setPosition(L_UP_PUSH_POS);
+                                robot.rpusher.setPosition(R_DN_PUSH_POS);
                                 break;
 
                             case RIGHT:
-                                robot.pusher.setPosition(RGT_PUSH_POS);
+                                robot.rpusher.setPosition(R_UP_PUSH_POS);
+                                robot.lpusher.setPosition(L_DN_PUSH_POS);
                                 break;
                         }
 
@@ -805,7 +752,7 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
 
                     if ( zPos > 0.9 || driveStep.equals("READY") )
                     {
-                        if ( pushSide == BeaconDetector.BeaconSide.UNKNOWN )
+                        if ( pushSide == BeaconFinder.BeaconSide.UNKNOWN )
                         {
                             beaconStep = "BACKUP";
                             bailPos = curDistCount;
@@ -824,7 +771,7 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
                         DbgLog.msg("SJH: /BEACON/FORWARD > CONFIDENCE DROPPED UNDER THREASHOLD %5.2f", bConf );
                     }
                     else if ( drvTrn.countsToDistance( curDistCount ) > 10.0 &&
-                              drvTrn.areDriveMotorsStuck() && drvTrn.isBusy() )
+                            drvTrn.areDriveMotorsStuck() && drvTrn.isBusy() )
                     {
                         beaconStep = "BACKUP";
                         bailPos = curDistCount;
@@ -860,7 +807,7 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
                             0.5, Drivetrain.Direction.REVERSE );
 
                     DbgLog.msg("SJH: /BEACON/BACKUP > BACKED UP" );
-                    robot.pusher.setPosition(ZER_PUSH_POS);
+                    robot.lpusher.setPosition(L_DN_PUSH_POS);
                     beaconStep = "LEAVE";
 
                     break;
@@ -876,8 +823,7 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
             robot.waitForTick( 10 );
         }
 
-        bd.stopSensing();
-        stopVision();
+        imgProc.stopSensing();
         drvTrn.stopAndReset();
 
         DbgLog.msg("SJH: /BEACON/ > MISSION COMPLETE");
@@ -931,28 +877,26 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
         // Create the menus.
         //
         //FtcChoiceMenu strategyMenu = new FtcChoiceMenu("STRATEGY:", null, this);
-        FtcChoiceMenu startPosMenu = new FtcChoiceMenu("START:", null, this);
-        FtcChoiceMenu pushMenu     = new FtcChoiceMenu("PUSH:", startPosMenu, this);
-        FtcChoiceMenu parkMenu     = new FtcChoiceMenu("PARK:", pushMenu, this);
-        FtcChoiceMenu allianceMenu = new FtcChoiceMenu("ALLIANCE:", parkMenu, this);
-        FtcChoiceMenu teamMenu     = new FtcChoiceMenu("TEAM:", allianceMenu, this);
-        FtcChoiceMenu routeMenu    = new FtcChoiceMenu("FLY2LIGHT:", teamMenu, this);
+        FtcChoiceMenu<Field.StartPos> startPosMenu =
+                new FtcChoiceMenu<>("START:", null, this);
+        FtcChoiceMenu<Field.BeaconChoice> pushMenu =
+                new FtcChoiceMenu<>("PUSH:", startPosMenu, this);
+        FtcChoiceMenu<Field.ParkChoice> parkMenu   =
+                new FtcChoiceMenu<>("PARK:", pushMenu, this);
+        FtcChoiceMenu<Field.Alliance> allianceMenu =
+                new FtcChoiceMenu<>("ALLIANCE:", parkMenu, this);
+        FtcChoiceMenu<Team> teamMenu               =
+                new FtcChoiceMenu<>("TEAM:", allianceMenu, this);
+        FtcChoiceMenu<Boolean> routeMenu           =
+                new FtcChoiceMenu<>("FLY2LIGHT:", teamMenu, this);
         //FtcValueMenu powerMenu     = new FtcValueMenu("SHOOTPOWER:", teamMenu, this,
         //                                                    0.0, 1.0, 0.05, 0.55, "%5.2f");
         FtcValueMenu delayMenu     = new FtcValueMenu("DELAY:", routeMenu, this,
-                                                             0.0, 20.0, 1.0, 0.0, "%5.2f");
+                0.0, 20.0, 1.0, 0.0, "%5.2f");
 
-//        strategyMenu.addChoice("Shoot_Push_ParkCenter",      Field.AutoStrategy.SHOOT_PUSH_PARKCNTR,    allianceMenu);
-//        strategyMenu.addChoice("Shoot_Push_ParkCorner",      Field.AutoStrategy.SHOOT_PUSH_PARKCRNR,    allianceMenu);
-//        strategyMenu.addChoice("Shoot_ParkCenter",           Field.AutoStrategy.SHOOT_PARKCNTR,         allianceMenu);
-//        strategyMenu.addChoice("Shoot_ParkCorner",           Field.AutoStrategy.SHOOT_PARKCRNR,         allianceMenu);
-//        strategyMenu.addChoice("AngleShoot_Push_ParkCenter", Field.AutoStrategy.ANGSHOOT_PUSH_PARKCNTR, allianceMenu);
-//        strategyMenu.addChoice("AngleShoot_Push_ParkCorner", Field.AutoStrategy.ANGSHOOT_PUSH_PARKCRNR, allianceMenu);
-//        strategyMenu.addChoice("AngleShoot_ParkCenter",      Field.AutoStrategy.ANGSHOOT_PARKCNTR,      allianceMenu);
-//        strategyMenu.addChoice("AngleShoot_ParkCorner",      Field.AutoStrategy.ANGSHOOT_PARKCRNR,      allianceMenu);
-
-        startPosMenu.addChoice("Start_A", Field.StartPos.START_A, pushMenu);
-        startPosMenu.addChoice("Start_B", Field.StartPos.START_B, pushMenu);
+        startPosMenu.addChoice("Start_A", Field.StartPos.START_A_SWEEPER, pushMenu);
+        startPosMenu.addChoice("Start_B", Field.StartPos.START_B_SWEEPER, pushMenu);
+        startPosMenu.addChoice("Start_R", Field.StartPos.START_R_PUSHER,  pushMenu);
         pushMenu.addChoice("BOTH", Field.BeaconChoice.BOTH, parkMenu);
         pushMenu.addChoice("NEAR", Field.BeaconChoice.NEAR, parkMenu);
         pushMenu.addChoice("FAR", Field.BeaconChoice.FAR, parkMenu);
@@ -960,6 +904,7 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
 
         parkMenu.addChoice("CENTER", Field.ParkChoice.CENTER_PARK, allianceMenu);
         parkMenu.addChoice("CORNER", Field.ParkChoice.CORNER_PARK, allianceMenu);
+        parkMenu.addChoice("DEFEND", Field.ParkChoice.DEFEND_PARK, allianceMenu);
 
         allianceMenu.addChoice("RED",  Field.Alliance.RED, teamMenu);
         allianceMenu.addChoice("BLUE", Field.Alliance.BLUE, teamMenu);
@@ -970,28 +915,24 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
         routeMenu.addChoice("TRUE",  Boolean.TRUE,  delayMenu);
         routeMenu.addChoice("FALSE", Boolean.FALSE, delayMenu);
 
-        //powerMenu.setChildMenu(delayMenu);
-
         //
         // Walk the menu tree starting with the strategy menu as the root
         // menu and get user choices.
         //
-        FtcMenu.walkMenuTree(startPosMenu);
+        FtcMenu.walkMenuTree(startPosMenu, this);
+
         //
         // Set choices variables.
         //
-        //autoStrategy = (Field.AutoStrategy)strategyMenu.getCurrentChoiceObject();
 
-        startPos = (Field.StartPos)startPosMenu.getCurrentChoiceObject();
-        beaconChoice = (Field.BeaconChoice)pushMenu.getCurrentChoiceObject();
-        parkChoice = (Field.ParkChoice)parkMenu.getCurrentChoiceObject();
-        alliance = (Field.Alliance)allianceMenu.getCurrentChoiceObject();
-        team = (Team)teamMenu.getCurrentChoiceObject();
-        //DEF_SHT_PWR = powerMenu.getCurrentValue();
-        useFly2Light = (Boolean)routeMenu.getCurrentChoiceObject();
+        startPos = startPosMenu.getCurrentChoiceObject();
+        beaconChoice = pushMenu.getCurrentChoiceObject();
+        parkChoice = parkMenu.getCurrentChoiceObject();
+        alliance = allianceMenu.getCurrentChoiceObject();
+        team = teamMenu.getCurrentChoiceObject();
+        useFly2Light = routeMenu.getCurrentChoiceObject();
         delay = delayMenu.getCurrentValue();
 
-        //dashboard.displayPrintf(0, "STRATEGY: %s", autoStrategy);
         dashboard.displayPrintf(0, "START: %s", startPos);
         dashboard.displayPrintf(1, "PUSH: %s", beaconChoice);
         dashboard.displayPrintf(2, "PARK: %s", parkChoice);
@@ -1008,14 +949,6 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
         DbgLog.msg("SJH: DELAY    %4.2f", delay);
     }
 
-    public Mat processFrame(Mat rgba, Mat gray) {
-
-        Mat flip = rgba.clone();
-        Core.flip(rgba, flip, 1);
-        bd.setImage( rgba );
-
-        return bd.drawBeacon();
-    }
 
     private enum Team
     {
@@ -1023,14 +956,13 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
         SNOWMAN
     }
 
-    private final static double ZER_PUSH_POS = 0.1;
-    private final static double RGT_PUSH_POS = 0.15;
-    private final static double LFT_PUSH_POS = 0.90;
-    private final static double CTR_PUSH_POS = 0.1;
+    private final static double L_DN_PUSH_POS = 1.0;
+    private final static double R_DN_PUSH_POS = 0.0;
+    private final static double L_UP_PUSH_POS = 0.0;
+    private final static double R_UP_PUSH_POS = 1.0;
 
-    //private final static double DEF_DRV_PWR  = 0.7;
-    private final static double DEF_ENCTRN_PWR  = 0.7; //0.70
-    private final static double DEF_GYRTRN_PWR = 0.48; //0.48
+    private final static double DEF_ENCTRN_PWR  = 0.7;
+    private final static double DEF_GYRTRN_PWR = 0.48;
 
     private final static double DEF_SWP_PWR = 1.0;
     private final static double DEF_ELV_PWR = 0.5;
@@ -1039,43 +971,35 @@ public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButto
 
     private ShelbyBot   robot = new ShelbyBot();
     private ElapsedTime timer = new ElapsedTime();
+    private ElapsedTime startTimer = new ElapsedTime();
     private Drivetrain drvTrn = new Drivetrain();
 
-    private JavaCameraView openCVCamera;
-    private BeaconDetector bd = new BeaconDetector();
+    private BeaconFinder bd;
 
     private static Point2d curPos;
     private static double  curHdg;
+    private int initHdg = 0;
+    private boolean gyroReady;
+    private boolean usePostTurn = true;
 
-    private static Field.AutoStrategy autoStrategy =
-            Field.AutoStrategy.SHOOT_PARKCNTR;
-
-    private static Field.StartPos startPos = Field.StartPos.START_A;
+    private static Field.StartPos startPos = Field.StartPos.START_A_SWEEPER;
     private static Field.BeaconChoice beaconChoice = Field.BeaconChoice.NEAR;
     private static Field.ParkChoice parkChoice = Field.ParkChoice.CENTER_PARK;
     private static Field.Alliance alliance = Field.Alliance.RED;
-    private static Team team = Team.SONIC;
+    private static Team team = Team.SNOWMAN;
     private static double DEF_SHT_PWR = 0.85;
 
-    private HalDashboard dashboard;
-
-    private double initHdg = 0.0;
-
-    private boolean scanImage = false;
-    private boolean useImageLoc = false;
-    private boolean usePostTurn = true;
-
-    private boolean gyroReady;
+    private static HalDashboard dashboard = null;
 
     private int RED_THRESH = 15;
     private int GRN_THRESH = 15;
     private int BLU_THRESH = 15;
-
     private int COLOR_THRESH = 40;
 
     private double delay = 0.0;
 
     private boolean useFly2Light = false;
+    private boolean useImageLoc  = false;
 
     private boolean firstInState = true;
 }
