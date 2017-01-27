@@ -6,7 +6,6 @@ import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cColorSensor;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DeviceInterfaceModule;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -40,14 +39,18 @@ class ShelbyBot
     DcMotor  sweepMotor  = null;
     DcMotor  shotmotor1  = null;
     DcMotor  shotmotor2  = null;
-    Servo    pusher      = null;
-    Servo    flicker     = null;
+    Servo    lpusher     = null;
+    Servo    rpusher     = null;
+
     ModernRoboticsI2cGyro gyro       = null;
     ModernRoboticsI2cColorSensor colorSensor = null;
 
     DeviceInterfaceModule dim = null;
 
     final static int    ENCODER_CPR = 1120;     //Encoder Counts per Revolution
+
+    final static DcMotor.Direction  LEFT_DIR = DcMotor.Direction.REVERSE;
+    final static DcMotor.Direction RIGHT_DIR = DcMotor.Direction.FORWARD;
 
     /* local OpMode members. */
     private ElapsedTime period  = new ElapsedTime();
@@ -68,8 +71,9 @@ class ShelbyBot
         sweepMotor  = hwMap.dcMotor.get("sweepmotor");
         shotmotor1  = hwMap.dcMotor.get("leftshooter");
         shotmotor2  = hwMap.dcMotor.get("rightshooter");
-        pusher      = hwMap.servo.get("pusher");
-        flicker     = hwMap.servo.get("flicker");
+        lpusher     = hwMap.servo.get("lpusher");
+        rpusher     = hwMap.servo.get("rpusher");
+
         gyro        = (ModernRoboticsI2cGyro)hwMap.gyroSensor.get("gyro");
         colorSensor = (ModernRoboticsI2cColorSensor)hwMap.colorSensor.get("color");
 
@@ -78,8 +82,8 @@ class ShelbyBot
 
         // FORWARD for CCW drive shaft rotation if using AndyMark motors
         // REVERSE for  CW drive shaft rotation if using AndyMark motors
-        if(leftMotor  != null)  leftMotor.setDirection(DcMotor.Direction.FORWARD);
-        if(rightMotor != null) rightMotor.setDirection(DcMotor.Direction.REVERSE);
+        if(leftMotor  != null)  leftMotor.setDirection(LEFT_DIR);
+        if(rightMotor != null) rightMotor.setDirection(RIGHT_DIR);
         if(elevMotor  != null)  elevMotor.setDirection(DcMotor.Direction.REVERSE);
         if(sweepMotor != null) sweepMotor.setDirection(DcMotor.Direction.REVERSE);
         if(shotmotor1 != null) shotmotor1.setDirection(DcMotor.Direction.FORWARD);
@@ -122,8 +126,11 @@ class ShelbyBot
         }
     }
 
-    void setDriveDir (driveDir ddir)
+    void setDriveDir (DriveDir ddir)
     {
+        if(initDriveDir == null)
+            initDriveDir = ddir;
+
         if(this.ddir == ddir)
         {
             return;
@@ -133,46 +140,63 @@ class ShelbyBot
 
         DbgLog.msg("SJH: Changing to " + ddir);
 
-        if(ddir == driveDir.INTAKE)
+        if(ddir == DriveDir.SWEEPER)
         {
             leftMotor   = hwMap.dcMotor.get("leftdrive");
             rightMotor  = hwMap.dcMotor.get("rightdrive");
-            leftMotor.setDirection(DcMotor.Direction.FORWARD);
-            rightMotor.setDirection(DcMotor.Direction.REVERSE);
         }
         else
         {
             leftMotor   = hwMap.dcMotor.get("rightdrive");
             rightMotor  = hwMap.dcMotor.get("leftdrive");
-            leftMotor.setDirection(DcMotor.Direction.FORWARD);
-            rightMotor.setDirection(DcMotor.Direction.REVERSE);
         }
+        leftMotor.setDirection(LEFT_DIR);
+        rightMotor.setDirection(RIGHT_DIR);
     }
 
     void invertDriveDir()
     {
-        if(ddir == driveDir.INTAKE)
+        if(ddir == DriveDir.SWEEPER)
         {
-            DbgLog.msg("SJH: Changing from INTAKE FWD to NONINTAKE FWD");
-            setDriveDir(driveDir.NONINTAKE);
+            DbgLog.msg("SJH: Changing from SWEEPER FWD to PUSHER FWD");
+            setDriveDir(DriveDir.PUSHER);
         }
         else
         {
-            DbgLog.msg("SJH: Changing from NONINTAKE FWD to INTAKE FWD");
-            setDriveDir(driveDir.INTAKE);
+            DbgLog.msg("SJH: Changing from PUSHER FWD to SWEEPER FWD");
+            setDriveDir(DriveDir.SWEEPER);
         }
     }
 
-    enum driveDir
+    void setInitHdg(double initHdg)
     {
-       INTAKE,
-       NONINTAKE
+        this.initHdg = (int) Math.round(initHdg);
+    }
+
+    public int getGyroFhdg()
+    {
+        int dirHdgAdj = 0;
+        if(ddir != initDriveDir) dirHdgAdj = 180;
+        int cHdg = gyro.getIntegratedZValue() + initHdg + dirHdgAdj;
+
+        while (cHdg <= -180) cHdg += 360;
+        while (cHdg >   180) cHdg -= 360;
+
+        return cHdg;
+    }
+
+    enum DriveDir
+    {
+        SWEEPER,
+        PUSHER
     }
 
     int getColorPort()
     {
         return colorPort;
     }
+
+    DriveDir getDriveDir() { return ddir; }
 
     void setOpMode(LinearOpMode op)
     {
@@ -207,15 +231,18 @@ class ShelbyBot
     private static final float BOT_LENGTH      = 18.0f;
 
     //Distance from ctr of rear wheel to tail
-    static final float REAR_OFFSET             = 3.0f;
+    static final float REAR_OFFSET             = 9.0f;
     static final float FRNT_OFFSET             = BOT_LENGTH - REAR_OFFSET;
     private static final float CAMERA_X_IN_BOT = 12.5f  * MM_PER_INCH;
     private static final float CAMERA_Y_IN_BOT = 0f; //12.5f * MM_PER_INCH;
     private static final float CAMERA_Z_IN_BOT = 0f; //15.5f * MM_PER_INCH;
 
     private int colorPort = 0;
-    private driveDir ddir = driveDir.INTAKE;
+    private DriveDir ddir = DriveDir.SWEEPER;
+    private DriveDir initDriveDir = null;
     private HardwareMap hwMap = null;
+
+    private int initHdg = 0;
 
     //With phone laid flat in portrait mode with screen up:
     //The phone axis is 0,0,0 at Camera (using front camera)

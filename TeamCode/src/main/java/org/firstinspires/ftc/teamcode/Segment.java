@@ -12,14 +12,14 @@ class Segment
         this.tgtPt  = end;
         this.fldHdg = angle();
         len = start.distance(end);
-        this.dir = SegDir.FORWARD;
+        this.dir = ShelbyBot.DriveDir.SWEEPER;
         this.speed = DEF_SEG_SPD;
         this.act = Action.NOTHING;
         this.drvTuner = 1.0;
         this.tgtType = TargetType.ENCODER;
     }
 
-    SegDir getDir()
+    ShelbyBot.DriveDir getDir()
     {
         return dir;
     }
@@ -27,6 +27,7 @@ class Segment
     {
         return fldHdg;
     }
+
     String getName()
     {
         return name;
@@ -47,7 +48,7 @@ class Segment
     TargetType getTgtType() { return tgtType; }
 
     void setAction(Action act) { this.act = act; }
-    void setDir(SegDir dir)
+    void setDir(ShelbyBot.DriveDir dir)
     {
         this.dir = dir;
     }
@@ -83,7 +84,7 @@ class Segment
                 name, strtPt, tgtPt, dir, fldHdg);
     }
 
-    enum SegDir {FORWARD, REVERSE}
+    //enum SegDir {FORWARD, REVERSE}
     enum Action {NOTHING, SHOOT, SCAN_IMAGE, FIND_BEACON, PUSH, RST_PUSHER}
     enum TargetType{ENCODER, TIME, COLOR}
     private static final double DEF_SEG_SPD = 0.5;
@@ -91,7 +92,7 @@ class Segment
     private Point2d strtPt;
     private Point2d tgtPt;
     private String  name;
-    private SegDir dir = SegDir.FORWARD;
+    private ShelbyBot.DriveDir dir;
     private double speed;
     private double len = 0;
     private Action act = Action.NOTHING;
