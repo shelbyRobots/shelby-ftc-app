@@ -1,18 +1,10 @@
 package org.firstinspires.ftc.teamcode;
 
-import android.app.Activity;
-
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.JavaCameraView;
-import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 
@@ -21,19 +13,19 @@ import org.opencv.core.Mat;
  */
 @SuppressWarnings("WeakerAccess")
 @Autonomous(name="OpenCVAuton", group ="Test")
-public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.CvCameraViewListener2 {
-    private JavaCameraView openCVCamera;
+public class OpenCVAuton extends VisionOpModeCore {
 
     private BeaconDetector bd = new BeaconDetector();
     private ShelbyBot   robot = new ShelbyBot();
     private Drivetrain drvTrn = new Drivetrain();
 
-    private boolean useMotor  = true;
+    private boolean useMotor  = false;
     private boolean gyroReady = false;
-    private boolean follow    = true;
+    private boolean follow    = false;
 
-    public void runOpMode() {
-
+    @Override
+    public void initRobot()
+    {
         if ( useMotor ) {
             robot.init(hardwareMap);
 
@@ -66,35 +58,12 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
             drvTrn.setGryoReady(gyroReady);
         }
 
-        BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(hardwareMap.appContext) {
-            @Override
-            public void onManagerConnected(int status) {
-                switch (status) {
-                    case LoaderCallbackInterface.SUCCESS: {
-                        openCVCamera.enableView();
-                    }
-                    break;
-                    default: {
-                        super.onManagerConnected(status);
-                    }
-                    break;
-                }
-            }
-        };
+        initVision();
+    }
 
-        openCVCamera = (JavaCameraView) ((Activity) hardwareMap.appContext).findViewById(R.id.surfaceView);
-        openCVCamera.setVisibility(CameraBridgeViewBase.VISIBLE);
-        openCVCamera.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_FRONT);
-        openCVCamera.setCvCameraViewListener(this);
-
-        if (!OpenCVLoader.initDebug()) {
-            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, hardwareMap.appContext, mLoaderCallback);
-        } else {
-            mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
-        }
-
-        waitForStart();
-
+    @Override
+    public void startMode()
+    {
         BeaconDetector.BeaconSide blueSide = BeaconDetector.BeaconSide.UNKNOWN;
         BeaconDetector.BeaconSide redSide = BeaconDetector.BeaconSide.UNKNOWN;
         BeaconDetector.BeaconSide pushSide = BeaconDetector.BeaconSide.UNKNOWN;
@@ -111,6 +80,7 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
         if ( useMotor )
             robot.gyro.resetZAxisIntegrator();
 
+        startVision();
         bd.startSensing();
 
         sleep( 200 );
@@ -295,10 +265,7 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
         }
 
         bd.stopSensing();
-
-        if (openCVCamera != null) {
-            openCVCamera.disableView();
-        }
+        stopVision();
     }
 
     private double getGryoFhdg()
@@ -311,21 +278,13 @@ public class OpenCVAuton extends LinearOpMode implements CameraBridgeViewBase.Cv
         return cHdg;
     }
 
-    public void onCameraViewStarted(int width, int height) {
-        DbgLog.msg("SJH: CAMERA VIEW STARTED");
-    }
+    public Mat processFrame(Mat rgba, Mat gray) {
 
-    public void onCameraViewStopped() {
-        DbgLog.msg("SJH: CAMERA VIEW STOPPED");
-    }
-
-    public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        Mat rgb = inputFrame.rgba();
-        Mat flip = rgb.clone();
-
-        Core.flip(rgb, flip, 1);
-        bd.setImage( flip );
+        Mat flip = rgba.clone();
+        Core.flip(rgba, flip, 1);
+        bd.setImage( rgba );
 
         return bd.drawBeacon();
     }
+
 }

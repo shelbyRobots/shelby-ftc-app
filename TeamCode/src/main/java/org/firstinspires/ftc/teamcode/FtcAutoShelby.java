@@ -1,7 +1,6 @@
 
 package org.firstinspires.ftc.teamcode;
 
-import android.app.Activity;
 import android.widget.TextView;
 
 import com.qualcomm.ftccommon.DbgLog;
@@ -9,23 +8,17 @@ import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cColorSensor;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DeviceInterfaceModule;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.JavaCameraView;
-import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 
 import ftclib.FtcChoiceMenu;
 import ftclib.FtcMenu;
-import ftclib.FtcOpMode;
 import ftclib.FtcValueMenu;
 import hallib.HalDashboard;
 
@@ -34,7 +27,7 @@ import hallib.HalDashboard;
 @SuppressWarnings({"unused", "ForLoopReplaceableByForEach"})
 @Autonomous(name="AutonShelby", group="Auton")
 //@Disabled
-public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, CameraBridgeViewBase.CvCameraViewListener2
+public class FtcAutoShelby extends VisionOpModeCore implements FtcMenu.MenuButtons
 {
     public FtcAutoShelby()
     {
@@ -50,6 +43,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
         FtcRobotControllerActivity act = (FtcRobotControllerActivity)(hardwareMap.appContext);
         dashboard.setTextView((TextView)act.findViewById(R.id.textOpMode));
         setup();
+        initVision();
     }
 
     @Override
@@ -104,33 +98,6 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
         sleep(50);
 
         turnColorOff();
-
-        BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(hardwareMap.appContext) {
-            @Override
-            public void onManagerConnected(int status) {
-                switch (status) {
-                    case LoaderCallbackInterface.SUCCESS: {
-                        openCVCamera.enableView();
-                    }
-                    break;
-                    default: {
-                        super.onManagerConnected(status);
-                    }
-                    break;
-                }
-            }
-        };
-
-        openCVCamera = (JavaCameraView) ((Activity) hardwareMap.appContext).findViewById(R.id.surfaceView);
-        openCVCamera.setVisibility(CameraBridgeViewBase.VISIBLE);
-        openCVCamera.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_FRONT);
-        openCVCamera.setCvCameraViewListener(this);
-
-        if (!OpenCVLoader.initDebug()) {
-            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, hardwareMap.appContext, mLoaderCallback);
-        } else {
-            mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
-        }
 
         if (robot.leftMotor  != null &&
             robot.rightMotor != null &&
@@ -673,6 +640,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
         double curDistCount = 0.0;
         double bailPos = -1;
 
+        startVision();
         bd.startSensing();
         sleep( 500 );
 
@@ -909,6 +877,7 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
         }
 
         bd.stopSensing();
+        stopVision();
         drvTrn.stopAndReset();
 
         DbgLog.msg("SJH: /BEACON/ > MISSION COMPLETE");
@@ -1039,20 +1008,11 @@ public class FtcAutoShelby extends FtcOpMode implements FtcMenu.MenuButtons, Cam
         DbgLog.msg("SJH: DELAY    %4.2f", delay);
     }
 
-    public void onCameraViewStarted(int width, int height) {
-        DbgLog.msg("SJH: CAMERA VIEW STARTED");
-    }
+    public Mat processFrame(Mat rgba, Mat gray) {
 
-    public void onCameraViewStopped() {
-        DbgLog.msg("SJH: CAMERA VIEW STOPPED");
-    }
-
-    public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        Mat rgb = inputFrame.rgba();
-        Mat flip = rgb.clone();
-
-        Core.flip(rgb, flip, 1);
-        bd.setImage( flip );
+        Mat flip = rgba.clone();
+        Core.flip(rgba, flip, 1);
+        bd.setImage( rgba );
 
         return bd.drawBeacon();
     }

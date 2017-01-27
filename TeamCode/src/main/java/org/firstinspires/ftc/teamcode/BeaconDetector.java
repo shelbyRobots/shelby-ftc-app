@@ -24,7 +24,10 @@ import java.util.List;
 
 public class BeaconDetector implements BeaconFinder
 {
-    private final static double MIN_COLOR_ZONE_AREA = 0.2; 	    // fraction of total image area
+    private final static double MIN_COLOR_ZONE_AREA = 0.2;// fraction of total image area
+    private final static double IMAGE_WIDTH = 864.0;
+    private final static double IMAGE_SCALE_FACTOR = IMAGE_WIDTH / 864.0;
+
 
     private Mat image;
     private Mat zonedImg;
@@ -140,7 +143,7 @@ public class BeaconDetector implements BeaconFinder
 
     private double scoreFit( Rect wb, Rect rb, Rect bb )
     {
-        double beac_w = 8.5;
+        double beac_w = 9.0;
         double beac_h = 6.5;
 
         double actl_beac_rt = beac_w / beac_h;
@@ -188,8 +191,8 @@ public class BeaconDetector implements BeaconFinder
         double beac_ctr = beacon_box.x + beacon_box.width / 2;
 
         beaconConf = beaconConfBuf.smooth( scoreFit( beacon_box, red_box, blue_box ) );
-        beaconPosX = beaconPosXBuf.smooth( beac_ctr - scrn_ctr );
-        beaconPosZ = beaconPosZBuf.smooth( (double) beacon_box.width / (double) image.cols() );
+        beaconPosZ = beaconPosZBuf.smooth( ((double) beacon_box.width * -0.0407 + 34.0829) / IMAGE_SCALE_FACTOR );
+        beaconPosX = beaconPosXBuf.smooth( (beac_ctr - scrn_ctr) / (864.0 / ( 1.3 * beaconPosZ - 2.4)));
 
         // Keep in mind that we flip the image before
         // processing to make it easier to visualize
