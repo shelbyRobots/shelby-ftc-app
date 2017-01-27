@@ -115,8 +115,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
 
         if (robot.leftMotor  != null &&
-            robot.rightMotor != null &&
-            robot.gyro       != null)
+                robot.rightMotor != null &&
+                robot.gyro       != null)
         {
             LinearOpMode inst = this;
             drvTrn.init(robot);
@@ -136,7 +136,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             boolean gyroCalibTimedout = false;
             gyroTimer.reset();
             while (!isStopRequested() &&
-                   robot.gyro.isCalibrating())
+                    robot.gyro.isCalibrating())
             {
                 sleep(50);
                 if(gyroTimer.seconds() > gyroInitTimout)
@@ -173,7 +173,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         drvTrn.setCurrPt(currPoint);
         drvTrn.setInitHdg(initHdg);
         robot.setInitHdg(initHdg);
-        
+
         DbgLog.msg("SJH Start %s.", currPoint);
         dashboard.displayPrintf(3, "PATH: Start at %s", currPoint);
 
@@ -238,7 +238,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             curPos = null;
 
             if(curSeg.getStrtPt().getX() == curSeg.getTgtPt().getX() &&
-               curSeg.getStrtPt().getY() == curSeg.getTgtPt().getY())
+                    curSeg.getStrtPt().getY() == curSeg.getTgtPt().getY())
             {
                 continue;
             }
@@ -343,7 +343,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             drvTrn.move(speed);
 
             while(opModeIsActive() &&
-                  !isStopRequested())
+                    !isStopRequested())
             {
                 int r = robot.colorSensor.red();
                 int g = robot.colorSensor.green();
@@ -389,7 +389,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
     {
         ModernRoboticsI2cColorSensor cs = robot.colorSensor;
         cs.getI2cController().registerForI2cPortReadyCallback(robot.colorSensor,
-                                                 robot.getColorPort());
+                robot.getColorPort());
 
         sleep(50);
         cs.enableLed(true);
@@ -515,8 +515,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
 
         while (opModeIsActive()                              &&
-               pushSide == BeaconFinder.BeaconSide.UNKNOWN   &&
-               itimer.milliseconds() < timeout)
+                pushSide == BeaconFinder.BeaconSide.UNKNOWN   &&
+                itimer.milliseconds() < timeout)
         {
             blueSide = bd.getBluePosSide();
             redSide  = bd.getRedPosSide();
@@ -600,7 +600,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             hErr = desHdg - cHdg;
 
             curDistCount = (robot.leftMotor.getCurrentPosition() +
-                            robot.rightMotor.getCurrentPosition()) / 2.0;
+                    robot.rightMotor.getCurrentPosition()) / 2.0;
 
             switch ( beaconStep )
             {
@@ -720,9 +720,9 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                     // Good when the beacon is in view enough or at least
                     // some driving done.
                     if ( pushSide == BeaconFinder.BeaconSide.UNKNOWN &&
-                         blueSide != BeaconFinder.BeaconSide.UNKNOWN &&
-                         redSide != BeaconFinder.BeaconSide.UNKNOWN &&
-                         (driveStep.equals("ALIGN") || driveStep.equals("DRIVE")))
+                            blueSide != BeaconFinder.BeaconSide.UNKNOWN &&
+                            redSide != BeaconFinder.BeaconSide.UNKNOWN &&
+                            (driveStep.equals("ALIGN") || driveStep.equals("DRIVE")))
                     {
                         if ( alliance == Field.Alliance.BLUE )
                         {
@@ -771,7 +771,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                         DbgLog.msg("SJH: /BEACON/FORWARD > CONFIDENCE DROPPED UNDER THREASHOLD %5.2f", bConf );
                     }
                     else if ( drvTrn.countsToDistance( curDistCount ) > 10.0 &&
-                              drvTrn.areDriveMotorsStuck() && drvTrn.isBusy() )
+                            drvTrn.areDriveMotorsStuck() && drvTrn.isBusy() )
                     {
                         beaconStep = "BACKUP";
                         bailPos = curDistCount;
@@ -892,7 +892,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         //FtcValueMenu powerMenu     = new FtcValueMenu("SHOOTPOWER:", teamMenu, this,
         //                                                    0.0, 1.0, 0.05, 0.55, "%5.2f");
         FtcValueMenu delayMenu     = new FtcValueMenu("DELAY:", routeMenu, this,
-                                                             0.0, 20.0, 1.0, 0.0, "%5.2f");
+                0.0, 20.0, 1.0, 0.0, "%5.2f");
 
         startPosMenu.addChoice("Start_A", Field.StartPos.START_A_SWEEPER, pushMenu);
         startPosMenu.addChoice("Start_B", Field.StartPos.START_B_SWEEPER, pushMenu);

@@ -222,9 +222,9 @@ public class OpenCVAuton extends OpenCvCameraOpMode
                     // Good when the beacon is in view enough or at least
                     // some driving done.
                     if ( pushSide == BeaconFinder.BeaconSide.UNKNOWN &&
-                         blueSide != BeaconFinder.BeaconSide.UNKNOWN &&
-                         redSide  != BeaconFinder.BeaconSide.UNKNOWN &&
-                         beaconStep.equals("ALIGN") )
+                            blueSide != BeaconFinder.BeaconSide.UNKNOWN &&
+                            redSide  != BeaconFinder.BeaconSide.UNKNOWN &&
+                            beaconStep.equals("ALIGN") )
                     {
                         pushSide = redSide;
 
