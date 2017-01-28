@@ -77,10 +77,9 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode {
     //HardwarePushbot         robot   = new HardwarePushbot();   // Use a Pushbot's hardware
     private ElapsedTime     runtime = new ElapsedTime();
 
-    //static final double     COUNTS_PER_MOTOR_REV    = 1440 ;    // eg: TETRIX Motor Encoder
     static final double     COUNTS_PER_MOTOR_REV    = 1120;
-    static final double     DRIVE_GEAR_REDUCTION    = 1.0 ;     // This is < 1.0 if geared UP
-    static final double     WHEEL_DIAMETER_INCHES   = 6.5 ;     // For figuring circumference
+    static final double     DRIVE_GEAR_REDUCTION    = 2.0 ;     // This is < 1.0 if geared UP
+    static final double     WHEEL_DIAMETER_INCHES   = 4.5 ;     // For figuring circumference
     static final double     COUNTS_PER_INCH         = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
                                                       (WHEEL_DIAMETER_INCHES * 3.1415);
     static final double     DRIVE_SPEED             = 0.6;
@@ -93,25 +92,11 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode {
     public void runOpMode() throws InterruptedException {
         
         robot.init(hardwareMap);
-        /*
-         * Initialize the drive system variables.
-         * The init() method of the hardware class does all the work here
-         */
-        //robot.init(hardwareMap);
-
-        //robot.leftMotor = hardwareMap.dcMotor.get("leftMotor");
-        //robot.rightMotor = hardwareMap.dcMotor.get("rightMotor");
-        //robot.rightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Status", "Resetting Encoders");    //
         telemetry.update();
 
-       // robot.leftMotor .setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-       // robot.rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-
-        //robot.robot.leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        //robot.rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         idle();
 
         robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -119,6 +104,7 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode {
 
         robot.leftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         robot.rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
 
         // Send telemetry message to indicate successful Encoder reset
         telemetry.addData("Path0",  "Starting at %7d :%7d",
@@ -134,15 +120,27 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode {
 
         // Step through each leg of the path,
         // Note: Reverse movement is obtained by setting a negative distance (not speed)
-        encoderDrive(DRIVE_SPEED,  41.6,  41.6, 30.0);  // S1: Forward 47 Inches with 5 Sec timeout
-        //encoderDrive(TURN_SPEED,  -76,  76, 30.0);  // S2: Turn Right 18 Inches with 4 Sec timeout
-        //encoderDrive(DRIVE_SPEED, -19, -19, 30.0);  // S3: Reverse 24 Inches with 4 Sec timeout
+        telemetry.addData("SEG", "SWEEPER FWD 20");
+        encoderDrive(DRIVE_SPEED,  20,  20, 30.0);  // S1: Forward 47 Inches with 5 Sec timeout
+        telemetry.addData("SEG", "SWEEPER RGT 20");
+        encoderDrive(TURN_SPEED,  -20,  20, 30.0);  // S2: Turn Right 18 Inches with 4 Sec timeout
+        telemetry.addData("SEG", "SWEEPER BKWD 40");
+        encoderDrive(DRIVE_SPEED, -40, -40, 30.0);  // S3: Reverse 24 Inches with 4 Sec timeout
+        telemetry.addData("SEG", "SWEEPER LEFT 20");
+        encoderDrive(TURN_SPEED,   20, -20, 30.0);  // S2: Turn Right 18 Inches with 4 Sec timeout
 
+        robot.setDriveDir(ShelbyBot.DriveDir.PUSHER);
 
+        sleep(5000);
 
-        //robot.leftClaw.setPosition(1.0);            // S4: Stop and close the claw.
-        //robot.rightClaw.setPosition(0.0);
-        //sleep(1000);     // pause for servos to move
+        telemetry.addData("SEG", "PUSHER FWD 20");
+        encoderDrive(DRIVE_SPEED,  20,  20, 30.0);  // S1: Forward 47 Inches with 5 Sec timeout
+        telemetry.addData("SEG", "PUSHER RGT 20");
+        encoderDrive(TURN_SPEED,  -20,  20, 30.0);  // S2: Turn Right 18 Inches with 4 Sec timeout
+        telemetry.addData("SEG", "PUSHER BKWD 40");
+        encoderDrive(DRIVE_SPEED, -40, -40, 30.0);  // S3: Reverse 24 Inches with 4 Sec timeout
+        telemetry.addData("SEG", "PUSHER LEFT 20");
+        encoderDrive(TURN_SPEED,   20, -20, 30.0);  // S2: Turn Right 18 Inches with 4 Sec timeout
 
         telemetry.addData("Path", "Complete");
         telemetry.update();

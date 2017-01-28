@@ -423,7 +423,7 @@ class Drivetrain
         {
             xPos = currPt.getX();
             yPos = currPt.getY();
-            estHdg = robot.getGyroFhdg();
+            if(robot.gyro != null) estHdg = robot.getGyroFhdg();
         }
         ++numPts;
     }
@@ -465,6 +465,7 @@ class Drivetrain
     {
         DbgLog.msg("SJH CPI: %5.2f", CPI);
         frame = 0;
+        this.robot  = robot;
         left_drive  = robot.leftMotor;
         right_drive = robot.rightMotor;
         this.gyro   = robot.gyro;

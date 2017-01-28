@@ -107,7 +107,7 @@ public abstract class OpenCvCameraOpMode extends LinearOpMode
 
                 ViewGroup rl = (ViewGroup) act.findViewById(R.id.RelativeLayout);
                 rl.removeViews(4,3);
-                rl.removeViews(0,3);
+                rl.removeViews(0,2);
                 rl.setPadding(0,0,0,0);
 
                 ViewGroup vg = (ViewGroup) act.findViewById(R.id.cameraMonitorViewId);
