@@ -15,6 +15,7 @@ public class DataLogger {
     private StringBuffer lineBuffer;
     private long msBase;
     private long nsBase;
+    private boolean lineStart = true;
 
     public DataLogger(String fileName) {
         //String directoryPath  = "/sdcard/FIRST/DataLogger";
@@ -45,7 +46,6 @@ public class DataLogger {
     }
 
     private void flushLineBuffer(){
-        long milliTime,nanoTime;
 
         try {
             lineBuffer.append('\n');
@@ -55,11 +55,25 @@ public class DataLogger {
         catch (IOException e){
             DbgLog.error("SJH: Could not write in flushLineBuffer()");
         }
+        lineStart = true;
+    }
+
+    public void logTime()
+    {
+        long milliTime,nanoTime;
         milliTime   = System.currentTimeMillis();
         nanoTime    = System.nanoTime();
-        addField(String.format(Locale.US, "%.3f",(milliTime - msBase) / 1.0E3));
-        addField(String.format(Locale.US, "%.3f",(nanoTime - nsBase) / 1.0E6));
+
+        double pmil = (milliTime - msBase) / 1.0E3;
+        double pnan =  (nanoTime - nsBase) / 1.0E6;
+
+        if (lineBuffer.length()>0) lineBuffer.append(',');
+        lineBuffer.append(String.format(Locale.US, "%.3f", pmil));
+        if (lineBuffer.length()>0) lineBuffer.append(',');
+        lineBuffer.append(String.format(Locale.US, "%.3f", pnan));
+
         nsBase      = nanoTime;
+        lineStart = false;
     }
 
     public void closeDataLogger() {
@@ -71,17 +85,17 @@ public class DataLogger {
         }
     }
 
-    public void addField(String s) {
-        if (lineBuffer.length()>0) {
-            lineBuffer.append(',');
-        }
+    public void addField(String s)
+    {
+        if(lineStart) logTime();
+        lineBuffer.append(',');
         lineBuffer.append(s);
     }
 
-    public void addField(char c) {
-        if (lineBuffer.length()>0) {
-            lineBuffer.append(',');
-        }
+    public void addField(char c)
+    {
+        if(lineStart) logTime();
+        lineBuffer.append(',');
         lineBuffer.append(c);
     }
 
@@ -110,6 +124,7 @@ public class DataLogger {
     }
 
     public void newLine() {
+        lineStart = true;
         flushLineBuffer();
     }
 
