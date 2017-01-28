@@ -33,64 +33,63 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cColorSensor;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-//import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
+import java.util.Date;
+
+//import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 //import org.firstinspires.ftc.robotcontroller.external.samples.HardwarePushbot;
 
-/**
- * This file illustrates the concept of driving a path based on encoder counts.
- * It uses the common Pushbot hardware class to define the drive on the robot.
- * The code is structured as a LinearOpMode
- *
- * The code REQUIRES that you DO have encoders on the wheels,
- *   otherwise you would use: PushbotAutoDriveByTime;
- *
- *  This code ALSO requires that the drive Motors have been configured such that a positive
- *  power command moves them forwards, and causes the encoders to count UP.
- *
- *   The desired path in this example is:
- *   - Drive forward for 48 inches
- *   - Spin right for 12 Inches
- *   - Drive Backwards for 24 inches
- *   - Stop and close the claw.
- *
- *  The code is written using a method called: encoderDrive(speed, leftInches, rightInches, timeoutS)
- *  that performs the actual movement.
- *  This methods assumes that each movement is relative to the last stopping place.
- *  There are other ways to perform encoder based moves, but this method is probably the simplest.
- *  This code uses the RUN_TO_POSITION mode to enable the Motor controllers to generate the run profile
- *
- * Use Android Studios to Copy this Class, and Paste it into your team's code folder with a new name.
- * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
- */
-
 @Autonomous(name="Auto Drive By Encoder", group="Test")
 //@Disabled
-public class AutoDriveByEncoder_Linear extends LinearOpMode {
+public class AutoDriveByEncoder_Linear extends LinearOpMode
+{
 
-    /* Declare OpMode members. */
-    //HardwarePushbot         robot   = new HardwarePushbot();   // Use a Pushbot's hardware
-    private ElapsedTime     runtime = new ElapsedTime();
+    private ElapsedTime runtime = new ElapsedTime();
+    private ShelbyBot robot = new ShelbyBot();
 
-    static final double     COUNTS_PER_MOTOR_REV    = 1120;
-    static final double     DRIVE_GEAR_REDUCTION    = 2.0 ;     // This is < 1.0 if geared UP
-    static final double     WHEEL_DIAMETER_INCHES   = 4.5 ;     // For figuring circumference
-    static final double     COUNTS_PER_INCH         = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
-                                                      (WHEEL_DIAMETER_INCHES * 3.1415);
-    static final double     DRIVE_SPEED             = 0.6;
-    static final double     TURN_SPEED              = 0.5;
+    static final double COUNTS_PER_MOTOR_REV = 1120;
+    static final double DRIVE_GEAR_REDUCTION = 0.5;     // This is < 1.0 if geared UP
+    static final double WHEEL_DIAMETER_INCHES = 4.5;     // For figuring circumference
+    static final double CPI = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION /
+                                       (WHEEL_DIAMETER_INCHES * Math.PI));
+
+    static final double DRIVE_SPEED = 0.6;
+    static final double TURN_SPEED = 0.5;
+
+    private ElapsedTime datalogtimer = new ElapsedTime();
+    private DataLogger dl;
+    private boolean logData = true;
+    private boolean gyroReady = false;
+    private boolean colorOn = false;
+    private int r, g, b;
+
+    private final double DD = 24.0;
+    private final double TD = 18 * Math.PI; //360
 
     static int frame = 0;
 
-
     @Override
-    public void runOpMode() throws InterruptedException {
-        
+    public void runOpMode() throws InterruptedException
+    {
+        if (logData)
+        {
+            Date day = new Date();
+            dl = new DataLogger(day.toString() + "autonomousData");
+            dl.addField("Gyro");
+            dl.addField("LENC");
+            dl.addField("RENC");
+            dl.addField("RED");
+            dl.addField("GRN");
+            dl.addField("BLU");
+            dl.newLine();
+        }
+
         robot.init(hardwareMap);
 
         // Send telemetry message to signify robot waiting;
@@ -107,90 +106,147 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode {
         robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
 
         // Send telemetry message to indicate successful Encoder reset
-        telemetry.addData("Path0",  "Starting at %7d :%7d",
-                          robot.leftMotor.getCurrentPosition(),
-                          robot.rightMotor.getCurrentPosition());
+        telemetry.addData("Path0", "Starting at %7d :%7d",
+                robot.leftMotor.getCurrentPosition(),
+                robot.rightMotor.getCurrentPosition());
         telemetry.update();
         DbgLog.msg("SJH: Strt: %7d %7d",
                 robot.leftMotor.getCurrentPosition(),
                 robot.rightMotor.getCurrentPosition());
 
-        // Wait for the game to start (driver presses PLAY)
+        if (robot.gyro != null)
+        {
+            DbgLog.msg("SJH: Starting gyro calibration");
+            robot.gyro.calibrate();
+
+            // make sure the gyro is calibrated before continuing
+            ElapsedTime gyroTimer = new ElapsedTime();
+            double gyroInitTimout = 5.0;
+            boolean gyroCalibTimedout = false;
+            gyroTimer.reset();
+            while (!isStopRequested() &&
+                           robot.gyro.isCalibrating())
+            {
+                sleep(50);
+                if (gyroTimer.seconds() > gyroInitTimout)
+                {
+                    DbgLog.msg("SJH: GYRO INIT TIMED OUT!!");
+                    gyroCalibTimedout = true;
+                    break;
+                }
+            }
+            DbgLog.msg("SJH: Gyro callibrated in %4.2f seconds", gyroTimer.seconds());
+
+            gyroReady = !gyroCalibTimedout;
+            if (gyroReady) robot.gyro.resetZAxisIntegrator();
+        }
+
+        if (robot.colorSensor != null)
+        {
+            robot.colorSensor.enableLed(false);
+            robot.colorSensor.enableLed(true);
+        }
+
+        while (!isStarted()) {
+            telemetry.addData(":", "Robot Heading = %d", robot.getGyroFhdg());
+            telemetry.addData("<", "LENC = %5d RENC = %5d", robot.leftMotor.getCurrentPosition(),
+                    robot.rightMotor.getCurrentPosition());
+            telemetry.update();
+            logData();
+            sleep(50);
+        }
+
+        //dl.closeDataLogger();
+
         waitForStart();
+        robot.gyro.resetZAxisIntegrator();
 
-        // Step through each leg of the path,
-        // Note: Reverse movement is obtained by setting a negative distance (not speed)
-        telemetry.addData("SEG", "SWEEPER FWD 20");
-        encoderDrive(DRIVE_SPEED,  20,  20, 30.0);  // S1: Forward 47 Inches with 5 Sec timeout
-        telemetry.addData("SEG", "SWEEPER RGT 20");
-        encoderDrive(TURN_SPEED,  -20,  20, 30.0);  // S2: Turn Right 18 Inches with 4 Sec timeout
-        telemetry.addData("SEG", "SWEEPER BKWD 40");
-        encoderDrive(DRIVE_SPEED, -40, -40, 30.0);  // S3: Reverse 24 Inches with 4 Sec timeout
-        telemetry.addData("SEG", "SWEEPER LEFT 20");
-        encoderDrive(TURN_SPEED,   20, -20, 30.0);  // S2: Turn Right 18 Inches with 4 Sec timeout
-
-        robot.setDriveDir(ShelbyBot.DriveDir.PUSHER);
-
-        sleep(5000);
-
-        telemetry.addData("SEG", "PUSHER FWD 20");
-        encoderDrive(DRIVE_SPEED,  20,  20, 30.0);  // S1: Forward 47 Inches with 5 Sec timeout
-        telemetry.addData("SEG", "PUSHER RGT 20");
-        encoderDrive(TURN_SPEED,  -20,  20, 30.0);  // S2: Turn Right 18 Inches with 4 Sec timeout
-        telemetry.addData("SEG", "PUSHER BKWD 40");
-        encoderDrive(DRIVE_SPEED, -40, -40, 30.0);  // S3: Reverse 24 Inches with 4 Sec timeout
-        telemetry.addData("SEG", "PUSHER LEFT 20");
-        encoderDrive(TURN_SPEED,   20, -20, 30.0);  // S2: Turn Right 18 Inches with 4 Sec timeout
+        doTestCycle(ShelbyBot.DriveDir.SWEEPER, DRIVE_SPEED, TURN_SPEED);
+        sleep(1000);
+        doTestCycle(ShelbyBot.DriveDir.PUSHER, DRIVE_SPEED, TURN_SPEED);
+        sleep(1000);
+        doTestCycle(ShelbyBot.DriveDir.SWEEPER, DRIVE_SPEED/2, TURN_SPEED/2);
+        sleep(1000);
+        doTestCycle(ShelbyBot.DriveDir.PUSHER, DRIVE_SPEED/2, TURN_SPEED/2);
+        sleep(1000);
 
         telemetry.addData("Path", "Complete");
         telemetry.update();
     }
 
-    /*
-     *  Method to perfmorm a relative move, based on encoder counts.
-     *  Encoders are not reset as the move is based on the current position.
-     *  Move will stop if any of three conditions occur:
-     *  1) Move gets to the desired position
-     *  2) Move runs out of time
-     *  3) Driver stops the opmode running.
-     */
+    public void doTestCycle(ShelbyBot.DriveDir ddir, double spd, double trnspd)
+    {
+        robot.setDriveDir(ddir);
+
+        turnColorOn();
+        dl.addField(ddir.toString()); dl.addField("FWD"); dl.addField("",DD);
+        dl.addField("",spd); dl.addField("",trnspd);dl.newLine();
+        telemetry.addData("SEG", "SWEEPER FWD 20");
+        encoderDrive(DRIVE_SPEED,  DD,  DD, 30.0);
+        turnColorOff();
+        dl.addField(ddir.toString()); dl.addField("LFT"); dl.addField("",TD);
+        dl.addField("",spd); dl.addField("",trnspd);dl.newLine();
+        telemetry.addData("SEG", "SWEEPER LFT 20");
+        encoderDrive(TURN_SPEED,  -TD,  TD, 30.0);
+        turnColorOn();
+        dl.addField(ddir.toString()); dl.addField("BCK"); dl.addField("",DD);
+        dl.addField("",spd); dl.addField("",trnspd);dl.newLine();
+        telemetry.addData("SEG", "SWEEPER BCK 40");
+        encoderDrive(DRIVE_SPEED, -DD, -DD, 30.0);
+        //turnColorOff();
+        dl.addField(ddir.toString()); dl.addField("RGT"); dl.addField("",TD);
+        dl.addField("",spd); dl.addField("",trnspd);dl.newLine();
+        telemetry.addData("SEG", "SWEEPER RGT 20");
+        encoderDrive(TURN_SPEED,   TD, -TD, 30.0);
+    }
+
     public void encoderDrive(double speed,
                              double leftInches, double rightInches,
-                             double timeoutS) throws InterruptedException {
+                             double timeoutS)
+    {
         int newLeftTarget;
         int newRightTarget;
 
-        // Ensure that the opmode is still active
-        if (opModeIsActive()) {
+        robot.leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-            // Determine new target position, and pass to motor controller
-            newLeftTarget = robot.leftMotor.getCurrentPosition() + (int)(leftInches * COUNTS_PER_INCH);
-            newRightTarget = robot.rightMotor.getCurrentPosition() + (int)(rightInches * COUNTS_PER_INCH);
+        if (opModeIsActive())
+        {
+            newLeftTarget  = robot.leftMotor.getCurrentPosition()  + (int)(leftInches  * CPI);
+            newRightTarget = robot.rightMotor.getCurrentPosition() + (int)(rightInches * CPI);
             robot.leftMotor.setTargetPosition(newLeftTarget);
             robot.rightMotor.setTargetPosition(newRightTarget);
 
             DbgLog.msg("SJH: TGT : %7d %7d", newLeftTarget, newRightTarget);
-            // Turn On RUN_TO_POSITION
             robot.leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             robot.rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-            // reset the timeout time and start motion.
             runtime.reset();
             robot.leftMotor.setPower(Math.abs(speed));
             robot.rightMotor.setPower(Math.abs(speed));
 
-            // keep looping while we are still active, and there is time left, and both motors are running.
             while (opModeIsActive() &&
                    (runtime.seconds() < timeoutS) &&
                    (robot.leftMotor.isBusy() && robot.rightMotor.isBusy())) {
 
                 if(frame%20 == 0)
                 {
-                    // Display it for the driver.
-                    telemetry.addData("Path1", "Running to %7d :%7d", newLeftTarget, newRightTarget);
-                    telemetry.addData("Path2", "Running at %7d :%7d",
+                    if(colorOn  && robot.colorSensor != null)
+                    {
+                        r = robot.colorSensor.red();
+                        g = robot.colorSensor.green();
+                        b = robot.colorSensor.blue();
+                    }
+
+                    logData();
+                    telemetry.addData("TGT", "TGT %7d :%7d", newLeftTarget, newRightTarget);
+                    telemetry.addData("POS", "POS %7d :%7d",
                             robot.leftMotor.getCurrentPosition(),
                             robot.rightMotor.getCurrentPosition());
+                    if(robot.gyro != null)
+                        telemetry.addData("ROT", "%d", robot.getGyroFhdg());
+                    if(robot.colorSensor != null)
+                        telemetry.addData("RGB", "RGB %3d %3d %3d", r, g, b);
                     DbgLog.msg("SJH: Pos : %7d %7d",
                             robot.leftMotor.getCurrentPosition(),
                             robot.rightMotor.getCurrentPosition());
@@ -198,8 +254,6 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode {
                 }
 
                 frame++;
-                // Allow time for other processes to run.
-                idle();
             }
 
             DbgLog.msg("SJH: Done: %7d %7d",
@@ -207,18 +261,67 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode {
                     robot.rightMotor.getCurrentPosition());
             telemetry.update();
 
-            // Stop all motion;
             robot.leftMotor.setPower(0);
             robot.rightMotor.setPower(0);
 
-            // Turn off RUN_TO_POSITION
+            dl.addField("DONE"); dl.newLine();
+            ElapsedTime et = new ElapsedTime();
+            while(et.seconds() < 0.5)
+            {
+                logData();
+                sleep(10);
+            }
+
             robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-            //  sleep(250);   // optional pause after each move
+            //sleep(250);
         }
     }
-    //private DcMotor robot.leftMotor;
-    //private DcMotor robot.robot.rightMotor;
-    private ShelbyBot   robot = new ShelbyBot();
+
+    private void turnColorOn()
+    {
+        if(robot.colorSensor == null) return;
+        colorOn = true;
+        ModernRoboticsI2cColorSensor cs = robot.colorSensor;
+        cs.getI2cController().registerForI2cPortReadyCallback(robot.colorSensor,
+                robot.getColorPort());
+
+        cs.enableLed(true);
+    }
+
+    private void turnColorOff()
+    {
+        if(robot.colorSensor == null) return;
+        colorOn = false;
+        ModernRoboticsI2cColorSensor cs = robot.colorSensor;
+        cs.enableLed(false);
+        cs.getI2cController().deregisterForPortReadyCallback(robot.getColorPort());
+        r = 0;
+        g = 0;
+        b = 0;
+    }
+
+    public void logData()
+    {
+        if (datalogtimer.seconds() <0.01) return;
+
+        datalogtimer.reset();
+
+        if(logData)
+        {
+            //Write sensor values to the data logger
+            if(robot.gyro != null) dl.addField(robot.getGyroFhdg());
+            else                   dl.addField("");
+            dl.addField(robot.leftMotor.getCurrentPosition());
+            dl.addField(robot.rightMotor.getCurrentPosition());
+            if(robot.colorSensor != null)
+            {
+                dl.addField(r);
+                dl.addField(g);
+                dl.addField(b);
+            }
+            dl.newLine();
+        }
+    }
 }

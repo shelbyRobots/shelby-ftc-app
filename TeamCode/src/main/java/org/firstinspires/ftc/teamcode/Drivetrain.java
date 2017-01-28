@@ -735,7 +735,7 @@ class Drivetrain
 
     public void setDrvTuner(double dtnr)
     {
-        CPI = ENCODER_CPR * GEAR_RATIO / (CIRCUMFERENCE * dtnr);
+        CPI = ENCODER_CPR * GEAR_REDUC / (CIRCUMFERENCE * dtnr);
     }
 
     public void logData()
@@ -761,10 +761,10 @@ class Drivetrain
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
     private static double WHL_DIAMETER = 4.5; //Diameter of the wheel (inches)
     private final static int    ENCODER_CPR = ShelbyBot.ENCODER_CPR;
-    private final static double GEAR_RATIO  = 2;                   //Gear ratio
+    private final static double GEAR_REDUC = 0.5;                   //Gear ratio
 
     private static double CIRCUMFERENCE = Math.PI * WHL_DIAMETER;
-    private static double CPI = ENCODER_CPR * GEAR_RATIO / (CIRCUMFERENCE * DRV_TUNER);
+    private static double CPI = ENCODER_CPR *GEAR_REDUC / (CIRCUMFERENCE * DRV_TUNER);
 
     private static final double Kp_GyrCorrection = 0.02;
     private static final double Kp_EncCorrection = 0.02;
