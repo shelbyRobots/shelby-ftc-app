@@ -152,15 +152,19 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode
 
         turnColorOn();
         telemetry.addData("SEG", "SWEEPER FWD " + DD);
+        telemetry.update();
         encoderDrive(DRIVE_SPEED,  DD,  DD, 30.0);
         turnColorOff();
         telemetry.addData("SEG", "SWEEPER LFT " + TD);
+        telemetry.update();
         encoderDrive(TURN_SPEED, -TD, TD, 30.0);
         turnColorOn();
         telemetry.addData("SEG", "SWEEPER BCK " + DD);
+        telemetry.update();
         encoderDrive(DRIVE_SPEED, -DD, -DD, 30.0);
         //turnColorOff();
         telemetry.addData("SEG", "SWEEPER RGT " + TD);
+        telemetry.update();
         encoderDrive(TURN_SPEED, TD, -TD, 30.0);
     }
 
@@ -176,13 +180,19 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode
 
         if (opModeIsActive())
         {
+            int lmoveCnt = (int)(leftInches  * CPI);
+            int rmoveCnt = (int)(rightInches  * CPI);
+
             dl.addField("encoderDrive");
             dl.addField("",leftInches);
             dl.addField("",rightInches);
             dl.addField("",speed);
+            dl.addField("",lmoveCnt);
+            dl.addField("",rmoveCnt);
             dl.newLine();
-            newLeftTarget  = robot.leftMotor.getCurrentPosition()  + (int)(leftInches  * CPI);
-            newRightTarget = robot.rightMotor.getCurrentPosition() + (int)(rightInches * CPI);
+
+            newLeftTarget  = robot.leftMotor.getCurrentPosition()  + lmoveCnt;
+            newRightTarget = robot.rightMotor.getCurrentPosition() + rmoveCnt;
             robot.leftMotor.setTargetPosition(newLeftTarget);
             robot.rightMotor.setTargetPosition(newRightTarget);
 
@@ -212,6 +222,7 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode
                     DbgLog.msg("SJH: Pos : %7d %7d",
                             robot.leftMotor.getCurrentPosition(),
                             robot.rightMotor.getCurrentPosition());
+                    telemetry.update();
                 }
                 frame++;
             }
@@ -221,7 +232,6 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode
             DbgLog.msg("SJH: Done: %7d %7d",
                     robot.leftMotor.getCurrentPosition(),
                     robot.rightMotor.getCurrentPosition());
-            telemetry.update();
 
             robot.leftMotor.setPower(0);
             robot.rightMotor.setPower(0);

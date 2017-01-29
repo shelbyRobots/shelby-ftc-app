@@ -15,7 +15,7 @@ public class DataLogger {
     private StringBuffer lineBuffer;
     private long msBase;
     private long nsBase;
-    private boolean lineStart = true;
+    private boolean lineStart = false;
 
     public DataLogger(String fileName) {
         //String directoryPath  = "/sdcard/FIRST/DataLogger";
