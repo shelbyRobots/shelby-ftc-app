@@ -53,10 +53,10 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
                                        (WHEEL_DIAMETER_INCHES * TUNE * Math.PI));
 
     static final double DRIVE_SPEED = 0.5;
-    static final double TURN_SPEED = 0.4;
+    static final double TURN_SPEED = 0.3;
 
     static final double     HEADING_THRESHOLD       = 1 ;      // As tight as we can make it with an integer gyro
-    static final double     P_TURN_COEFF            = 0.1;     // Larger is more responsive, but also less stable
+    static final double     P_TURN_COEFF            = 0.06;     // Larger is more responsive, but also less stable
     static final double     P_DRIVE_COEFF           = 0.15;     // Larger is more responsive, but also less stable
 
     private ElapsedTime datalogtimer = new ElapsedTime();
@@ -70,6 +70,9 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
     private final double TA = 45.0;
 
     static int frame = 0;
+
+    private int curLftTarget = 0;
+    private int curRgtTarget = 0;
 
     ShelbyBot.DriveDir startDir = ShelbyBot.DriveDir.SWEEPER;
 
@@ -129,8 +132,14 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
 
         robot.turnColorOff();
         dl.addField(ddir.toString()); dl.newLine();
-        gyroDrive(DRIVE_SPEED, DD, 0.0);    // Drive FWD DD inches
-        logOverrun(1.0); sleep(3000);
+        gyroDrive(DRIVE_SPEED, DD, 0.0);
+        logOverrun(0.25);
+        int overLcnt = curLftTarget - robot.leftMotor.getCurrentPosition();
+        int overRcnt = curRgtTarget - robot.rightMotor.getCurrentPosition();
+        double overLdst = overLcnt/CPI;
+        double overRdst = overRcnt/CPI;
+        gyroDrive(DRIVE_SPEED, (overLdst + overRdst)/2, 0.0, false);
+        sleep(3000);
         gyroTurn( TURN_SPEED, -TA);         // Turn  CCW to -45 Degrees
         logOverrun(1.0); sleep(3000);
         gyroHold( TURN_SPEED, -TA, 0.5);    // Hold -45 Deg heading for a 1/2 second
@@ -187,10 +196,12 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
     *                   0 = fwd. +ve is CCW from fwd. -ve is CW from forward.
     *                   If a relative angle is required, add/subtract from current heading.
     */
-    public void gyroDrive ( double speed,
-                            double distance,
-                            double angle) {
-
+    public void gyroDrive (double speed, double distance, double angle)
+    {
+        gyroDrive(speed, distance, angle, true);
+    }
+    public void gyroDrive ( double speed, double distance, double angle, boolean correctHdg)
+    {
         int     newLeftTarget;
         int     newRightTarget;
         int     moveCounts;
@@ -205,7 +216,7 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
 
             // Determine new target position, and pass to motor controller
             moveCounts = (int)(distance * CPI);
-            newLeftTarget = robot.leftMotor.getCurrentPosition() + moveCounts;
+            newLeftTarget  = robot.leftMotor.getCurrentPosition()  + moveCounts;
             newRightTarget = robot.rightMotor.getCurrentPosition() + moveCounts;
 
             if(logData)
@@ -218,8 +229,8 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
                 dl.newLine();
             }
 
-            robot.leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            robot.rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            //robot.leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            //robot.rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
             // Set Target and Turn On RUN_TO_POSITION
             robot.leftMotor.setTargetPosition(newLeftTarget);
@@ -251,6 +262,11 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
                 if (distance < 0)
                     steer *= -1.0;
 
+                if(!correctHdg)
+                {
+                    steer = 0;
+                }
+
                 leftSpeed = speed - steer;
                 rightSpeed = speed + steer;
 
@@ -273,6 +289,13 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
                 telemetry.addData("Speed",   "%5.2f:%5.2f",  leftSpeed, rightSpeed);
                 telemetry.update();
             }
+
+            logData();
+            dl.addField("DONE");
+            dl.newLine();
+
+            curLftTarget = newLeftTarget;
+            curRgtTarget = newRightTarget;
 
             // Stop all motion;
             robot.leftMotor.setPower(0);
@@ -321,6 +344,9 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
             frame++;
             telemetry.update();
         }
+        logData();
+        dl.addField("DONE");
+        dl.newLine();
     }
 
     /**
@@ -358,6 +384,9 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
             frame++;
             telemetry.update();
         }
+        logData();
+        dl.addField("DONE");
+        dl.newLine();
 
         // Stop all motion;
         robot.leftMotor.setPower(0);
