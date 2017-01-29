@@ -83,7 +83,7 @@ public class TeleopTank_Driver extends LinearOpMode
         /* Initialize the hardware variables.
          * The init() method of the hardware class does all the work here
          */
-        robot.init(hardwareMap);
+        robot.init(this);
 
         if (robot.leftMotor  != null &&
             robot.rightMotor != null &&
@@ -100,7 +100,7 @@ public class TeleopTank_Driver extends LinearOpMode
         telemetry.addData("Say", "Hello Driver");    //
         telemetry.update();
 
-        robot.setOpMode(this);
+        robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();

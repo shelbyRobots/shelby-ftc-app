@@ -4,9 +4,7 @@ package org.firstinspires.ftc.teamcode;
 import android.widget.TextView;
 
 import com.qualcomm.ftccommon.DbgLog;
-import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cColorSensor;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
@@ -55,11 +53,16 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
     public void runOpMode()
     {
         initRobot();
-        while(!isStarted() && !isStopRequested())
-        {
-            runPeriodic(0.0);
-            sleep(10);
-        }
+//        while(!isStarted() && !isStopRequested())
+//        {
+//            if(robot.gyro != null)
+//            {
+//                int chdg = robot.gyro.getIntegratedZValue();
+//                dashboard.displayPrintf(6, "GHDG: %d", chdg);
+//                DbgLog.msg("SJH INIT CHDG %d", chdg);
+//            }
+//            sleep(10);
+//        }
         waitForStart();
         startMode();
         stopMode();
@@ -67,18 +70,11 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
     public void runPeriodic(double elapsedTime)
     {
-        if(robot.gyro != null)
-        {
-            int chdg = robot.gyro.getIntegratedZValue();
-            dashboard.displayPrintf(6, "GHDG: %d", chdg);
-            DbgLog.msg("SJH INIT CHDG %d", chdg);
-        }
     }
 
     public void stopMode()
     {
         cleanupCamera();
-
         if(drvTrn != null) drvTrn.stopAndReset();
     }
 
@@ -87,85 +83,50 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         dashboard.displayPrintf(2, "STATE: %s", "INITIALIZING - PLEASE WAIT FOR MENU");
         DbgLog.msg("SJH: SETUP");
         hardwareMap.logDevices();
-        robot.init(hardwareMap);
 
-        DbgLog.msg("SJH: I2C Controller version %d",
-                robot.colorSensor.getI2cController().getVersion());
+        robot.init(this);
 
-        DbgLog.msg("SJH: COLOR_SENSOR");
-        DbgLog.msg("SJH:  ConnectionInfo %s", robot.colorSensor.getConnectionInfo());
-        DbgLog.msg("SJH:  I2cAddr %s", Integer.toHexString(robot.colorSensor.getI2cAddress().get8Bit()));
-        DbgLog.msg("SJH:  I2cAddr %s", Integer.toHexString(robot.colorSensor.getI2cAddress().get7Bit()));
-
-        DbgLog.msg("SJH: GYRO_SENSOR");
-        DbgLog.msg("SJH:  ConnectionInfo %s", robot.gyro.getConnectionInfo());
-        DbgLog.msg("SJH:  I2cAddr %s", Integer.toHexString(robot.gyro.getI2cAddress().get8Bit()));
-        DbgLog.msg("SJH:  I2cAddr %s", Integer.toHexString(robot.gyro.getI2cAddress().get7Bit()));
-
-        robot.colorSensor.enableLed(false);
-        robot.colorSensor.enableLed(true);
-        sleep(20);
-
-        turnColorOff();
+        drvTrn.init(robot);
+        drvTrn.setOpMode(this);
 
         initOpenCv();
 
         imgProc = new BeaconDetector();
         bd = (BeaconFinder) imgProc;
 
-
-        if (robot.leftMotor  != null &&
-                robot.rightMotor != null &&
-                robot.gyro       != null)
-        {
-            LinearOpMode inst = this;
-            drvTrn.init(robot);
-            drvTrn.setOpMode(this);
-            robot.setOpMode(inst);
-
-            int lms = robot.leftMotor.getMaxSpeed();
-            int rms = robot.rightMotor.getMaxSpeed();
-            DbgLog.msg("SJH: MaxSpeeds %d %d", lms, rms);
-
-            DbgLog.msg("SJH: Starting gyro calibration");
-            robot.gyro.calibrate();
-
-            // make sure the gyro is calibrated before continuing
-            ElapsedTime gyroTimer = new ElapsedTime();
-            double gyroInitTimout = 5.0;
-            boolean gyroCalibTimedout = false;
-            gyroTimer.reset();
-            while (!isStopRequested() &&
-                    robot.gyro.isCalibrating())
-            {
-                sleep(50);
-                if(gyroTimer.seconds() > gyroInitTimout)
-                {
-                    DbgLog.msg("SJH: GYRO INIT TIMED OUT!!");
-                    gyroCalibTimedout = true;
-                    break;
-                }
-            }
-            DbgLog.msg("SJH: Gyro callibrated in %4.2f seconds", gyroTimer.seconds());
-
-            gyroReady = !gyroCalibTimedout;
-            if(gyroReady) robot.gyro.resetZAxisIntegrator();
-
-            drvTrn.setGryoReady(gyroReady);
-        }
-
         doMenus();
-        robot.lpusher.setPosition(L_DN_PUSH_POS);
-
-        if(team == Team.SNOWMAN)
-        {
-            DEF_SHT_PWR = 0.75;
-        }
 
         Points pts = new Points(startPos, alliance, beaconChoice, parkChoice, useFly2Light);
         pathSegs = pts.getSegments();
 
         initHdg = (int)(Math.round(pathSegs[0].getFieldHeading()));
+
+        ShelbyBot.DriveDir startDdir = pathSegs[0].getDir();
+        robot.setDriveDir(startDdir);
+
+        dashboard.displayPrintf(0, "GYRO CALIBRATING DO NOT TOUCH OR START");
+
+        if (robot.leftMotor  != null &&
+            robot.rightMotor != null &&
+            robot.gyro       != null)
+        {
+            int lms = robot.leftMotor.getMaxSpeed();
+            int rms = robot.rightMotor.getMaxSpeed();
+            DbgLog.msg("SJH: MaxSpeeds %d %d", lms, rms);
+
+            gyroReady = robot.calibrateGyro();
+        }
+
+        if(gyroReady)
+            dashboard.displayPrintf(0, "GYRO CALIBATED!!");
+
+        robot.lpusher.setPosition(L_DN_PUSH_POS);
+        robot.rpusher.setPosition(R_DN_PUSH_POS);
+
+        if(team == Team.SNOWMAN)
+        {
+            DEF_SHT_PWR = 0.75;
+        }
 
         DbgLog.msg("SJH ROUTE: \n" + pts.toString());
 
@@ -248,7 +209,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             DbgLog.msg("SJH: ENCODER TURN %s", curSeg.getName());
             doEncoderTurn(curSeg.getFieldHeading()); //quick but rough
             DbgLog.msg("SJH: GYRO TURN %s", curSeg.getName());
-            doTurn(curSeg.getFieldHeading()); //fine tune using gyro
+            doGyroTurn(curSeg.getFieldHeading()); //fine tune using gyro
             DbgLog.msg("SJH: Setting drive tuner to %4.2f", curSeg.getDrvTuner());
             drvTrn.setDrvTuner(curSeg.getDrvTuner());
             doMove(curSeg);
@@ -259,7 +220,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                 DbgLog.msg("SJH ENCODER POST TURN %s", curSeg.getName());
                 doEncoderTurn(pturn);
                 DbgLog.msg("SJH: GRYO POST TURN %s", curSeg.getName());
-                doTurn(pturn);
+                doGyroTurn(pturn);
             }
 
             if(!opModeIsActive() || isStopRequested())
@@ -330,7 +291,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         if(robot.colorSensor != null && seg.getTgtType() == Segment.TargetType.COLOR)
         {
             DbgLog.msg("SJH: Turning on colorSensor LED");
-            turnColorOn();
+            robot.turnColorOn();
             DcMotor.RunMode lRunMode = robot.leftMotor.getMode();
             DcMotor.RunMode rRunMode = robot.rightMotor.getMode();
             robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -357,7 +318,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                 {
                     drvTrn.stopAndReset();
                     DbgLog.msg("SJH: FOUND LINE");
-                    turnColorOff();
+                    robot.turnColorOff();
                     drvTrn.setCurrPt(ept);
                     break;
                 }
@@ -366,7 +327,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                 {
                     drvTrn.stopAndReset();
                     DbgLog.msg("SJH: REACHED OVERRUN PT - Backing up a bit");
-                    turnColorOff();
+                    robot.turnColorOff();
                     drvTrn.driveDistanceLinear(3.0, 0.3, Drivetrain.Direction.REVERSE);
                     drvTrn.setCurrPt(ept);
                     break;
@@ -385,23 +346,6 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                 seg.getName(), timer.time(), robot.getGyroFhdg());
     }
 
-    private void turnColorOn()
-    {
-        ModernRoboticsI2cColorSensor cs = robot.colorSensor;
-        cs.getI2cController().registerForI2cPortReadyCallback(robot.colorSensor,
-                robot.getColorPort());
-
-        sleep(50);
-        cs.enableLed(true);
-    }
-
-    private void turnColorOff()
-    {
-        ModernRoboticsI2cColorSensor cs = robot.colorSensor;
-        cs.enableLed(false);
-        sleep(50);
-        cs.getI2cController().deregisterForPortReadyCallback(robot.getColorPort());
-    }
 
     private void doEncoderTurn(double fHdg)
     {
@@ -424,7 +368,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                 angle, timer.time(), cHdg);
     }
 
-    private void doTurn(double fHdg)
+    private void doGyroTurn(double fHdg)
     {
         if(!gyroReady) return;
         if(!opModeIsActive() || isStopRequested()) return;
@@ -933,12 +877,13 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         useFly2Light = routeMenu.getCurrentChoiceObject();
         delay = delayMenu.getCurrentValue();
 
-        dashboard.displayPrintf(0, "START: %s", startPos);
-        dashboard.displayPrintf(1, "PUSH: %s", beaconChoice);
-        dashboard.displayPrintf(2, "PARK: %s", parkChoice);
-        dashboard.displayPrintf(3, "ALLIANCE: %s", alliance);
-        dashboard.displayPrintf(4, "TEAM: %s", team);
-        dashboard.displayPrintf(5, "FLY2LIGHT: %s", useFly2Light);
+        int lnum = 3;
+        dashboard.displayPrintf(lnum++, "START: %s", startPos);
+        dashboard.displayPrintf(lnum++, "PUSH: %s", beaconChoice);
+        dashboard.displayPrintf(lnum++, "PARK: %s", parkChoice);
+        dashboard.displayPrintf(lnum++, "ALLIANCE: %s", alliance);
+        dashboard.displayPrintf(lnum++, "TEAM: %s", team);
+        dashboard.displayPrintf(lnum++, "FLY2LIGHT: %s", useFly2Light);
 
         DbgLog.msg("SJH: STARTPOS %s", startPos);
         DbgLog.msg("SJH: PUSH     %s", beaconChoice);

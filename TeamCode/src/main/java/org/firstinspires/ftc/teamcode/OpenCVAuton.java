@@ -28,35 +28,9 @@ public class OpenCVAuton extends OpenCvCameraOpMode
         bd = (BeaconFinder) imgProc;
 
         if ( useMotor ) {
-            robot.init(hardwareMap);
-
+            robot.init(this);
             drvTrn.init(robot);
-
-            DbgLog.msg("SJH: Starting gyro calibration");
-            robot.gyro.calibrate();
-
-            // make sure the gyro is calibrated before continuing
-            ElapsedTime gyroTimer = new ElapsedTime();
-            double gyroInitTimout = 5.0;
-            boolean gyroCalibTimedout = false;
-            gyroTimer.reset();
-            while (!isStopRequested() &&
-                    robot.gyro.isCalibrating())
-            {
-                sleep(50);
-                if(gyroTimer.seconds() > gyroInitTimout)
-                {
-                    DbgLog.msg("SJH: GYRO INIT TIMED OUT!!");
-                    gyroCalibTimedout = true;
-                    break;
-                }
-            }
-            DbgLog.msg("SJH: Gyro callibrated in %4.2f seconds", gyroTimer.seconds());
-
-            gyroReady = !gyroCalibTimedout;
-            if(gyroReady) robot.gyro.resetZAxisIntegrator();
-
-            drvTrn.setGryoReady(gyroReady);
+            gyroReady = robot.calibrateGyro();
         }
 
         imgProc.setTelemetry(telemetry);
