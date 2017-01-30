@@ -63,7 +63,7 @@ public class TeleopTank_Driver extends LinearOpMode
         boolean last_invert_drive_pressed = false;
         boolean switch_mode_pressed;             //driver x button -> temporary test for motor mode
         boolean last_switch_mode_pressed = false;
-        boolean bkwr_shoot_pressed;              //with prefix bkwr_, it is used to run shooters backwards
+        boolean bkwr_shoot_pressed;              //with prefix bkwr_, variable is used to run shooters backwards
         boolean last_bkwr_shoot_pressed = false;
 
         boolean lpush;                           //driver left trigger -> move lpusher left
