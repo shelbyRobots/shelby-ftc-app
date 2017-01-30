@@ -24,6 +24,8 @@ public class OpenCVAuton extends OpenCvCameraOpMode
     {
         initOpenCv();
 
+        flipImage = false;
+
         imgProc = new BeaconDetector();
         bd = (BeaconFinder) imgProc;
 

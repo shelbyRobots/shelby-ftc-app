@@ -41,7 +41,7 @@ public class DataLogger {
         }
         msBase = System.currentTimeMillis();
         nsBase = System.nanoTime();
-        addField("sec");
+        lineBuffer.append("sec");
         addField("d ms");
     }
 
