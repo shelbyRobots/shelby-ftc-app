@@ -22,7 +22,7 @@ public class GyroTest extends LinearOpMode
 
         waitForStart();
 
-        move(.3, -.3);
+     //   move(.3, -.3);
 
         while(opModeIsActive())
         {
