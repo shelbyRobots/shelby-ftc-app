@@ -30,51 +30,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cColorSensor;
-import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.robotcontroller.external.samples.HardwarePushbot;
-
 import java.util.Date;
-
-/**
- * This file illustrates the concept of driving a path based on Gyro heading and encoder counts.
- * It uses the common Pushbot hardware class to define the drive on the robot.
- * The code is structured as a LinearOpMode
- *
- * The code REQUIRES that you DO have encoders on the wheels,
- *   otherwise you would use: PushbotAutoDriveByTime;
- *
- *  This code ALSO requires that you have a Modern Robotics I2C gyro with the name "gyro"
- *   otherwise you would use: PushbotAutoDriveByEncoder;
- *
- *  This code requires that the drive Motors have been configured such that a positive
- *  power command moves them forward, and causes the encoders to count UP.
- *
- *  This code uses the RUN_TO_POSITION mode to enable the Motor controllers to generate the run profile
- *
- *  In order to calibrate the Gyro correctly, the robot must remain stationary during calibration.
- *  This is performed when the INIT button is pressed on the Driver Station.
- *  This code assumes that the robot is stationary when the INIT button is pressed.
- *  If this is not the case, then the INIT should be performed again.
- *
- *  Note: in this example, all angles are referenced to the initial coordinate frame set during the
- *  the Gyro Calibration process, or whenever the program issues a resetZAxisIntegrator() call on the Gyro.
- *
- *  The angle of movement/rotation is assumed to be a standardized rotation around the robot Z axis,
- *  which means that a Positive rotation is Counter Clock Wise, looking down on the field.
- *  This is consistent with the FTC field coordinate conventions set out in the document:
- *  ftc_app\doc\tutorial\FTC_FieldCoordinateSystemDefinition.pdf
- *
- * Use Android Studios to Copy this Class, and Paste it into your team's code folder with a new name.
- * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
- */
 
 @Autonomous(name="Auto Drive By Gyro", group="Test")
 //@Disabled
@@ -82,21 +44,19 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
 
     /* Declare OpMode members. */
     ShelbyBot               robot   = new ShelbyBot();
-    ModernRoboticsI2cGyro   gyro    = null;                    // Additional Gyro device
 
-    static final double     COUNTS_PER_MOTOR_REV    = 1120;
-    static final double     DRIVE_GEAR_REDUCTION    = 0.5;
-    static final double     WHEEL_DIAMETER_INCHES   = 4.5;
-    static final double     COUNTS_PER_INCH         = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
-                                                      (WHEEL_DIAMETER_INCHES * Math.PI);
+    static final double COUNTS_PER_MOTOR_REV = 1120;
+    static final double DRIVE_GEAR_REDUCTION = 0.5;     // This is < 1.0 if geared UP
+    static final double WHEEL_DIAMETER_INCHES = 4.5;     // For figuring circumference
+    static final double TUNE = 1.05;
+    static final double CPI = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION /
+                                       (WHEEL_DIAMETER_INCHES * TUNE * Math.PI));
 
-    // These constants define the desired driving/control characteristics
-    // The can/should be tweaked to suite the specific robot drive train.
-    static final double     DRIVE_SPEED             = 0.5;     // Nominal speed for better accuracy.
-    static final double     TURN_SPEED              = 0.4;     // Nominal half speed for better accuracy.
+    static final double DRIVE_SPEED = 0.5;
+    static final double TURN_SPEED = 0.3;
 
     static final double     HEADING_THRESHOLD       = 1 ;      // As tight as we can make it with an integer gyro
-    static final double     P_TURN_COEFF            = 0.1;     // Larger is more responsive, but also less stable
+    static final double     P_TURN_COEFF            = 0.06;     // Larger is more responsive, but also less stable
     static final double     P_DRIVE_COEFF           = 0.15;     // Larger is more responsive, but also less stable
 
     private ElapsedTime datalogtimer = new ElapsedTime();
@@ -111,9 +71,16 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
 
     static int frame = 0;
 
+    private int curLftTarget = 0;
+    private int curRgtTarget = 0;
+
+    ShelbyBot.DriveDir startDir = ShelbyBot.DriveDir.SWEEPER;
+
     @Override
     public void runOpMode()
     {
+        robot.init(this);
+
         if (logData)
         {
             Date day = new Date();
@@ -121,31 +88,27 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
             dl.addField("Gyro");
             dl.addField("LENC");
             dl.addField("RENC");
+            dl.addField("LPWR");
+            dl.addField("RPWR");
             dl.addField("RED");
             dl.addField("GRN");
             dl.addField("BLU");
             dl.newLine();
         }
-        robot.init(hardwareMap);
-        gyro = robot.gyro;
 
-        robot.leftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        robot.rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-        if(gyro == null) stop();
 
         robot.leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         robot.rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
+        robot.leftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        robot.rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
         telemetry.addData(">", "Calibrating Gyro");    //
         telemetry.update();
 
-        gyro.calibrate();
+        robot.setDriveDir(startDir);
 
-        while (!isStopRequested() && gyro.isCalibrating())  {
-            sleep(50);
-            idle();
-        }
+        boolean gyroReady = robot.calibrateGyro();
 
         if (robot.colorSensor != null)
         {
@@ -163,55 +126,63 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
             telemetry.update();
             idle();
         }
-        gyro.resetZAxisIntegrator();
+        robot.gyro.resetZAxisIntegrator();
 
-        turnColorOff();
-        robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
-        dl.addField("SgyroDrive"); dl.addField("",DD); dl.addField(0.0f); dl.newLine();
-        gyroDrive(DRIVE_SPEED, DD, 0.0);    // Drive FWD DD inches
-        dl.addField("SgyroTurn"); dl.addField("",-TA); dl.newLine();
-        gyroTurn( TURN_SPEED, -TA);         // Turn  CCW to -45 Degrees
-        dl.addField("SgyroHold"); dl.addField("",-TA); dl.addField(0.5f); dl.newLine();
-        gyroHold( TURN_SPEED, -TA, 0.5);    // Hold -45 Deg heading for a 1/2 second
-        dl.addField("SgyroTurn"); dl.addField("",TA); dl.addField(0.0f); dl.newLine();
-        gyroTurn( TURN_SPEED,  TA);         // Turn  CW  to  45 Degrees
-        dl.addField("SgyroHold"); dl.addField("",TA); dl.addField(0.5f); dl.newLine();
-        gyroHold( TURN_SPEED,  TA, 0.5);    // Hold  45 Deg heading for a 1/2 second
-        dl.addField("SgyroTurn"); dl.addField("",0.0); ; dl.newLine();
-        gyroTurn( TURN_SPEED,   0.0);         // Turn  CW  to   0 Degrees
-        dl.addField("SgyroHold"); dl.addField("",0.0); dl.addField(1.0f); dl.newLine();
-        gyroHold( TURN_SPEED,   0.0, 1.0);    // Hold  0 Deg heading for a 1 second
-        dl.addField("SgyroDrive"); dl.addField("",-DD); dl.addField(0.0f); dl.newLine();
-        gyroDrive(DRIVE_SPEED, -DD, 0.0);    // Drive REV 48 inches
-        dl.addField("SgyroHold"); dl.addField("",0.0); dl.addField(0.5f); dl.newLine();
-        gyroHold( TURN_SPEED,   0.0, 0.5);    // Hold  0 Deg heading for a 1/2 second
+        ShelbyBot.DriveDir ddir = startDir;
 
-        turnColorOn();
-        robot.setDriveDir(ShelbyBot.DriveDir.PUSHER);
-        robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
-        dl.addField("SgyroDrive"); dl.addField("",DD); dl.addField(0.0f); dl.newLine();
-        gyroDrive(DRIVE_SPEED, DD, 0.0);    // Drive FWD DD inches
-        dl.addField("SgyroTurn"); dl.addField("",-TA); dl.newLine();
+        robot.turnColorOff();
+        dl.addField(ddir.toString()); dl.newLine();
+        gyroDrive(DRIVE_SPEED, DD, 0.0);
+        logOverrun(0.25);
+        int overLcnt = curLftTarget - robot.leftMotor.getCurrentPosition();
+        int overRcnt = curRgtTarget - robot.rightMotor.getCurrentPosition();
+        double overLdst = overLcnt/CPI;
+        double overRdst = overRcnt/CPI;
+        gyroDrive(DRIVE_SPEED, (overLdst + overRdst)/2, 0.0, false);
+        sleep(3000);
         gyroTurn( TURN_SPEED, -TA);         // Turn  CCW to -45 Degrees
-        dl.addField("SgyroHold"); dl.addField("",-TA); dl.addField(0.5f); dl.newLine();
+        logOverrun(1.0); sleep(3000);
         gyroHold( TURN_SPEED, -TA, 0.5);    // Hold -45 Deg heading for a 1/2 second
-        dl.addField("SgyroTurn"); dl.addField("",TA); dl.addField(0.0f); dl.newLine();
+        logOverrun(1.0); sleep(3000);
         gyroTurn( TURN_SPEED,  TA);         // Turn  CW  to  45 Degrees
-        dl.addField("SgyroHold"); dl.addField("",TA); dl.addField(0.5f); dl.newLine();
+        logOverrun(1.0); sleep(3000);
         gyroHold( TURN_SPEED,  TA, 0.5);    // Hold  45 Deg heading for a 1/2 second
-        dl.addField("SgyroTurn"); dl.addField("",0.0); ; dl.newLine();
+        logOverrun(1.0); sleep(3000);
         gyroTurn( TURN_SPEED,   0.0);         // Turn  CW  to   0 Degrees
-        dl.addField("SgyroHold"); dl.addField("",0.0); dl.addField(1.0f); dl.newLine();
+        logOverrun(1.0); sleep(3000);
         gyroHold( TURN_SPEED,   0.0, 1.0);    // Hold  0 Deg heading for a 1 second
-        dl.addField("SgyroDrive"); dl.addField("",-DD); dl.addField(0.0f); dl.newLine();
+        logOverrun(1.0); sleep(3000);
         gyroDrive(DRIVE_SPEED, -DD, 0.0);    // Drive REV 48 inches
-        dl.addField("SgyroHold"); dl.addField("",0.0); dl.addField(0.5f); dl.newLine();
+        logOverrun(1.0); sleep(3000);
         gyroHold( TURN_SPEED,   0.0, 0.5);    // Hold  0 Deg heading for a 1/2 second
+        logOverrun(1.0); sleep(3000);
+
+        ddir = robot.invertDriveDir();
+
+        robot.turnColorOn();
+        dl.addField(ddir.toString()); dl.newLine();
+        gyroDrive(DRIVE_SPEED, DD, 0.0);    // Drive FWD DD inches
+        logOverrun(1.0); sleep(3000);
+        gyroTurn( TURN_SPEED, -TA);         // Turn  CCW to -45 Degrees
+        logOverrun(1.0); sleep(3000);
+        gyroHold( TURN_SPEED, -TA, 0.5);    // Hold -45 Deg heading for a 1/2 second
+        logOverrun(1.0); sleep(3000);
+        gyroTurn( TURN_SPEED,  TA);         // Turn  CW  to  45 Degrees
+        logOverrun(1.0); sleep(3000);
+        gyroHold( TURN_SPEED,  TA, 0.5);    // Hold  45 Deg heading for a 1/2 second
+        logOverrun(1.0); sleep(3000);
+        gyroTurn( TURN_SPEED,   0.0);         // Turn  CW  to   0 Degrees
+        logOverrun(1.0); sleep(3000);
+        gyroHold( TURN_SPEED,   0.0, 1.0);    // Hold  0 Deg heading for a 1 second
+        logOverrun(1.0); sleep(3000);
+        gyroDrive(DRIVE_SPEED, -DD, 0.0);    // Drive REV 48 inches
+        logOverrun(1.0); sleep(3000);
+        gyroHold( TURN_SPEED,   0.0, 0.5);    // Hold  0 Deg heading for a 1/2 second
+        logOverrun(1.0); sleep(3000);
 
         telemetry.addData("Path", "Complete");
         telemetry.update();
     }
-
 
    /**
     *  Method to drive on a fixed compass bearing (angle), based on encoder counts.
@@ -225,10 +196,12 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
     *                   0 = fwd. +ve is CCW from fwd. -ve is CW from forward.
     *                   If a relative angle is required, add/subtract from current heading.
     */
-    public void gyroDrive ( double speed,
-                            double distance,
-                            double angle) {
-
+    public void gyroDrive (double speed, double distance, double angle)
+    {
+        gyroDrive(speed, distance, angle, true);
+    }
+    public void gyroDrive ( double speed, double distance, double angle, boolean correctHdg)
+    {
         int     newLeftTarget;
         int     newRightTarget;
         int     moveCounts;
@@ -241,13 +214,23 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
         // Ensure that the opmode is still active
         if (opModeIsActive()) {
 
-            robot.leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            robot.rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
             // Determine new target position, and pass to motor controller
-            moveCounts = (int)(distance * COUNTS_PER_INCH);
-            newLeftTarget = robot.leftMotor.getCurrentPosition() + moveCounts;
+            moveCounts = (int)(distance * CPI);
+            newLeftTarget  = robot.leftMotor.getCurrentPosition()  + moveCounts;
             newRightTarget = robot.rightMotor.getCurrentPosition() + moveCounts;
+
+            if(logData)
+            {
+                dl.addField("GyroDrive");
+                dl.addField(robot.getDriveDir().toString());
+                dl.addField("", distance);
+                dl.addField("", angle);
+                dl.addField("",moveCounts);
+                dl.newLine();
+            }
+
+            //robot.leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            //robot.rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
             // Set Target and Turn On RUN_TO_POSITION
             robot.leftMotor.setTargetPosition(newLeftTarget);
@@ -265,15 +248,8 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
             while (opModeIsActive() &&
                    (robot.leftMotor.isBusy() && robot.rightMotor.isBusy())) {
 
-                if(frame%20 == 0)
+                if(frame%5 == 0)
                 {
-                    if (colorOn && robot.colorSensor != null)
-                    {
-                        r = robot.colorSensor.red();
-                        g = robot.colorSensor.green();
-                        b = robot.colorSensor.blue();
-                    }
-
                     logData();
                 }
                 frame++;
@@ -285,6 +261,11 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
                 // if driving in reverse, the motor correction also needs to be reversed
                 if (distance < 0)
                     steer *= -1.0;
+
+                if(!correctHdg)
+                {
+                    steer = 0;
+                }
 
                 leftSpeed = speed - steer;
                 rightSpeed = speed + steer;
@@ -309,6 +290,13 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
                 telemetry.update();
             }
 
+            logData();
+            dl.addField("DONE");
+            dl.newLine();
+
+            curLftTarget = newLeftTarget;
+            curRgtTarget = newRightTarget;
+
             // Stop all motion;
             robot.leftMotor.setPower(0);
             robot.rightMotor.setPower(0);
@@ -318,6 +306,7 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
             robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
     }
+
 
     /**
      *  Method to spin on central axis to point in a new direction.
@@ -330,27 +319,34 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
      *                   0 = fwd. +ve is CCW from fwd. -ve is CW from forward.
      *                   If a relative angle is required, add/subtract from current heading.
      */
-    public void gyroTurn (  double speed, double angle) {
+    public void gyroTurn (  double speed, double angle)
+    {
+        if(logData)
+        {
+            dl.addField("GyroTurn");
+            dl.addField(robot.getDriveDir().toString());
+            dl.addField("", angle);
+            dl.newLine();
+        }
 
         robot.leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         robot.rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        // keep looping while we are still active, and not on heading.
-        while (opModeIsActive() && !onHeading(speed, angle, P_TURN_COEFF)) {
-            // Update telemetry & Allow time for other processes to run.
-            if(frame%20 == 0)
-            {
-                if (colorOn && robot.colorSensor != null)
-                {
-                    r = robot.colorSensor.red();
-                    g = robot.colorSensor.green();
-                    b = robot.colorSensor.blue();
-                }
 
+        robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        // keep looping while we are still active, and not on heading.
+        while (opModeIsActive() && !onHeading(speed, angle, P_TURN_COEFF))
+        {
+            if(frame%5 == 0)
+            {
                 logData();
             }
             frame++;
             telemetry.update();
         }
+        logData();
+        dl.addField("DONE");
+        dl.newLine();
     }
 
     /**
@@ -367,27 +363,30 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
 
         robot.leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         robot.rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        dl.addField("GyroHold");
+        dl.addField(robot.getDriveDir().toString());
+        dl.addField("", angle);
+        dl.addField("", holdTime);
+        dl.newLine();
+
         ElapsedTime holdTimer = new ElapsedTime();
-
-        // keep looping while we have time remaining.
         holdTimer.reset();
-        while (opModeIsActive() && (holdTimer.time() < holdTime)) {
-            // Update telemetry & Allow time for other processes to run.
+        while (opModeIsActive() && (holdTimer.time() < holdTime))
+        {
             onHeading(speed, angle, P_TURN_COEFF);
-            if(frame%20 == 0)
+            if(frame%5 == 0)
             {
-                if (colorOn && robot.colorSensor != null)
-                {
-                    r = robot.colorSensor.red();
-                    g = robot.colorSensor.green();
-                    b = robot.colorSensor.blue();
-                }
-
                 logData();
             }
             frame++;
             telemetry.update();
         }
+        logData();
+        dl.addField("DONE");
+        dl.newLine();
 
         // Stop all motion;
         robot.leftMotor.setPower(0);
@@ -426,11 +425,9 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
             leftSpeed   = -rightSpeed;
         }
 
-        // Send desired speeds to motors.
         robot.leftMotor.setPower(leftSpeed);
         robot.rightMotor.setPower(rightSpeed);
 
-        // Display it for the driver.
         telemetry.addData("Target", "%5.2f", angle);
         telemetry.addData("Err/St", "%5.2f/%5.2f", error, steer);
         telemetry.addData("Speed.", "%5.2f:%5.2f", leftSpeed, rightSpeed);
@@ -465,42 +462,39 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
         return Range.clip(error * PCoeff, -1, 1);
     }
 
-    private void turnColorOn()
+    public void logOverrun(double t)
     {
-        if(robot.colorSensor == null) return;
-        colorOn = true;
-        ModernRoboticsI2cColorSensor cs = robot.colorSensor;
-        cs.getI2cController().registerForI2cPortReadyCallback(robot.colorSensor,
-                robot.getColorPort());
-
-        cs.enableLed(true);
+        dl.addField("LOGGING OVERRUN");
+        dl.newLine();
+        ElapsedTime et = new ElapsedTime();
+        while(et.seconds() < t)
+        {
+            logData();
+            robot.waitForTick(10);
+        }
     }
-
-    private void turnColorOff()
-    {
-        if(robot.colorSensor == null) return;
-        colorOn = false;
-        ModernRoboticsI2cColorSensor cs = robot.colorSensor;
-        cs.enableLed(false);
-        cs.getI2cController().deregisterForPortReadyCallback(robot.getColorPort());
-        r = 0;
-        g = 0;
-        b = 0;
-    }
-
     public void logData()
     {
-        if (datalogtimer.seconds() <0.01) return;
+        double dlTimeout = 0.002;
+        if (datalogtimer.seconds() <dlTimeout) return;
 
         datalogtimer.reset();
 
         if(logData)
         {
-            //Write sensor values to the data logger
+            if (colorOn && robot.colorSensor != null)
+            {
+                r = robot.colorSensor.red();
+                g = robot.colorSensor.green();
+                b = robot.colorSensor.blue();
+            }
+
             if(robot.gyro != null) dl.addField(robot.getGyroFhdg());
             else                   dl.addField("");
             dl.addField(robot.leftMotor.getCurrentPosition());
             dl.addField(robot.rightMotor.getCurrentPosition());
+            dl.addField("",robot.leftMotor.getPower());
+            dl.addField("",robot.rightMotor.getPower());
             if(robot.colorSensor != null)
             {
                 dl.addField(r);

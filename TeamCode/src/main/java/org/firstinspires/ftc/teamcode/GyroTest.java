@@ -18,7 +18,7 @@ public class GyroTest extends LinearOpMode
 {
     public void runOpMode() throws InterruptedException
     {
-        robot.init(hardwareMap);
+        robot.init(this);
 
         waitForStart();
 

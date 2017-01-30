@@ -42,15 +42,16 @@ class ShelbyBot
     Servo    lpusher     = null;
     Servo    rpusher     = null;
 
-    ModernRoboticsI2cGyro gyro       = null;
+    ModernRoboticsI2cGyro        gyro        = null;
     ModernRoboticsI2cColorSensor colorSensor = null;
-
-    DeviceInterfaceModule dim = null;
+    DeviceInterfaceModule        dim         = null;
 
     final static int    ENCODER_CPR = 1120;     //Encoder Counts per Revolution
 
     final static DcMotor.Direction  LEFT_DIR = DcMotor.Direction.REVERSE;
     final static DcMotor.Direction RIGHT_DIR = DcMotor.Direction.FORWARD;
+
+    boolean gyroReady = false;
 
     /* local OpMode members. */
     private ElapsedTime period  = new ElapsedTime();
@@ -61,9 +62,10 @@ class ShelbyBot
     }
 
     /* Initialize standard Hardware interfaces */
-    public void init(HardwareMap hwMap)
+    public void init(LinearOpMode op)
     {
-        this.hwMap = hwMap;
+        this.op = op;
+        this.hwMap = op.hardwareMap;
         // Define and Initialize Motors
         leftMotor   = hwMap.dcMotor.get("leftdrive");
         rightMotor  = hwMap.dcMotor.get("rightdrive");
@@ -77,7 +79,6 @@ class ShelbyBot
         gyro        = (ModernRoboticsI2cGyro)hwMap.gyroSensor.get("gyro");
         colorSensor = (ModernRoboticsI2cColorSensor)hwMap.colorSensor.get("color");
 
-        //fix name of DIM
         dim = hwMap.deviceInterfaceModule.get("dim");
 
         // FORWARD for CCW drive shaft rotation if using AndyMark motors
@@ -123,49 +124,82 @@ class ShelbyBot
         if(colorSensor != null)
         {
             colorPort = colorSensor.getPort();
+            DbgLog.msg("SJH: I2C Controller version %d",
+                    colorSensor.getI2cController().getVersion());
+
+            DbgLog.msg("SJH: COLOR_SENSOR");
+            DbgLog.msg("SJH:  ConnectionInfo %s", colorSensor.getConnectionInfo());
+            DbgLog.msg("SJH:  I2cAddr %s", Integer.toHexString(colorSensor.getI2cAddress().get8Bit()));
+            DbgLog.msg("SJH:  I2cAddr %s", Integer.toHexString(colorSensor.getI2cAddress().get7Bit()));
+
+            colorSensor.enableLed(false);
+            colorSensor.enableLed(true);
+
+            turnColorOff();
+        }
+
+        if(gyro != null)
+        {
+            DbgLog.msg("SJH: GYRO_SENSOR");
+            DbgLog.msg("SJH:  ConnectionInfo %s", gyro.getConnectionInfo());
+            DbgLog.msg("SJH:  I2cAddr %s", Integer.toHexString(gyro.getI2cAddress().get8Bit()));
+            DbgLog.msg("SJH:  I2cAddr %s", Integer.toHexString(gyro.getI2cAddress().get7Bit()));
         }
     }
 
     void setDriveDir (DriveDir ddir)
     {
-        if(initDriveDir == null)
-            initDriveDir = ddir;
+        if(ddir == DriveDir.UNKNOWN)
+        {
+            DbgLog.error("SJH: ERROR - setDriveDir UNKNOWN not allowed.  Setting SWEEPER.");
+            ddir = DriveDir.SWEEPER;
+        }
+
+        if(calibrationDriveDir == DriveDir.UNKNOWN) calibrationDriveDir = ddir;
 
         if(this.ddir == ddir)
-        {
             return;
-        }
 
         this.ddir = ddir;
 
-        DbgLog.msg("SJH: Changing to " + ddir);
+        DbgLog.msg("SJH: Setting Drive Direction to " + ddir);
 
-        if(ddir == DriveDir.SWEEPER)
+        switch (ddir)
         {
-            leftMotor   = hwMap.dcMotor.get("leftdrive");
-            rightMotor  = hwMap.dcMotor.get("rightdrive");
+            case PUSHER:
+            {
+                leftMotor   = hwMap.dcMotor.get("rightdrive");
+                rightMotor  = hwMap.dcMotor.get("leftdrive");
+                break;
+            }
+            case SWEEPER:
+            case UNKNOWN:
+            {
+                leftMotor   = hwMap.dcMotor.get("leftdrive");
+                rightMotor  = hwMap.dcMotor.get("rightdrive");
+            }
         }
-        else
-        {
-            leftMotor   = hwMap.dcMotor.get("rightdrive");
-            rightMotor  = hwMap.dcMotor.get("leftdrive");
-        }
+
         leftMotor.setDirection(LEFT_DIR);
         rightMotor.setDirection(RIGHT_DIR);
     }
 
-    void invertDriveDir()
+    DriveDir invertDriveDir()
     {
-        if(ddir == DriveDir.SWEEPER)
+        DriveDir inDir  = getDriveDir();
+        DriveDir outDir = DriveDir.SWEEPER;
+
+        switch(inDir)
         {
-            DbgLog.msg("SJH: Changing from SWEEPER FWD to PUSHER FWD");
-            setDriveDir(DriveDir.PUSHER);
+            case SWEEPER: outDir = DriveDir.PUSHER;  break;
+            case PUSHER:
+            case UNKNOWN:
+                outDir = DriveDir.SWEEPER; break;
         }
-        else
-        {
-            DbgLog.msg("SJH: Changing from PUSHER FWD to SWEEPER FWD");
-            setDriveDir(DriveDir.SWEEPER);
-        }
+
+        DbgLog.msg("SJH: Changing from %s FWD to %s FWD", inDir, outDir);
+        setDriveDir(outDir);
+        return outDir;
     }
 
     void setInitHdg(double initHdg)
@@ -173,11 +207,56 @@ class ShelbyBot
         this.initHdg = (int) Math.round(initHdg);
     }
 
+    public boolean calibrateGyro()
+    {
+        if(gyro == null)
+        {
+            DbgLog.error("SJH: NO GYRO FOUND TO CALIBRATE");
+            return false;
+        }
+
+        if(calibrationDriveDir == DriveDir.UNKNOWN)
+        {
+            DbgLog.msg("SJH: calibrateGyro called without having set a drive Direction. " +
+                       "Defaulting to SWEEPER.");
+            setDriveDir(DriveDir.SWEEPER);
+        }
+
+        DbgLog.msg("SJH: Starting gyro calibration");
+        gyro.calibrate();
+
+        double gyroInitTimout = 5.0;
+        boolean gyroCalibTimedout = false;
+        ElapsedTime gyroTimer = new ElapsedTime();
+
+        while (!op.isStopRequested() &&
+               gyro.isCalibrating())
+        {
+            op.sleep(50);
+            if(gyroTimer.seconds() > gyroInitTimout)
+            {
+                DbgLog.msg("SJH: GYRO INIT TIMED OUT!!");
+                gyroCalibTimedout = true;
+                break;
+            }
+        }
+        DbgLog.msg("SJH: Gyro calibrated in %4.2f seconds", gyroTimer.seconds());
+
+        boolean gyroReady = !gyroCalibTimedout;
+        if(gyroReady) gyro.resetZAxisIntegrator();
+        this.gyroReady = gyroReady;
+        return gyroReady;
+    }
+
     public int getGyroFhdg()
     {
         int dirHdgAdj = 0;
-        if(ddir != initDriveDir) dirHdgAdj = 180;
-        int cHdg = gyro.getIntegratedZValue() + initHdg + dirHdgAdj;
+        if(ddir != calibrationDriveDir) dirHdgAdj = 180;
+        //NOTE:  gyro.getIntegratedZValue is +ve CCW (left turn)
+        //WHEN the freaking gyro is mounted upright.
+        //Since snowman 2.0 has gyro mounted upside down, we need
+        //to negate the value!!
+        int cHdg = -gyro.getIntegratedZValue() + initHdg + dirHdgAdj;
 
         while (cHdg <= -180) cHdg += 360;
         while (cHdg >   180) cHdg -= 360;
@@ -187,6 +266,7 @@ class ShelbyBot
 
     enum DriveDir
     {
+        UNKNOWN,
         SWEEPER,
         PUSHER
     }
@@ -196,12 +276,23 @@ class ShelbyBot
         return colorPort;
     }
 
-    DriveDir getDriveDir() { return ddir; }
-
-    void setOpMode(LinearOpMode op)
+    public void turnColorOn()
     {
-        this.op = op;
+        colorSensor.getI2cController().registerForI2cPortReadyCallback(colorSensor,
+                getColorPort());
+
+        op.sleep(50);
+        colorSensor.enableLed(true);
     }
+
+    public void turnColorOff()
+    {
+        colorSensor.enableLed(false);
+        op.sleep(50);
+        colorSensor.getI2cController().deregisterForPortReadyCallback(getColorPort());
+    }
+
+    DriveDir getDriveDir() { return ddir; }
 
     /***
      *
@@ -238,8 +329,8 @@ class ShelbyBot
     private static final float CAMERA_Z_IN_BOT = 0f; //15.5f * MM_PER_INCH;
 
     private int colorPort = 0;
-    private DriveDir ddir = DriveDir.SWEEPER;
-    private DriveDir initDriveDir = null;
+    private DriveDir ddir = DriveDir.UNKNOWN;
+    public DriveDir calibrationDriveDir = DriveDir.UNKNOWN;
     private HardwareMap hwMap = null;
 
     private int initHdg = 0;
