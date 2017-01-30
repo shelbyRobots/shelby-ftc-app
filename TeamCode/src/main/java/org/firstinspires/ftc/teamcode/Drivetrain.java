@@ -747,6 +747,9 @@ class Drivetrain
                 dl.addField(robot.colorSensor.green());
                 dl.addField(robot.colorSensor.blue());
             }
+            dl.addField("", estPos.getX());
+            dl.addField("", estPos.getY());
+            dl.addField("", estHdg);
             dl.newLine();
         }
     }
