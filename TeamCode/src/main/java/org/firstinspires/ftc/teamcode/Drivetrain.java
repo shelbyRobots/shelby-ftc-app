@@ -456,6 +456,11 @@ class Drivetrain
         this.op = op;
     }
 
+    void setDataLogger(DataLogger dl)
+    {
+        this.dl = dl;
+    }
+
     public void init(ShelbyBot robot)
     {
         DbgLog.msg("SJH CPI: %5.2f", CPI);
@@ -465,21 +470,6 @@ class Drivetrain
 
         robot.leftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         robot.rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-        if (logData)
-        {
-            Date day = new Date();
-            dl = new DataLogger(day.toString() + "autonomousData");
-            dl.addField("Gyro");
-            dl.addField("LENC");
-            dl.addField("RENC");
-            dl.addField("LPWR");
-            dl.addField("RPWR");
-            dl.addField("RED");
-            dl.addField("GRN");
-            dl.addField("BLU");
-            dl.newLine();
-        }
     }
 
     private void waitForTick(long periodMs)
@@ -757,6 +747,9 @@ class Drivetrain
                 dl.addField(robot.colorSensor.green());
                 dl.addField(robot.colorSensor.blue());
             }
+            dl.addField("", estPos.getX());
+            dl.addField("", estPos.getY());
+            dl.addField("", estHdg);
             dl.newLine();
         }
     }

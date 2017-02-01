@@ -246,8 +246,8 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
 
             // keep looping while we are still active, and BOTH motors are running.
             while (opModeIsActive() &&
-                   (robot.leftMotor.isBusy() && robot.rightMotor.isBusy())) {
-
+                   (robot.leftMotor.isBusy() && robot.rightMotor.isBusy()))
+            {
                 if(frame%5 == 0)
                 {
                     logData();
@@ -290,20 +290,16 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
                 telemetry.update();
             }
 
+            curLftTarget = newLeftTarget;
+            curRgtTarget = newRightTarget;
+            robot.leftMotor.setPower(0);
+            robot.rightMotor.setPower(0);
+            robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
             logData();
             dl.addField("DONE");
             dl.newLine();
-
-            curLftTarget = newLeftTarget;
-            curRgtTarget = newRightTarget;
-
-            // Stop all motion;
-            robot.leftMotor.setPower(0);
-            robot.rightMotor.setPower(0);
-
-            // Turn off RUN_TO_POSITION
-            robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
     }
 
@@ -473,6 +469,7 @@ public class AutoDriveByGyro_Linear extends LinearOpMode {
             robot.waitForTick(10);
         }
     }
+
     public void logData()
     {
         double dlTimeout = 0.002;

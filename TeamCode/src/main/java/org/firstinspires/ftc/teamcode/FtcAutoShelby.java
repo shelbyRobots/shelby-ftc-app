@@ -12,6 +12,8 @@ import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
 
+import java.util.Date;
+
 import ftclib.FtcChoiceMenu;
 import ftclib.FtcMenu;
 import ftclib.FtcValueMenu;
@@ -89,6 +91,9 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         drvTrn.init(robot);
         drvTrn.setOpMode(this);
 
+        setupLogger();
+        drvTrn.setDataLogger(dl);
+
         initOpenCv();
 
         imgProc = new BeaconDetector();
@@ -149,6 +154,11 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         startTimer.reset();
 
         DbgLog.msg("SJH: STARTING AT %4.2f", timer.seconds());
+        if(logData)
+        {
+            dl.addField("START");
+            dl.newLine();
+        }
 
         DbgLog.msg("SJH: Delaying for %4.2f seconds", delay);
         ElapsedTime delayTimer = new ElapsedTime();
@@ -167,7 +177,9 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         for (int i = 0; i < pathSegs.length; ++i)
         {
             if(!opModeIsActive() || isStopRequested()) break;
-            DbgLog.msg("SJH: Starting segment %s at %4.2f", pathSegs[i].getName(),
+
+            String segName = pathSegs[i].getName();
+            DbgLog.msg("SJH: Starting segment %s at %4.2f", segName,
                     startTimer.seconds());
 
             //noinspection ConstantConditions
@@ -199,18 +211,21 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             curPos = null;
 
             if(curSeg.getStrtPt().getX() == curSeg.getTgtPt().getX() &&
-                    curSeg.getStrtPt().getY() == curSeg.getTgtPt().getY())
+               curSeg.getStrtPt().getY() == curSeg.getTgtPt().getY())
             {
                 continue;
             }
 
             robot.setDriveDir(curSeg.getDir());
 
+            if(logData) { dl.addField(segName + " encoderTurn"); dl.newLine(); }
             DbgLog.msg("SJH: ENCODER TURN %s", curSeg.getName());
             doEncoderTurn(curSeg.getFieldHeading()); //quick but rough
+            if(logData) { dl.addField(segName + " gyroTurn"); dl.newLine(); }
             DbgLog.msg("SJH: GYRO TURN %s", curSeg.getName());
             doGyroTurn(curSeg.getFieldHeading()); //fine tune using gyro
             DbgLog.msg("SJH: Setting drive tuner to %4.2f", curSeg.getDrvTuner());
+            if(logData) { dl.addField(segName + " move"); dl.newLine(); }
             drvTrn.setDrvTuner(curSeg.getDrvTuner());
             doMove(curSeg);
             Double pturn = curSeg.getPostTurn();
@@ -218,10 +233,14 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             if(usePostTurn && pturn != null)
             {
                 DbgLog.msg("SJH ENCODER POST TURN %s", curSeg.getName());
+                if(logData) { dl.addField(segName + " postEncoderTurn"); dl.newLine(); }
                 doEncoderTurn(pturn);
+                if(logData) { dl.addField(segName + " postGyroTurn"); dl.newLine(); }
                 DbgLog.msg("SJH: GRYO POST TURN %s", curSeg.getName());
                 doGyroTurn(pturn);
             }
+
+            if(logData) { dl.addField(segName + " action"); dl.newLine(); }
 
             if(!opModeIsActive() || isStopRequested())
             {
@@ -344,6 +363,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
         RobotLog.ii("SJH", "Completed move %s. Time: %6.3f HDG: %4d",
                 seg.getName(), timer.time(), robot.getGyroFhdg());
+
+        if(logOverrun) logOverrun(overtime);
     }
 
 
@@ -366,6 +387,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         cHdg = robot.getGyroFhdg();
         DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f CHDG: %4d",
                 angle, timer.time(), cHdg);
+
+        if(logOverrun) logOverrun(overtime);
     }
 
     private void doGyroTurn(double fHdg)
@@ -386,6 +409,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         cHdg = robot.getGyroFhdg();
         DbgLog.msg("SJH Completed turnGyro %4d. Time: %6.3f CHDG: %4d",
                 tHdg, timer.time(), cHdg);
+
+        if(logOverrun) logOverrun(overtime);
     }
 
     private BeaconFinder.BeaconSide findPushSide(BeaconFinder.BeaconSide bSide,
@@ -894,6 +919,35 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         DbgLog.msg("SJH: DELAY    %4.2f", delay);
     }
 
+    private void setupLogger()
+    {
+        if (logData)
+        {
+            Date day = new Date();
+            dl = new DataLogger(day.toString() + "autonomousData");
+            dl.addField("Gyro");
+            dl.addField("LENC");
+            dl.addField("RENC");
+            dl.addField("LPWR");
+            dl.addField("RPWR");
+            dl.addField("RED");
+            dl.addField("GRN");
+            dl.addField("BLU");
+            dl.newLine();
+        }
+    }
+
+    public void logOverrun(double t)
+    {
+        dl.addField("LOGGING OVERRUN");
+        dl.newLine();
+        ElapsedTime et = new ElapsedTime();
+        while(et.seconds() < t)
+        {
+            drvTrn.logData();
+            robot.waitForTick(10);
+        }
+    }
 
     private enum Team
     {
@@ -947,4 +1001,9 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
     private boolean useImageLoc  = false;
 
     private boolean firstInState = true;
+
+    private DataLogger dl;
+    private boolean logData = true;
+    private boolean logOverrun = false;
+    private double overtime = 0.5;
 }
