@@ -54,7 +54,7 @@ class Points
 
         if(startPos != Field.StartPos.START_R_PUSHER)
         {
-            addPoint(points, rev, 0.3, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
+            addPoint(points, rev, 0.3, 1.05, Segment.TargetType.ENCODER, shoot, shoot_pt);
         }
 
         if(pushChoice == Field.BeaconChoice.NEAR ||
@@ -64,7 +64,7 @@ class Points
             {
                 if(startPos != Field.StartPos.START_R_PUSHER)
                 {
-                    addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, CLRA1_PT);
+                    addPoint(points, fwd, 0.5, 1.10, Segment.TargetType.ENCODER, none, CLRA1_PT);
                 }
                 else
                 {
@@ -96,7 +96,7 @@ class Points
         {
             if(!useFly2Light)
             {
-                addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, CLR_2_PT);
+                addPoint(points, fwd, 0.5, 1.10, Segment.TargetType.ENCODER, none, CLR_2_PT);
                 addPoint(points, fwd, 0.20, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
             }
             else

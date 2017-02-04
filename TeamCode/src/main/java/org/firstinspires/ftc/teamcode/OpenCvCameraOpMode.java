@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
+import android.hardware.Camera;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -140,7 +141,7 @@ public abstract class OpenCvCameraOpMode extends LinearOpMode
 
         width = openCVCamera.getMeasuredWidth();
         height = openCVCamera.getMeasuredHeight();
-        DbgLog.msg("SBH: CAMERA %d x %d", width, height);
+        DbgLog.msg("SJH: CAMERA %d x %d", width, height);
     }
 
     protected void initOpenCv()
