@@ -3,10 +3,9 @@ package org.firstinspires.ftc.teamcode;
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
 import android.hardware.Camera;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -18,9 +17,6 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
-import org.opencv.core.Size;
-
-import java.util.List;
 
 public abstract class OpenCvCameraOpMode extends LinearOpMode
                                          implements CameraBridgeViewBase.CvCameraViewListener2
@@ -29,7 +25,7 @@ public abstract class OpenCvCameraOpMode extends LinearOpMode
     protected ImageProcessor imgProc = null;
     private static JavaCameraView openCVCamera = null;
 
-    protected boolean flipImage = true;
+    protected boolean flipImage = false;
 
     int width;
     int height;
@@ -102,13 +98,25 @@ public abstract class OpenCvCameraOpMode extends LinearOpMode
                 ViewGroup es = (ViewGroup) act.findViewById(R.id.entire_screen);
                 ViewGroup tb = (ViewGroup) act.findViewById(R.id.top_bar);
                 ViewGroup ih = (ViewGroup) act.findViewById(R.id.included_header);
-                es.removeView(tb);
-                es.removeView(ih);
+                if(tb != null) es.removeView(tb);
+                if(ih != null) es.removeView(ih);
 
                 ViewGroup rl = (ViewGroup) act.findViewById(R.id.RelativeLayout);
-                rl.removeViews(4,3);
-                rl.removeViews(0,2);
+                View nc = act.findViewById(R.id.textNetworkConnectionStatus);
+                View rs = act.findViewById(R.id.textRobotStatus);
+                View g1 = act.findViewById(R.id.textGamepad1);
+                View g2 = act.findViewById(R.id.textGamepad2);
+                View wv = act.findViewById(R.id.webViewBlocksRuntime);
+                if(nc != null) rl.removeView(nc);
+                if(rs != null) rl.removeView(rs);
+                if(g1 != null) rl.removeView(g1);
+                if(g2 != null) rl.removeView(g2);
+                if(wv != null) rl.removeView(wv);
+
                 rl.setPadding(0,0,0,0);
+
+                TextView et = (TextView) act.findViewById(R.id.textErrorMessage);
+                et.setTextColor(0xFFFF00);
 
                 ViewGroup vg = (ViewGroup) act.findViewById(R.id.cameraMonitorViewId);
 
@@ -133,7 +141,7 @@ public abstract class OpenCvCameraOpMode extends LinearOpMode
 
         width = openCVCamera.getMeasuredWidth();
         height = openCVCamera.getMeasuredHeight();
-        DbgLog.msg("SBH: CAMERA %d x %d", width, height);
+        DbgLog.msg("SJH: CAMERA %d x %d", width, height);
     }
 
     protected void initOpenCv()

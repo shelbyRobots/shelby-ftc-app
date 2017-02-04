@@ -54,7 +54,7 @@ class Points
 
         if(startPos != Field.StartPos.START_R_PUSHER)
         {
-            addPoint(points, rev, 0.5, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
+            addPoint(points, rev, 0.3, 1.05, Segment.TargetType.ENCODER, shoot, shoot_pt);
         }
 
         if(pushChoice == Field.BeaconChoice.NEAR ||
@@ -64,22 +64,22 @@ class Points
             {
                 if(startPos != Field.StartPos.START_R_PUSHER)
                 {
-                    addPoint(points, fwd, 0.95, 1.00, Segment.TargetType.ENCODER, none, CLRA1_PT);
+                    addPoint(points, fwd, 0.5, 1.10, Segment.TargetType.ENCODER, none, CLRA1_PT);
                 }
                 else
                 {
-                    addPoint(points, fwd, 0.95, 1.00, Segment.TargetType.ENCODER, none, CLRR1_PT);
+                    addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, CLRR1_PT);
                 }
                 addPoint(points, fwd, 0.20,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
             }
             else
             {
-                addPoint(points, fwd, 0.95, 1.00, Segment.TargetType.ENCODER, beacon, SCAN1_PT);
+                addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, beacon, SCAN1_PT);
             }
 
             if(startPos == Field.StartPos.START_R_PUSHER)
             {
-                addPoint(points, rev, 0.5, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
+                addPoint(points, rev, 0.3, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
             }
 
             //addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   push, PRSS1_PT);
@@ -88,7 +88,7 @@ class Points
 
         if(pushChoice == Field.BeaconChoice.FAR && startPos == Field.StartPos.START_B_SWEEPER)
         {
-            addPoint(points, fwd, 0.9, 1.00, Segment.TargetType.ENCODER, none, B_MID_PT);
+            addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, B_MID_PT);
         }
 
         if(pushChoice == Field.BeaconChoice.FAR ||
@@ -96,12 +96,12 @@ class Points
         {
             if(!useFly2Light)
             {
-                addPoint(points, fwd, 0.95, 1.00, Segment.TargetType.ENCODER, none, CLR_2_PT);
+                addPoint(points, fwd, 0.5, 1.10, Segment.TargetType.ENCODER, none, CLR_2_PT);
                 addPoint(points, fwd, 0.20, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
             }
             else
             {
-                addPoint(points, fwd, 0.95, 1.00, Segment.TargetType.ENCODER, beacon, SCAN2_PT);
+                addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, beacon, SCAN2_PT);
             }
 
             //addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   push, PRSS2_PT);
@@ -109,7 +109,7 @@ class Points
         }
 
         //PARK PTS
-        addPoint(points, fwd, 1.0, 1.00, Segment.TargetType.ENCODER,   none, park_pt);
+        addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER,   none, park_pt);
 
         return points;
     }
@@ -152,27 +152,13 @@ class Points
         segSpeeds.add(speed);
         ttypes.add(targetType);
         actions.add(action);
+        tuners.add(tune);
         points.add(pt);
     }
 
     final Segment[] getSegments()
     {
         return segments;
-    }
-
-    final Vector<Segment.Action> getActions()
-    {
-        return actions;
-    }
-
-    final Vector<Double> getSegSpeeds()
-    {
-        return segSpeeds;
-    }
-
-    final Vector<ShelbyBot.DriveDir> getSegDirs()
-    {
-        return segDirs;
     }
 
     private Vector<Point2d> initRedPoints(Vector<Point2d> inpts)
@@ -220,6 +206,7 @@ class Points
             seg.setSpeed(segSpeeds.get(s));
             seg.setAction(actions.get(s));
             seg.setTgtType(ttypes.get(s));
+            seg.setDrvTuner(tuners.get(s));
 
             DbgLog.msg("SJH: setting up segment %s %s %s %4.1f tune: %4.2f",
                     seg.getName(), seg.getStrtPt(), seg.getTgtPt(),

@@ -211,7 +211,7 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
 
         Point2d currPoint = pathSegs[0].getStrtPt();
         drvTrn.setCurrPt(currPoint);
-        drvTrn.setInitHdg(initHdg);
+        drvTrn.setStartHdg(initHdg);
 
         robot.lpusher.setPosition(ZER_PUSH_POS);
 
