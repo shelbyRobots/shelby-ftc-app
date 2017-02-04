@@ -26,8 +26,8 @@ import java.util.List;
 public class BeaconDetector implements BeaconFinder, ImageProcessor
 {
     private final static double MIN_COLOR_ZONE_AREA = 0.2;// fraction of total image area
-    private final static double IMAGE_WIDTH = 864.0;
-    private final static double IMAGE_SCALE_FACTOR = IMAGE_WIDTH / 864.0;
+    private final static double IMAGE_WIDTH = 480.0;
+    private final static double IMAGE_SCALE_FACTOR =  864.0 / IMAGE_WIDTH;
 
 
     private Mat hsvImg;
@@ -238,7 +238,7 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
 
         beaconConf = beaconConfBuf.smooth( scoreFit( beacon_box, red_box, blue_box ) );
         beaconPosZ = beaconPosZBuf.smooth( ((double) beacon_box.width * -0.0407 + 34.0829) / IMAGE_SCALE_FACTOR );
-        beaconPosX = beaconPosXBuf.smooth( (beac_ctr - scrn_ctr) / (864.0 / ( 1.3 * beaconPosZ - 2.4)));
+        beaconPosX = beaconPosXBuf.smooth( (beac_ctr - scrn_ctr) / (IMAGE_WIDTH / ( 1.3 * beaconPosZ - 2.4)));
 
         // Keep in mind that we flip the image before
         // processing to make it easier to visualize

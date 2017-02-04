@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 /**
@@ -73,7 +72,7 @@ public class OpenCVAuton extends OpenCvCameraOpMode
             {
                 if ( follow ) {
                     if ( bd.getBeaconConf() > 0.25 && bd.getBeaconPosZ() < 0.7 ) {
-                        zOff = 1.0 - bd.getBeaconPosZ();
+                        zOff = 1.0 - bd.getBeaconPosZ() / 24.0;
                         xOff = bd.getBeaconPosX();
                         robot.rightMotor.setPower( baseSpeed + zOff * xOff * 0.0025 );
                         robot.leftMotor.setPower( baseSpeed - zOff * xOff * 0.0025 );
@@ -106,11 +105,12 @@ public class OpenCVAuton extends OpenCvCameraOpMode
                             hErr = Math.abs( cHdg ) < 45 ? cHdg : Math.signum( cHdg ) * ( 90 - Math.abs( cHdg ) );
 
                             xPos = bd.getBeaconPosX();
+                            zPos = bd.getBeaconPosZ();
 
-                            nOff = 24.0 * Math.tan( Math.toRadians( hErr ) );
+                            nOff = zPos * Math.tan( Math.toRadians( hErr ) );
                             nPos = xPos / 17.7; // + nOff;
                             nAng = Math.atan( nPos / 9.0 );
-                            dDist = 6.0 / Math.cos( nAng );
+                            dDist = (zPos / 4.0) / Math.cos( nAng );
                             tPow1 = 2.0 * nAng / Math.PI; //2 * ( nAng - Math.toRadians( hErr ) ) / Math.PI;
                             tPow2 = 2.0 * nAng / Math.PI;
 

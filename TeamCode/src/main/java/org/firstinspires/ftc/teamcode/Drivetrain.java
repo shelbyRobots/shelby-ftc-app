@@ -7,8 +7,6 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
-import java.util.Date;
-
 class Drivetrain
 {
     Drivetrain()
@@ -16,10 +14,10 @@ class Drivetrain
         rt.reset();
     }
 
-    private void move(double lPwr, double rPwr)
+    public void move(double lPwr, double rPwr)
     {
-        robot.leftMotor.setPower(lPwr);
         robot.rightMotor.setPower(rPwr);
+        robot.leftMotor.setPower(lPwr);
     }
 
     public void move(double pwr)
@@ -30,17 +28,9 @@ class Drivetrain
     private void stopMotion()
     {
         move(0.0, 0.0);
+        robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
-
-/*    private void turnLeft(double pwr)
-    {
-        move(0.0, pwr);
-    }
-
-    private void turnRight(double pwr)
-    {
-        move(pwr, 0.0);
-    }*/
 
     private void resetCounts()
     {
@@ -54,9 +44,8 @@ class Drivetrain
 
     void stopAndReset()
     {
-        stopMotion();
+        move(0.0, 0.0);
         resetCounts();
-        //time.reset();
     }
 
     public void resetLastPos()
@@ -69,6 +58,7 @@ class Drivetrain
     public void driveDistance(double dst, double pwr, Direction dir)
     {
         int counts = distanceToCounts(dst);
+        curCntTgt = counts;
         DbgLog.msg("SJH driveDistance: %6.2f Counts %d", dst, counts);
 
         if(dir == Direction.REVERSE)
@@ -76,12 +66,15 @@ class Drivetrain
             counts*=-1;
         }
 
-        int lft_target =  robot.leftMotor.getCurrentPosition() + counts;
-        int rgt_target = robot.rightMotor.getCurrentPosition() + counts;
-        robot.leftMotor.setTargetPosition(lft_target);
-        robot.rightMotor.setTargetPosition(rgt_target);
+        if(doStopAndReset) stopAndReset();
 
-        //resetCounts();
+        trgtLpos = initLpos + counts;
+        trgtRpos = initRpos + counts;
+        setStartValues();
+
+        robot.leftMotor.setTargetPosition(trgtLpos);
+        robot.rightMotor.setTargetPosition(trgtRpos);
+
         robot.leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         robot.rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
@@ -90,33 +83,25 @@ class Drivetrain
 
     int driveDistanceLinear(double dst, double pwr, Direction dir)
     {
+        resetLastPos();
+
         driveDistance(dst, pwr, dir);
 
-        ptmr.reset();
-        noMoveTimer.reset();
-        lposLast = robot.leftMotor.getCurrentPosition();
-        rposLast = robot.rightMotor.getCurrentPosition();
-        while(isBusy()               &&
-              !areDriveMotorsStuck() &&
-              op.opModeIsActive()    &&
-              !op.isStopRequested())
+        while(op.opModeIsActive()    &&
+              !op.isStopRequested()  &&
+              isBusy()               &&
+              !areDriveMotorsStuck())
         {
             logData();
             estimatePosition();
-            if(ptmr.seconds() > printTimeout) ptmr.reset();
         }
 
-        robot.leftMotor.setPower(0.0);
-        robot.rightMotor.setPower(0.0);
+        stopMotion();
 
-        int ldrive_end =  robot.leftMotor.getCurrentPosition();
-        int rdrive_end = robot.rightMotor.getCurrentPosition();
+        setEndValues();
+        if(logOverrun) logOverrun(overtime);
 
-        DbgLog.msg("SJH: driveDistanceLinear ldc %6d rdc %6d",
-                ldrive_end, rdrive_end);
-
-        stopAndReset();
-        return((ldrive_end + rdrive_end)/2);
+        return((doneLpos - initLpos + doneRpos - initRpos)/2);
     }
 
     void driveToPoint(Point2d tgtPt, double pwr, Direction dir)
@@ -129,76 +114,61 @@ class Drivetrain
 
     int driveToPointLinear(Point2d tgtPt, double pwr, Direction dir, int targetHdg)
     {
-        if (tgtPt == null)  DbgLog.error("SJH tgtPt null in driveToPoint");
-        if (currPt == null) DbgLog.error("SJH currPt null in driveToPoint");
+        resetLastPos();
 
-        int tHdg = targetHdg;
+        initHdg = robot.getGyroFhdg();
+        trgtHdg = targetHdg;
+
+        DbgLog.msg("SJH: Starting drive");
 
         driveToPoint(tgtPt, pwr, dir);
 
-        ptmr.reset();
-        noMoveTimer.reset();
-        lposLast = robot.leftMotor.getCurrentPosition();
-        rposLast = robot.rightMotor.getCurrentPosition();
-        DbgLog.msg("SJH: Starting drive corrections");
-        while(isBusy() &&
-                !areDriveMotorsStuck() &&
-                op.opModeIsActive() &&
-                !op.isStopRequested())
+        while(op.opModeIsActive() &&
+              !op.isStopRequested() &&
+              isBusy() &&
+              !areDriveMotorsStuck())
         {
             logData();
             estimatePosition();
 
-            if(robot.gyroReady)
-            {
-                makeGyroCorrections(pwr, tHdg);
-            }
-            else
-            {
-                DbgLog.msg("SJH: GYRO NOT READY");
-            }
-            op.idle();
-
-            if(ptmr.seconds() > printTimeout) ptmr.reset();
+            makeGyroCorrections(pwr, trgtHdg);
         }
 
-        robot.leftMotor.setPower(0.0);
-        robot.rightMotor.setPower(0.0);
-        int ldrive_end =  robot.leftMotor.getCurrentPosition();
-        int rdrive_end = robot.rightMotor.getCurrentPosition();
-        DbgLog.msg("SJH: ldc %6d rdc %6d",
-                ldrive_end, rdrive_end);
+        stopMotion();
+        setEndValues();
+        if(logOverrun) logOverrun(overtime);
 
-        stopAndReset();
-        DbgLog.msg("SJH: driveToPointLinear end - set currPt to %s", tgtPt);
-        currPt = tgtPt;
-        return ((ldrive_end + rdrive_end)/2);
+        setCurrPt(tgtPt);
+        return ((doneLpos - initLpos + doneRpos - initRpos)/2);
     }
 
-    void driveToPointLinear(Point2d tgtPt, double pwr, Direction dir)
+    int driveToPointLinear(Point2d tgtPt, double pwr, Direction dir)
     {
-        int tHdg = robot.getGyroFhdg();
-
-        driveToPointLinear(tgtPt, pwr, dir, tHdg);
+        return driveToPointLinear(tgtPt, pwr, dir, robot.getGyroFhdg());
     }
 
-    void ctrTurn(double angle, double pwr)
+    void ctrTurnEncoder(double angle, double pwr)
     {
-        //perform a turn about rear axle center
+        //perform a turn about drive axle center
         //left turns are positive angles
 
         int counts = angleToCounts(angle, VEH_WIDTH/2.0);
-        DbgLog.msg("SJH Angle: %5.2f Counts: %4d", angle, counts);
 
-        int lft_target = robot.leftMotor.getCurrentPosition()  - counts;
-        int rgt_target = robot.rightMotor.getCurrentPosition() + counts;
-        robot.leftMotor.setTargetPosition(lft_target);
-        robot.rightMotor.setTargetPosition(rgt_target);
+        if(doStopAndReset) stopAndReset();
+
+        trgtLpos = initLpos - counts;
+        trgtRpos = initRpos + counts;
+        trgtHdg = initHdg + (int) Math.round(angle);
+        setStartValues();
+
+        DbgLog.msg("SJH Angle: %5.2f Counts: %4d CHdg: %d", angle, counts, initHdg);
+
+        robot.leftMotor.setTargetPosition(trgtLpos);
+        robot.rightMotor.setTargetPosition(trgtRpos);
 
         robot.leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         robot.rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-        //pwr *= dir;
         move(pwr, pwr);
     }
 
@@ -247,13 +217,13 @@ class Drivetrain
             leftSpeed   = -rightSpeed;
         }
 
-        robot.leftMotor.setPower(leftSpeed);
-        robot.rightMotor.setPower(rightSpeed);
+        move(leftSpeed, rightSpeed);
         lastGyroError = error;
 
-        if(ptmr.seconds() > printTimeout)
+        double ct = ptmr.seconds();
+        if(ct > nextPrintTime)
         {
-            ptmr.reset();
+            nextPrintTime = ct + printTimeout;
             DbgLog.msg("SJH: TGT %d CHDG %d ERR %d STR %4.2f L %4.2f R %4.2f",
                     (int) hdg, robot.getGyroFhdg(),
                     (int) error, steer, leftSpeed, rightSpeed);
@@ -263,30 +233,25 @@ class Drivetrain
 
     void ctrTurnLinear(double angle, double pwr)
     {
-        ctrTurn(angle, pwr);
-        Direction tdir = Direction.FORWARD;
-        ptmr.reset();
-        noMoveTimer.reset();
-        lposLast = robot.leftMotor.getCurrentPosition();
-        rposLast = robot.rightMotor.getCurrentPosition();
-        DbgLog.msg("SJH: Starting turn corrections");
-        while(isBusy() &&
-              !areMotorsStuck() &&
-              op.opModeIsActive() &&
-              !op.isStopRequested())
+        resetLastPos();
+
+        DbgLog.msg("SJH: Starting turn of %f", angle);
+
+        ctrTurnEncoder(angle, pwr);
+
+        while(op.opModeIsActive() &&
+              !op.isStopRequested() &&
+              isBusy() &&
+              !areMotorsStuck())
         {
             logData();
             estimatePosition();
-            //makeCorrections(pwr, tdir);
-            waitForTick(10);
-            if(ptmr.seconds() > printTimeout) ptmr.reset();
+            op.idle();
         }
 
-        DbgLog.msg("SJH: ldc %6d rdc %6d",
-                robot.leftMotor.getCurrentPosition(),
-                robot.rightMotor.getCurrentPosition());
-
-        stopAndReset();
+        stopMotion();
+        setEndValues();
+        if(logOverrun) logOverrun(overtime);
     }
 
     void ctrTurnToHeading(double tgtHdg, double pwr)
@@ -295,71 +260,31 @@ class Drivetrain
 
         DbgLog.msg("SJH: GYRO TURN to HDG %d", (int)tgtHdg);
 
-        stopAndReset();
-        robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        if(doStopAndReset) stopAndReset();
 
-        ptmr.reset();
-        noMoveTimer.reset();
-        lposLast = robot.leftMotor.getCurrentPosition();
-        rposLast = robot.rightMotor.getCurrentPosition();
-        DbgLog.msg("SJH: Starting gyro turn corrections");
+        resetLastPos();
+
+        trgtLpos = 0;
+        trgtRpos = 0;
+        trgtHdg = (int) tgtHdg;
+        setStartValues();
+
+        DbgLog.msg("SJH: Starting gyro turn");
         gyroFrameTime.reset();
-        while(!ctrTurnGyro(tgtHdg, pwr) &&
-              !areMotorsStuck()         &&
-              op.opModeIsActive()       &&
-              !op.isStopRequested())
+        while(op.opModeIsActive()       &&
+              !op.isStopRequested()     &&
+              !ctrTurnGyro(tgtHdg, pwr) &&
+              !areMotorsStuck())
         {
             logData();
             estimatePosition();
             op.idle();
             frame++;
-            if(ptmr.seconds() > printTimeout) ptmr.reset();
-        }
-        stopAndReset();
-    }
-
-    void ctrTurnLinearGyro(double angle, double pwr, int pass)
-    {
-        angle = Math.round(angle);
-        int curHdg = robot.getGyroFhdg();
-        int tgtHdg = (int)angle + curHdg;
-        while(tgtHdg > 180)   tgtHdg -= 360;
-        while(tgtHdg <= -180) tgtHdg += 360;
-        DbgLog.msg("SJH: GYRO TURN %d to HDG %d PASS %d", (int)angle, tgtHdg, pass);
-
-        ctrTurn(angle, pwr);
-        ptmr.reset();
-        noMoveTimer.reset();
-        lposLast = robot.leftMotor.getCurrentPosition();
-        rposLast = robot.rightMotor.getCurrentPosition();
-        int hDiff = tgtHdg - curHdg;
-        if (Math.abs(hDiff) > 180) hDiff = 360 - Math.abs(hDiff);
-        DbgLog.msg("SJH: Starting turn corrections");
-        while(isBusy() &&
-              Math.abs(hDiff) > TURN_TOLERANCE &&
-              !areMotorsStuck() &&
-              op.opModeIsActive() &&
-              !op.isStopRequested())
-        {
-            logData();
-            estimatePosition();
-            waitForTick(10);
-            curHdg = robot.getGyroFhdg();
-            hDiff = tgtHdg - curHdg;
-            if (Math.abs(hDiff) > 180) hDiff = 360 - Math.abs(hDiff);
-            if(ptmr.seconds() > printTimeout) ptmr.reset();
         }
 
-        DbgLog.msg("SJH: ldc %6d rdc %6d",
-                robot.leftMotor.getCurrentPosition(),
-                robot.rightMotor.getCurrentPosition());
-        if(pass == 0) ctrTurnLinearGyro(hDiff, pwr, 1);
-    }
-
-    void ctrTurnLinearGyro(double angle, double pwr)
-    {
-       ctrTurnLinearGyro(angle, pwr, 0);
+        stopMotion();
+        setEndValues();
+        if(logOverrun) logOverrun(overtime);
     }
 
 //    static void turn(double angle, double pwr, double radius)
@@ -423,19 +348,21 @@ class Drivetrain
         {
             xPos = currPt.getX();
             yPos = currPt.getY();
+            estPos.setX(xPos);
+            estPos.setY(yPos);
             if(robot.gyro != null) estHdg = robot.getGyroFhdg();
         }
         ++numPts;
     }
 
-    void estimatePosition()
+    public void estimatePosition()
     {
         int curLcnt =  robot.leftMotor.getCurrentPosition();
         int curRcnt = robot.rightMotor.getCurrentPosition();
         int dCntL = curLcnt - lastLcnt;
-        int dCntR = curRcnt = lastRcnt;
-        double dX = (dCntL)/CPI * Math.cos(robot.getGyroFhdg());
-        double dY = (dCntR)/CPI * Math.sin(robot.getGyroFhdg());
+        int dCntR = curRcnt - lastRcnt;
+        double dX = (dCntL)/CPI * Math.cos(Math.toRadians(robot.getGyroFhdg()));
+        double dY = (dCntR)/CPI * Math.sin(Math.toRadians(robot.getGyroFhdg()));
         xPos += dX;
         yPos += dY;
         estPos.setX(xPos);
@@ -446,9 +373,9 @@ class Drivetrain
         lastRcnt = curRcnt;
     }
 
-    void setInitHdg(double initHdg)
+    void setStartHdg(double startHdg)
     {
-        this.initHdg = initHdg;
+        this.startHdg = startHdg;
     }
 
     void setOpMode(LinearOpMode op)
@@ -486,6 +413,8 @@ class Drivetrain
 
     void makeGyroCorrections(double pwr, int thdg)
     {
+        if(gyro == null || !robot.gyroReady) return;
+
         if (!op.opModeIsActive() || op.isStopRequested())
         {
             robot.rightMotor.setPower( 0.0 );
@@ -517,87 +446,91 @@ class Drivetrain
         robot.rightMotor.setPower( rdp );
         robot.leftMotor.setPower( ldp );
 
-        if (ptmr.seconds() > printTimeout)
+        double ct = ptmr.seconds();
+        if (ct > nextPrintTime)
         {
+            nextPrintTime = ct + printTimeout;
             DbgLog.msg("SJH %4d lpwr: %5.3f rpwr: %5.3f err: %5.3f str %5.3f rt %5.3f chdg %d thdg %d",
                     frame, ldp, rdp, err, steer, rt.seconds(), robot.getGyroFhdg(), thdg);
         }
     }
 
-    void makeCorrections(double pwr, Direction dir)
-    {
-        double ldp; // = Math.abs(robot.leftMotor.getPower());
-        double rdp; // = Math.abs(robot.rightMotor.getPower());
-
-        double err = getEncoderError();
-
-        if(Math.abs(err) > THRESH)
-        {
-            double steer = getSteer(err, Kp_EncCorrection);
-
-            if(Math.abs(steer) > pwr)  steer = Math.signum(steer) * pwr;
-            //if (dir == Direction.REVERSE) steer *= -1;
-
-            rdp = pwr ;//- steer;
-            ldp = pwr ;//+ steer;
-
-            double max = Math.max(Math.abs(rdp), Math.abs(ldp));
-            if(max > 1.0)
-            {
-                rdp = rdp / max;
-                ldp = ldp / max;
-            }
-
-            int ldc = robot.leftMotor.getCurrentPosition();
-            int rdc = robot.rightMotor.getCurrentPosition();
-            int diff = Math.abs(ldc) - Math.abs(rdc);
-            int tgtCnts = robot.leftMotor.getTargetPosition();
-
-            if(Math.abs(ldc) >= Math.abs(tgtCnts))
-            {
-                ldp = 0.0;
-                robot.leftMotor.setPower(0.0);
-                robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                if(Math.abs(diff) < 30)
-                {
-                    rdp = 0.0;
-                    robot.rightMotor.setPower(0.0);
-                    robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                }
-            }
-            else if(Math.abs(rdc) >= Math.abs(tgtCnts))
-            {
-                rdp = 0.0;
-                robot.rightMotor.setPower(0.0);
-                robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                if(Math.abs(diff) < 30)
-                {
-                    ldp = 0.0;
-                    robot.leftMotor.setPower(0.0);
-                    robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                }
-            }
-            else
-            {
-                move(ldp, rdp);
-            }
-
-            if (ptmr.seconds() > printTimeout)
-            {
-                DbgLog.msg("SJH %4d ldc: %6d rdc: %6d diff: %2d " +
-                                "lpwr: %5.3f rpwr: %5.3f err: %5.3f str %5.3f rt %5.3f",
-                        frame, ldc, rdc, diff, ldp, rdp, err, steer, rt.seconds());
-            }
-
-            frame++;
-        }
-        else
-        {
-            ldp = pwr;
-            rdp = pwr;
-            move(ldp, rdp);
-        }
-    }
+//    void makeCorrections(double pwr, Direction dir)
+//    {
+//        double ldp; // = Math.abs(robot.leftMotor.getPower());
+//        double rdp; // = Math.abs(robot.rightMotor.getPower());
+//
+//        double err = getEncoderError();
+//
+//        if(Math.abs(err) > THRESH)
+//        {
+//            double steer = getSteer(err, Kp_EncCorrection);
+//
+//            if(Math.abs(steer) > pwr)  steer = Math.signum(steer) * pwr;
+//            //if (dir == Direction.REVERSE) steer *= -1;
+//
+//            rdp = pwr ;//- steer;
+//            ldp = pwr ;//+ steer;
+//
+//            double max = Math.max(Math.abs(rdp), Math.abs(ldp));
+//            if(max > 1.0)
+//            {
+//                rdp = rdp / max;
+//                ldp = ldp / max;
+//            }
+//
+//            int ldc = robot.leftMotor.getCurrentPosition();
+//            int rdc = robot.rightMotor.getCurrentPosition();
+//            int diff = Math.abs(ldc) - Math.abs(rdc);
+//            int tgtCnts = robot.leftMotor.getTargetPosition();
+//
+//            if(Math.abs(ldc) >= Math.abs(tgtCnts))
+//            {
+//                ldp = 0.0;
+//                robot.leftMotor.setPower(0.0);
+//                robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//                if(Math.abs(diff) < 30)
+//                {
+//                    rdp = 0.0;
+//                    robot.rightMotor.setPower(0.0);
+//                    robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//                }
+//            }
+//            else if(Math.abs(rdc) >= Math.abs(tgtCnts))
+//            {
+//                rdp = 0.0;
+//                robot.rightMotor.setPower(0.0);
+//                robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//                if(Math.abs(diff) < 30)
+//                {
+//                    ldp = 0.0;
+//                    robot.leftMotor.setPower(0.0);
+//                    robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//                }
+//            }
+//            else
+//            {
+//                move(ldp, rdp);
+//            }
+//
+//            double ct = ptmr.seconds();
+//            if (ct > nextPrintTime)
+//            {
+//                nextPrintTime = ct + printTimeout;
+//                DbgLog.msg("SJH %4d ldc: %6d rdc: %6d diff: %2d " +
+//                                "lpwr: %5.3f rpwr: %5.3f err: %5.3f str %5.3f rt %5.3f",
+//                        frame, ldc, rdc, diff, ldp, rdp, err, steer, rt.seconds());
+//            }
+//
+//            frame++;
+//        }
+//        else
+//        {
+//            ldp = pwr;
+//            rdp = pwr;
+//            move(ldp, rdp);
+//        }
+//    }
 
     private double getEncoderError()
     {
@@ -623,19 +556,53 @@ class Drivetrain
         return Range.clip(error * PCoeff, -1, 1);
     }
 
-    void logDriveState()
+    private void setStartValues()
     {
-        boolean ldb = robot.leftMotor.isBusy();
-        boolean rdb = robot.rightMotor.isBusy();
-        int ldc = robot.leftMotor.getCurrentPosition();
-        int rdc = robot.rightMotor.getCurrentPosition();
-        double ldp = robot.leftMotor.getPower();
-        double rdp = robot.rightMotor.getPower();
+        initLpos = robot.leftMotor.getCurrentPosition();
+        initRpos = robot.rightMotor.getCurrentPosition();
+        initHdg = robot.getGyroFhdg();
+        if(logData)
+        {
+            dl.addField("BEGIN");
+            dl.addField(initLpos);
+            dl.addField(initRpos);
+            dl.addField(initHdg);
+            dl.addField(trgtLpos);
+            dl.addField(trgtRpos);
+            dl.addField(trgtHdg);
+            dl.newLine();
+        }
+        DbgLog.msg("SJH: Begin ldc %6d rdc %6d Hdg %d",
+                initLpos, initRpos, initHdg);
+    }
 
-        DbgLog.msg("SJH " +
-                " ldb:" + ldb + " rdb:" + rdb +
-                " ldc:" + ldc + " rdc:" + rdc +
-                " ldp:" + ldp + " rdp:" + rdp);
+    private void setEndValues()
+    {
+        doneLpos = robot.leftMotor.getCurrentPosition();
+        doneRpos = robot.rightMotor.getCurrentPosition();
+        doneHdg  = robot.getGyroFhdg();
+        if(logData)
+        {
+            dl.addField("DONE");
+            dl.addField(doneLpos);
+            dl.addField(doneRpos);
+            dl.addField(doneHdg);
+            dl.newLine();
+        }
+        DbgLog.msg("SJH: End ldc %6d rdc %6d Hdg %d",
+                doneLpos, doneRpos, doneHdg);
+    }
+
+    public void logOverrun(double t)
+    {
+        dl.addField("LOGGING OVERRUN");
+        dl.newLine();
+        ElapsedTime et = new ElapsedTime();
+        while(et.seconds() < t)
+        {
+            logData();
+            robot.waitForTick(10);
+        }
     }
 
     boolean areMotorsStuck()
@@ -708,8 +675,10 @@ class Drivetrain
             return false;
         }
 
-        if(ptmr.seconds() > printTimeout)
+        double ct = ptmr.seconds();
+        if(ct > nextBusyPrintTime)
         {
+            nextBusyPrintTime = ct + printTimeout;
             DbgLog.msg("SJH: ldc %6d rdc %6d  mptimer: %4.2f chdg %5d",
                     robot.leftMotor.getCurrentPosition(),
                     robot.rightMotor.getCurrentPosition(),
@@ -717,8 +686,22 @@ class Drivetrain
                     robot.getGyroFhdg());
         }
 
-        return (robot.leftMotor.isBusy() && robot.rightMotor.isBusy());   //true if both are busy
-        //return (robot.leftMotor.isBusy() || robot.rightMotor.isBusy()); //true if 1 is busy
+
+        boolean busy = false;
+        if(busyAnd)
+        {
+            busy = robot.leftMotor.isBusy() && robot.rightMotor.isBusy(); //true if both are busy
+        }
+        else
+        {
+            busy = robot.leftMotor.isBusy() || robot.rightMotor.isBusy(); //true if 1 is busy
+        }
+        return busy;
+    }
+
+    public void setBusyAnd(boolean busyAnd)
+    {
+        this.busyAnd = busyAnd;
     }
 
     public void setDrvTuner(double dtnr)
@@ -728,13 +711,15 @@ class Drivetrain
 
     public void logData()
     {
-        double dlTimeout = 0.002;
-        if (datalogtimer.seconds() <dlTimeout) return;
+//        double dlTimeout = 0.002;
+//        if (datalogtimer.seconds() <dlTimeout) return;
+//
+//        datalogtimer.reset();
 
-        datalogtimer.reset();
-
-        if(logData)
+        double ldt = logDataTimer.seconds();
+        if(logData && ldt > logTime)
         {
+            logTime += logDataTimeout;
             if(robot.gyro != null) dl.addField(robot.getGyroFhdg());
             else                   dl.addField("");
             dl.addField(robot.leftMotor.getCurrentPosition());
@@ -759,15 +744,15 @@ class Drivetrain
     private final static double TURN_TOLERANCE = 1.0;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
-    private static double WHL_DIAMETER = 4.5; //Diameter of the wheel (inches)
+    private static double WHL_DIAMETER = 4.25; //Diameter of the wheel (inches)
     private final static int    ENCODER_CPR = ShelbyBot.ENCODER_CPR;
     private final static double GEAR_REDUC = 0.5;                   //Gear ratio
 
     private static double CIRCUMFERENCE = Math.PI * WHL_DIAMETER;
     private static double CPI = ENCODER_CPR *GEAR_REDUC / (CIRCUMFERENCE * DRV_TUNER);
 
-    private static final double Kp_GyrCorrection = 0.02;
-    private static final double Kp_EncCorrection = 0.02;
+    private static final double Kp_GyrCorrection = 0.01;
+    private static final double Kp_EncCorrection = 0.01;
     private static final double Kp_GyroTurn      = 0.01;
     private static final double Kd_GyroTurn      = 0.001;
     private static final double THRESH = Math.toRadians(0.004);
@@ -778,7 +763,7 @@ class Drivetrain
     public ModernRoboticsI2cGyro gyro;
 
     private Point2d currPt = new Point2d(0.0, 0.0);
-    private double initHdg = 0.0;
+    private double startHdg = 0.0;
 
     private int frame   = 0;
     //private LinearOpMode lom;
@@ -789,6 +774,20 @@ class Drivetrain
     private double lposLast;
     private double rposLast;
 
+    private int initLpos;
+    private int initRpos;
+    private int trgtLpos;
+    private int trgtRpos;
+    private int doneLpos;
+    private int doneRpos;
+    private int overLpos;
+    private int overRpos;
+
+    private int initHdg;
+    private int trgtHdg;
+    private int doneHdg;
+    private int overHdg;
+
     private double xPos = 0.0;
     private double yPos = 0.0;
     private Point2d estPos = new Point2d(xPos, yPos);
@@ -798,19 +797,20 @@ class Drivetrain
     private int numPts = 0;
 
     private double noMoveTimeout = 0.5;
-    private double noDriveMoveTimeout = 0.35;
+    private double noDriveMoveTimeout = 0.50;
     private int noMoveThreshLow = 10;
-    private int noMoveThreshHi = 60;
-    private double noMovePwrHi = 0.25;
+    private int noMoveThreshHi = 20;
+    private double noMovePwrHi = 0.15;
     private ElapsedTime noMoveTimer = new ElapsedTime();
 
     private double printTimeout = 0.05;
 
-    private double minSpeed = 0.2;
+    private double minSpeed = 0.1;
 
     private LinearOpMode op = null;
 
     private boolean usePosStop = true;
+    private boolean doStopAndReset = false;
 
     private double lastGyroError = 0;
     private boolean useDterm = false;
@@ -819,4 +819,17 @@ class Drivetrain
     private ElapsedTime datalogtimer = new ElapsedTime();
     private DataLogger dl;
     private boolean logData = true;
+    private double logDataTimeout = 0.005;
+    private ElapsedTime logDataTimer = new ElapsedTime();
+    private double logTime = logDataTimer.seconds();
+
+    private int curCntTgt = 0;
+
+    double nextPrintTime = ptmr.seconds();
+    double nextBusyPrintTime = ptmr.seconds();
+
+    private boolean logOverrun = true;
+    private double overtime = 0.5;
+
+    private boolean busyAnd = true;
 }

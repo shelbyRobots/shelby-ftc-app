@@ -250,6 +250,7 @@ class ShelbyBot
 
     public int getGyroFhdg()
     {
+        if(gyro == null) return 0;
         int dirHdgAdj = 0;
         if(ddir != calibrationDriveDir) dirHdgAdj = 180;
         //NOTE:  gyro.getIntegratedZValue is +ve CCW (left turn)
