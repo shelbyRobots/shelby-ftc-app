@@ -605,10 +605,10 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
                             xPos = bd.getBeaconPosX();
 
-                            nOff = 24.0 * Math.tan( Math.toRadians( hErr ) );
-                            nPos = xPos / 17.7 + nOff;
+                            nOff = zPos * Math.tan( Math.toRadians( hErr ) );
+                            nPos = xPos + nOff;
                             nAng = Math.atan( nPos / 12.0 );
-                            dDist = 6.0 / Math.cos( nAng );
+                            dDist = (zPos / 4.0) / Math.cos( nAng );
                             tPow1 = Range.clip(2.0 * ( nAng - Math.toRadians( hErr ) ) / Math.PI, 0.0, 0.15);
                             tPow2 = Range.clip(2.0 * ( nAng - Math.toRadians( hErr ) ) / Math.PI, 0.0, 0.15);
 
@@ -672,7 +672,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                             robot.rightMotor.setPower(rDv);
                             robot.leftMotor.setPower(lDv);
 
-                            if (bd.getBeaconPosZ() > 0.95) {
+                            if (bd.getBeaconPosZ() < 10.0) {
                                 driveStep = "READY";
 
                                 sleep(100);
@@ -719,7 +719,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
                     }
 
-                    if ( zPos > 0.9 || driveStep.equals("READY") )
+                    if ( zPos < 10.0 || driveStep.equals("READY") )
                     {
                         if ( pushSide == BeaconFinder.BeaconSide.UNKNOWN )
                         {
