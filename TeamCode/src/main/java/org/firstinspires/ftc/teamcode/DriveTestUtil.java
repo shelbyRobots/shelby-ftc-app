@@ -91,7 +91,7 @@ public class DriveTestUtil
     public void doMinSpeedTest()
     {
         double spdStep = 0.01;
-        double spdDur  = 0.5;
+        double spdDur  = 1.0;
         int    MOVE_THRESH = 10;
         robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
         dl.addField("RUNNING MIN SPEED TEST"); dl.newLine();
@@ -102,10 +102,12 @@ public class DriveTestUtil
             dl.addField("SETTING POWER " + spd); dl.newLine();
             drvTrn.stopAndReset();
             et.reset();
+            drvTrn.move(spd);
             while(op.opModeIsActive() && et.seconds() < spdDur)
             {
                 estAndLog();
             }
+            drvTrn.move(0);
             boolean moved = true;
             int l = robot.leftMotor.getCurrentPosition();
             int r = robot.rightMotor.getCurrentPosition();
