@@ -279,8 +279,15 @@ public class TeleopTank_Driver extends LinearOpMode
 
     private void do_pushButton(ButtonSide bside)
     {
-        robot.lpusher.setPosition(L_UP_PUSH_POS);
-        robot.rpusher.setPosition(R_UP_PUSH_POS);
+        if (bside == ButtonSide.LEFT) {
+            robot.lpusher.setPosition(L_UP_PUSH_POS);
+            robot.rpusher.setPosition(R_DN_PUSH_POS);
+        }
+
+        if (bside == ButtonSide.RIGHT) {
+            robot.lpusher.setPosition(L_DN_PUSH_POS);
+            robot.rpusher.setPosition(R_UP_PUSH_POS);
+        }
     }
 
     //This line of text has no use. It can be deleted.
