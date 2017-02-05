@@ -54,7 +54,7 @@ class Points
 
         if(startPos != Field.StartPos.START_R_PUSHER)
         {
-            addPoint(points, rev, 0.3, 1.05, Segment.TargetType.ENCODER, shoot, shoot_pt);
+            addPoint(points, rev, 0.5, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
         }
 
         if(pushChoice == Field.BeaconChoice.NEAR ||
@@ -64,22 +64,22 @@ class Points
             {
                 if(startPos != Field.StartPos.START_R_PUSHER)
                 {
-                    addPoint(points, fwd, 0.5, 1.10, Segment.TargetType.ENCODER, none, CLRA1_PT);
+                    addPoint(points, fwd, 0.7, 1.00, Segment.TargetType.ENCODER, none, CLRA1_PT);
                 }
                 else
                 {
-                    addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, CLRR1_PT);
+                    addPoint(points, fwd, 0.7, 1.00, Segment.TargetType.ENCODER, none, CLRR1_PT);
                 }
-                addPoint(points, fwd, 0.20,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
+                addPoint(points, fwd, 0.30,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
             }
             else
             {
-                addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, beacon, SCAN1_PT);
+                addPoint(points, fwd, 0.7, 1.00, Segment.TargetType.ENCODER, beacon, SCAN1_PT);
             }
 
             if(startPos == Field.StartPos.START_R_PUSHER)
             {
-                addPoint(points, rev, 0.3, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
+                addPoint(points, rev, 0.5, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
             }
 
             //addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   push, PRSS1_PT);
@@ -88,7 +88,7 @@ class Points
 
         if(pushChoice == Field.BeaconChoice.FAR && startPos == Field.StartPos.START_B_SWEEPER)
         {
-            addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, B_MID_PT);
+            addPoint(points, fwd, 0.7, 1.00, Segment.TargetType.ENCODER, none, B_MID_PT);
         }
 
         if(pushChoice == Field.BeaconChoice.FAR ||
@@ -96,12 +96,12 @@ class Points
         {
             if(!useFly2Light)
             {
-                addPoint(points, fwd, 0.5, 1.10, Segment.TargetType.ENCODER, none, CLR_2_PT);
-                addPoint(points, fwd, 0.20, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
+                addPoint(points, fwd, 0.7, 1.00, Segment.TargetType.ENCODER, none, CLR_2_PT);
+                addPoint(points, fwd, 0.30, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
             }
             else
             {
-                addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, beacon, SCAN2_PT);
+                addPoint(points, fwd, 0.7, 1.00, Segment.TargetType.ENCODER, beacon, SCAN2_PT);
             }
 
             //addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   push, PRSS2_PT);
@@ -109,7 +109,7 @@ class Points
         }
 
         //PARK PTS
-        addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER,   none, park_pt);
+        addPoint(points, fwd, 0.7, 1.00, Segment.TargetType.ENCODER,   none, park_pt);
 
         return points;
     }
@@ -335,8 +335,8 @@ class Points
     private static final double BECNOFF =   2.0;
     private static final double SAFETY  =   0.0;
     private static final double SCAN_X  = -38.0;
-    private static final double BECN_X  = -51.0;
-    private static final double BECN2X  = -51.0;
+    private static final double BECN_X  = -52.0;
+    private static final double BECN2X  = -52.0;
     private static final double TOUCHX  =  W_WALL + BECNOFF + REAR_OFFSET;
     private static final double TOUCH2  =  W_WALL + BECNOFF + REAR_OFFSET;
 

@@ -337,8 +337,11 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             int lpos = robot.leftMotor.getCurrentPosition();
             int rpos = robot.rightMotor.getCurrentPosition();
             int segCounts = drvTrn.distanceToCounts(seg.getLength());
+            int segOver = (int)(0.2 * segCounts);
 
             DbgLog.msg("SJH: Color Driving to pt %s at speed %4.2f", ept, speed);
+            dl.addField("FIND_LINE"); dl.newLine();
+            drvTrn.logData();
             drvTrn.move(speed);
 
             while(opModeIsActive() &&
@@ -348,9 +351,11 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                 int g = robot.colorSensor.green();
                 int b = robot.colorSensor.blue();
 
-                //DbgLog.msg("SJH: RGB %d %d %d", r, g, b);
-
+                drvTrn.logData();
                 int totColor = r + g + b;
+
+                int lTrav = robot.leftMotor.getCurrentPosition()  - lpos;
+                int rTrav = robot.rightMotor.getCurrentPosition()  - rpos;
 
                 if (totColor > COLOR_THRESH)
                 {
@@ -360,13 +365,14 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                     drvTrn.setCurrPt(ept);
                     break;
                 }
-                else if(robot.leftMotor.getCurrentPosition()  - lpos > (int)(segCounts * 1.2) ||
-                        robot.rightMotor.getCurrentPosition() - rpos > (int)(segCounts * 1.2))
+                else if(Math.abs(lTrav) > (segCounts + segOver) ||
+                        Math.abs(rTrav) > (segCounts + segOver))
                 {
                     drvTrn.stopAndReset();
                     DbgLog.msg("SJH: REACHED OVERRUN PT - Backing up a bit");
                     robot.turnColorOff();
-                    drvTrn.driveDistanceLinear(3.0, 0.3, Drivetrain.Direction.REVERSE);
+                    double rDst = drvTrn.countsToDistance(segOver);
+                    drvTrn.driveDistanceLinear(rDst, 0.3, Drivetrain.Direction.REVERSE);
                     drvTrn.setCurrPt(ept);
                     break;
                 }
@@ -980,8 +986,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
     private final static double L_UP_PUSH_POS = 0.0;
     private final static double R_UP_PUSH_POS = 1.0;
 
-    private final static double DEF_ENCTRN_PWR  = 0.3;
-    private final static double DEF_GYRTRN_PWR = 0.3;
+    private final static double DEF_ENCTRN_PWR  = 0.4;
+    private final static double DEF_GYRTRN_PWR = 0.4;
 
     private final static double DEF_SWP_PWR = 1.0;
     private final static double DEF_ELV_PWR = 0.5;
