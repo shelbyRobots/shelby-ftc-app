@@ -7,6 +7,8 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
+import java.util.Locale;
+
 class Drivetrain
 {
     Drivetrain()
@@ -16,8 +18,14 @@ class Drivetrain
 
     public void move(double lPwr, double rPwr)
     {
-        robot.rightMotor.setPower(rPwr);
+        //long t0 = System.nanoTime();
+        //make sure they actually set commanded power
         robot.leftMotor.setPower(lPwr);
+        //long t1 = System.nanoTime();
+        robot.rightMotor.setPower(rPwr);
+        //long t2 = System.nanoTime();
+        //DbgLog.msg("SJH: LFT set power %f took %f", lPwr, (double)(t1-t0)/1000000);
+        //DbgLog.msg("SJH: RGT set power %f took %f", rPwr, (double)(t2-t1)/1000000);
     }
 
     public void move(double pwr)
@@ -66,8 +74,6 @@ class Drivetrain
             counts*=-1;
         }
 
-        if(doStopAndReset) stopAndReset();
-
         trgtLpos = initLpos + counts;
         trgtRpos = initRpos + counts;
         setStartValues();
@@ -78,12 +84,24 @@ class Drivetrain
         robot.leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         robot.rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
+        //op.sleep(100);
+
         move(pwr);
     }
 
-    int driveDistanceLinear(double dst, double pwr, Direction dir)
+    int driveDistanceLinear(double dst, double pwr, Direction dir, int targetHdg)
     {
         resetLastPos();
+
+        initHdg = robot.getGyroFhdg();
+        trgtHdg = targetHdg;
+
+        DbgLog.msg("SJH: Starting drive");
+        logData(true);
+
+        int tgtCounts = distanceToCounts(dst);
+
+        if(doStopAndReset) stopAndReset();
 
         driveDistance(dst, pwr, dir);
 
@@ -94,52 +112,44 @@ class Drivetrain
         {
             logData();
             estimatePosition();
+
+            int lcnt = robot.leftMotor.getCurrentPosition();
+            int rcnt = robot.rightMotor.getCurrentPosition();
+            double pctCnt = (double)(((lcnt-initLpos) + (rcnt-initRpos))/2)/tgtCounts;
+            double ppwr = pwr;
+            if (pctCnt > reducePct) ppwr = reducePower;
+
+            makeGyroCorrections(ppwr, trgtHdg);
         }
 
+        logData(true);
+        setEndValues();
         stopMotion();
 
-        setEndValues();
         if(logOverrun) logOverrun(overtime);
 
         return((doneLpos - initLpos + doneRpos - initRpos)/2);
     }
 
-    void driveToPoint(Point2d tgtPt, double pwr, Direction dir)
+    int driveDistanceLinear(double dst, double pwr, Direction dir)
+    {
+        return driveDistanceLinear(dst, pwr, dir, robot.getGyroFhdg());
+    }
+
+    int driveToPoint(Point2d tgtPt, double pwr, Direction dir, int targetHdg)
     {
         if (tgtPt == null)  DbgLog.error("SJH tgtPt null in driveToPoint");
         if (currPt == null) DbgLog.error("SJH currPt null in driveToPoint");
         double dist = currPt.distance(tgtPt);
-        driveDistance(dist, pwr, dir);
+        return driveDistanceLinear(dist, pwr, dir, targetHdg);
     }
 
     int driveToPointLinear(Point2d tgtPt, double pwr, Direction dir, int targetHdg)
     {
-        resetLastPos();
-
-        initHdg = robot.getGyroFhdg();
-        trgtHdg = targetHdg;
-
-        DbgLog.msg("SJH: Starting drive");
-
-        driveToPoint(tgtPt, pwr, dir);
-
-        while(op.opModeIsActive() &&
-              !op.isStopRequested() &&
-              isBusy() &&
-              !areDriveMotorsStuck())
-        {
-            logData();
-            estimatePosition();
-
-            makeGyroCorrections(pwr, trgtHdg);
-        }
-
-        stopMotion();
-        setEndValues();
-        if(logOverrun) logOverrun(overtime);
+        int dist = driveToPoint(tgtPt, pwr, dir, targetHdg);
 
         setCurrPt(tgtPt);
-        return ((doneLpos - initLpos + doneRpos - initRpos)/2);
+        return dist;
     }
 
     int driveToPointLinear(Point2d tgtPt, double pwr, Direction dir)
@@ -153,8 +163,6 @@ class Drivetrain
         //left turns are positive angles
 
         int counts = angleToCounts(angle, VEH_WIDTH/2.0);
-
-        if(doStopAndReset) stopAndReset();
 
         trgtLpos = initLpos - counts;
         trgtRpos = initRpos + counts;
@@ -215,6 +223,7 @@ class Drivetrain
                 rightSpeed = Math.signum(rightSpeed) * minSpeed;
             }
             leftSpeed   = -rightSpeed;
+            //DbgLog.msg("SJH: LP %f RP %f ERR %f STR %f", leftSpeed, rightSpeed, error, steer);
         }
 
         move(leftSpeed, rightSpeed);
@@ -237,6 +246,12 @@ class Drivetrain
 
         DbgLog.msg("SJH: Starting turn of %f", angle);
 
+        if(doStopAndReset) stopAndReset();
+
+        logData(true);
+
+        int tgtCounts = angleToCounts(angle, VEH_WIDTH/2.0);
+
         ctrTurnEncoder(angle, pwr);
 
         while(op.opModeIsActive() &&
@@ -246,11 +261,19 @@ class Drivetrain
         {
             logData();
             estimatePosition();
-            op.idle();
+
+            int lcnt = robot.leftMotor.getCurrentPosition();
+            int rcnt = robot.rightMotor.getCurrentPosition();
+            double pctCnt = (double)(lcnt-initLpos)/tgtCounts;
+            double ppwr = pwr;
+            if (Math.abs(pctCnt) > reducePct) ppwr = reduceTurnPower;
+            robot.leftMotor.setPower(ppwr);
+            robot.rightMotor.setPower(ppwr);
         }
 
-        stopMotion();
+        logData(true);
         setEndValues();
+        stopMotion();
         if(logOverrun) logOverrun(overtime);
     }
 
@@ -269,6 +292,8 @@ class Drivetrain
         trgtHdg = (int) tgtHdg;
         setStartValues();
 
+        logData(true);
+
         DbgLog.msg("SJH: Starting gyro turn");
         gyroFrameTime.reset();
         while(op.opModeIsActive()       &&
@@ -278,12 +303,13 @@ class Drivetrain
         {
             logData();
             estimatePosition();
-            op.idle();
             frame++;
         }
 
-        stopMotion();
+        logData(true);
         setEndValues();
+        stopMotion();
+
         if(logOverrun) logOverrun(overtime);
     }
 
@@ -601,8 +627,9 @@ class Drivetrain
         while(et.seconds() < t)
         {
             logData();
-            robot.waitForTick(10);
+            estimatePosition();
         }
+        logData(true);
     }
 
     boolean areMotorsStuck()
@@ -709,17 +736,13 @@ class Drivetrain
         CPI = ENCODER_CPR * GEAR_REDUC / (CIRCUMFERENCE * dtnr);
     }
 
-    public void logData()
+    public void logData(boolean force)
     {
-//        double dlTimeout = 0.002;
-//        if (datalogtimer.seconds() <dlTimeout) return;
-//
-//        datalogtimer.reset();
-
-        double ldt = logDataTimer.seconds();
-        if(logData && ldt > logTime)
+        double ldt = logDataTimer.time();
+        boolean expired = ldt > logTime;
+        if(logData && (expired || force))
         {
-            logTime += logDataTimeout;
+            if(expired) logTime = ldt + logDataTimeout;
             if(robot.gyro != null) dl.addField(robot.getGyroFhdg());
             else                   dl.addField("");
             dl.addField(robot.leftMotor.getCurrentPosition());
@@ -732,11 +755,16 @@ class Drivetrain
                 dl.addField(robot.colorSensor.green());
                 dl.addField(robot.colorSensor.blue());
             }
-            dl.addField("", estPos.getX());
-            dl.addField("", estPos.getY());
-            dl.addField("", estHdg);
+            dl.addField(estPos.getX());
+            dl.addField(estPos.getY());
+            dl.addField(Math.toDegrees(estHdg));
             dl.newLine();
         }
+    }
+
+    public void logData()
+    {
+        logData(false);
     }
 
     private static double DRV_TUNER = 1.00;
@@ -744,7 +772,7 @@ class Drivetrain
     private final static double TURN_TOLERANCE = 1.0;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
-    private static double WHL_DIAMETER = 4.25; //Diameter of the wheel (inches)
+    private static double WHL_DIAMETER = 4.1875; //Diameter of the wheel (inches)
     private final static int    ENCODER_CPR = ShelbyBot.ENCODER_CPR;
     private final static double GEAR_REDUC = 0.5;                   //Gear ratio
 
@@ -753,7 +781,7 @@ class Drivetrain
 
     private static final double Kp_GyrCorrection = 0.01;
     private static final double Kp_EncCorrection = 0.01;
-    private static final double Kp_GyroTurn      = 0.01;
+    private static final double Kp_GyroTurn      = 0.03;
     private static final double Kd_GyroTurn      = 0.001;
     private static final double THRESH = Math.toRadians(0.004);
 
@@ -796,8 +824,8 @@ class Drivetrain
     private int lastRcnt = 0;
     private int numPts = 0;
 
-    private double noMoveTimeout = 0.5;
-    private double noDriveMoveTimeout = 0.50;
+    private double noMoveTimeout = 1.0;
+    private double noDriveMoveTimeout = 1.0;
     private int noMoveThreshLow = 10;
     private int noMoveThreshHi = 20;
     private double noMovePwrHi = 0.15;
@@ -805,12 +833,12 @@ class Drivetrain
 
     private double printTimeout = 0.05;
 
-    private double minSpeed = 0.1;
+    private double minSpeed = 0.06;
 
     private LinearOpMode op = null;
 
     private boolean usePosStop = true;
-    private boolean doStopAndReset = false;
+    private boolean doStopAndReset = true;
 
     private double lastGyroError = 0;
     private boolean useDterm = false;
@@ -819,8 +847,8 @@ class Drivetrain
     private ElapsedTime datalogtimer = new ElapsedTime();
     private DataLogger dl;
     private boolean logData = true;
-    private double logDataTimeout = 0.005;
-    private ElapsedTime logDataTimer = new ElapsedTime();
+    private double logDataTimeout = 5;
+    public ElapsedTime logDataTimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
     private double logTime = logDataTimer.seconds();
 
     private int curCntTgt = 0;
@@ -828,8 +856,11 @@ class Drivetrain
     double nextPrintTime = ptmr.seconds();
     double nextBusyPrintTime = ptmr.seconds();
 
-    private boolean logOverrun = true;
+    private boolean logOverrun = false;
     private double overtime = 0.5;
 
-    private boolean busyAnd = true;
+    private boolean busyAnd = false;
+    private double reducePct = 0.6;
+    private double reducePower = 0.3;
+    private double reduceTurnPower = 0.2;
 }

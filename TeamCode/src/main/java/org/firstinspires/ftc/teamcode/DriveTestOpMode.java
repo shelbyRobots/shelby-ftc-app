@@ -6,6 +6,7 @@ import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
 
@@ -47,6 +48,8 @@ public class DriveTestOpMode extends LinearOpMode
 
         dashboard.displayPrintf(0, "GYRO CALIBRATING DO NOT TOUCH OR START");
 
+        robot.turnColorOff();
+
         if (robot.leftMotor != null &&
             robot.rightMotor != null &&
             robot.gyro != null)
@@ -70,6 +73,12 @@ public class DriveTestOpMode extends LinearOpMode
     public void runOpMode()
     {
         initRobot();
+        while(!isStarted())
+        {
+            dashboard.displayPrintf(1, "HDG: " + robot.getGyroFhdg());
+            dashboard.displayPrintf(2, "LENC: " + robot.leftMotor.getCurrentPosition());
+            dashboard.displayPrintf(3, "RENC: " + robot.rightMotor.getCurrentPosition());
+        }
         waitForStart();
         startMode();
         stopMode();
@@ -83,15 +92,28 @@ public class DriveTestOpMode extends LinearOpMode
 
     public void do_main_loop()
     {
-        dtu.doMaxSpeedTest(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        sleep(5000);
-        dtu.doMaxSpeedTest(DcMotor.RunMode.RUN_USING_ENCODER);
-        sleep(5000);
-        dtu.doMinSpeedTest();
-        sleep(5000);
-        dtu.driveDist(12.0, 0.2, false);
-        sleep(5000);
-        dtu.driveDist(12.0, 0.2, true);
+        sleep(100);
+        drvTrn.setBusyAnd(false);
+        Point2d tPt = new Point2d(48.0, 0.0);
+        //drvTrn.driveToPointLinear(tPt, 0.8, Drivetrain.Direction.FORWARD);
+        drvTrn.ctrTurnLinear(-122.0, 0.4);
+        drvTrn.ctrTurnToHeading(-122.0, 0.4);
+//        dtu.doMaxSpeedTest(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+//        sleep(5000);
+//        dtu.doMaxSpeedTest(DcMotor.RunMode.RUN_USING_ENCODER);
+//        sleep(5000);
+//        dtu.doMinSpeedTest();
+//        sleep(5000);
+//        dtu.driveDist(12.0, 0.2, false);
+//        sleep(5000);
+//        dtu.driveDist(12.0, 0.2, true);
+        ElapsedTime endTimer = new ElapsedTime();
+        while (endTimer.seconds() < 5)
+        {
+            dashboard.displayPrintf(1, "HDG: " + robot.getGyroFhdg());
+            dashboard.displayPrintf(2, "LENC: " + robot.leftMotor.getCurrentPosition());
+            dashboard.displayPrintf(3, "RENC: " + robot.rightMotor.getCurrentPosition());
+        }
     }
 
     public void stopMode()
