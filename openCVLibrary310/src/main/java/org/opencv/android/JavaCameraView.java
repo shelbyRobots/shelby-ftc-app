@@ -1,6 +1,7 @@
 package org.opencv.android;
 
 import java.util.List;
+import java.util.Locale;
 
 import android.content.Context;
 import android.graphics.ImageFormat;
@@ -137,10 +138,21 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
             /* Now set camera parameters */
             try {
                 Camera.Parameters params = mCamera.getParameters();
+                float hfov = params.getHorizontalViewAngle();
+                float vfov = params.getVerticalViewAngle();
+                float flen = params.getFocalLength();
+
+                Log.d(TAG, String.format(Locale.US, "FOV %f x %f FLEN %s", hfov, vfov, flen));
+
                 Log.d(TAG, "getSupportedPreviewSizes()");
                 List<android.hardware.Camera.Size> sizes = params.getSupportedPreviewSizes();
 
                 if (sizes != null) {
+                    for(Camera.Size s : sizes)
+                    {
+                        Log.d(TAG, "WxH: " + s.width + " x " + s.height + " " +
+                                           (double)s.width/s.height);
+                    }
                     /* Select the size that fits surface considering maximum size allowed */
                     Size frameSize = calculateCameraFrameSize(sizes, new JavaCameraSizeAccessor(), width, height);
 
@@ -283,7 +295,7 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
 
     @Override
     public void onPreviewFrame(byte[] frame, Camera arg1) {
-        Log.d(TAG, "Preview Frame received. Frame size: " + frame.length);
+        //Log.d(TAG, "Preview Frame received. Frame size: " + frame.length);
         synchronized (this) {
             mFrameChain[mChainIdx].put(0, 0, frame);
             mCameraFrameReady = true;

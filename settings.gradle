@@ -4,4 +4,3 @@ include ':TeamCode'
 include ':openCVLibrary310'
 
 include ':Ftc3543Lib'
-include ':FtcSampleCode'
