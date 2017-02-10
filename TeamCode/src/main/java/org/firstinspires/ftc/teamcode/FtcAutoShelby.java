@@ -175,7 +175,11 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         DbgLog.msg("SJH: STARTING AT %4.2f", timer.seconds());
         if(logData)
         {
+            Point2d spt = pathSegs[0].getStrtPt();
             dl.addField("START");
+            dl.addField(initHdg);
+            dl.addField(spt.getX());
+            dl.addField(spt.getY());
             dl.newLine();
         }
 
@@ -237,14 +241,14 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
             robot.setDriveDir(curSeg.getDir());
 
-            if(logData) { dl.addField(segName + " encoderTurn"); dl.newLine(); }
+            if(logData) { drvTrn.logData(true, segName + " encoderTurn"); }
             DbgLog.msg("SJH: ENCODER TURN %s", curSeg.getName());
             doEncoderTurn(curSeg.getFieldHeading()); //quick but rough
-            if(logData) { dl.addField(segName + " gyroTurn"); dl.newLine(); }
+            if(logData) { drvTrn.logData(true, segName + " gyroTurn"); }
             DbgLog.msg("SJH: GYRO TURN %s", curSeg.getName());
             doGyroTurn(curSeg.getFieldHeading()); //fine tune using gyro
             DbgLog.msg("SJH: Setting drive tuner to %4.2f", curSeg.getDrvTuner());
-            if(logData) { dl.addField(segName + " move"); dl.newLine(); }
+            if(logData) { drvTrn.logData(true, segName + " move"); }
             drvTrn.setDrvTuner(curSeg.getDrvTuner());
             doMove(curSeg);
             Double pturn = curSeg.getPostTurn();
@@ -252,14 +256,14 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             if(usePostTurn && pturn != null)
             {
                 DbgLog.msg("SJH ENCODER POST TURN %s", curSeg.getName());
-                if(logData) { dl.addField(segName + " postEncoderTurn"); dl.newLine(); }
+                if(logData) { drvTrn.logData(true, segName + " postEncoderTurn"); }
                 doEncoderTurn(pturn);
-                if(logData) { dl.addField(segName + " postGyroTurn"); dl.newLine(); }
+                if(logData) { drvTrn.logData(true, segName + " postGyroTurn"); }
                 DbgLog.msg("SJH: GRYO POST TURN %s", curSeg.getName());
                 doGyroTurn(pturn);
             }
 
-            if(logData) { dl.addField(segName + " action"); dl.newLine(); }
+            if(logData) { drvTrn.logData(true, segName + " action"); }
 
             if(!opModeIsActive() || isStopRequested())
             {
@@ -334,14 +338,16 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             DcMotor.RunMode rRunMode = robot.rightMotor.getMode();
             robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            int lpos = robot.leftMotor.getCurrentPosition();
-            int rpos = robot.rightMotor.getCurrentPosition();
             int segCounts = drvTrn.distanceToCounts(seg.getLength());
             int segOver = (int)(0.2 * segCounts);
 
+            drvTrn.stopAndReset();
+            drvTrn.resetLastPos();
+            drvTrn.setInitValues();
+
             DbgLog.msg("SJH: Color Driving to pt %s at speed %4.2f", ept, speed);
-            dl.addField("FIND_LINE"); dl.newLine();
-            drvTrn.logData();
+            drvTrn.logData(true, "FIND_LINE");
+            sleep(50);
             drvTrn.move(speed);
 
             while(opModeIsActive() &&
@@ -350,24 +356,29 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                 int r = robot.colorSensor.red();
                 int g = robot.colorSensor.green();
                 int b = robot.colorSensor.blue();
-
-                drvTrn.logData();
                 int totColor = r + g + b;
 
-                int lTrav = robot.leftMotor.getCurrentPosition()  - lpos;
-                int rTrav = robot.rightMotor.getCurrentPosition()  - rpos;
+                drvTrn.setCurValues();
+                drvTrn.logData();
+                drvTrn.estimatePosition();
+
+                int lTrav = drvTrn.curLpos  - drvTrn.initLpos;
+                int rTrav = drvTrn.curRpos  - drvTrn.initRpos;
 
                 if (totColor > COLOR_THRESH)
                 {
+                    drvTrn.setEndValues();
                     drvTrn.stopAndReset();
                     DbgLog.msg("SJH: FOUND LINE");
                     robot.turnColorOff();
                     drvTrn.setCurrPt(ept);
                     break;
                 }
-                else if(Math.abs(lTrav) > (segCounts + segOver) ||
-                        Math.abs(rTrav) > (segCounts + segOver))
+                else if(Math.abs(lTrav) > (segOver) ||
+                        Math.abs(rTrav) > (segOver))
                 {
+                    drvTrn.setEndValues();
+                    drvTrn.logData(true, "COLOR_MISS");
                     drvTrn.stopAndReset();
                     DbgLog.msg("SJH: REACHED OVERRUN PT - Backing up a bit");
                     robot.turnColorOff();
@@ -534,8 +545,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
             Point2d touchEnd = new Point2d("TCHEND", touchX, touchY);
 
-            dl.addField("PUSHING " + pushSide.toString());
-            dl.newLine();
+            drvTrn.logData(true, "PUSHING " + pushSide.toString());
             int dcount;
             robot.setDriveDir(ShelbyBot.DriveDir.PUSHER);
             //noinspection ConstantConditions
@@ -544,8 +554,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
             double actDist = drvTrn.countsToDistance(dcount);
 
-            dl.addField("AT PUSH");
-            dl.newLine();
+            drvTrn.logData(true, "AT PUSH");
             double actTouchX = touchStart.getX();
             double actTouchY = touchStart.getY();
             if (alliance == Field.Alliance.RED)
@@ -564,7 +573,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             drvTrn.driveToPointLinear(touchStart, 0.2,
                     Drivetrain.Direction.FORWARD, targetHdg);
             drvTrn.setCurrPt(touchStart);
-            dl.addField("PUSHED?");
+            drvTrn.logData(true, "PUSHED?");
             dl.newLine();
         }
 
@@ -963,6 +972,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         {
             Date day = new Date();
             dl = new DataLogger(day.toString() + "autonomousData");
+            dl.addField("NOTE");
+            dl.addField("FRAME");
             dl.addField("Gyro");
             dl.addField("LENC");
             dl.addField("RENC");
@@ -971,6 +982,9 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             dl.addField("RED");
             dl.addField("GRN");
             dl.addField("BLU");
+            dl.addField("ESTX");
+            dl.addField("ESTY");
+            dl.addField("ESTH");
             dl.newLine();
         }
     }

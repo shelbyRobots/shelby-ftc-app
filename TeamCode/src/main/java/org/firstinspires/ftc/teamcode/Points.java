@@ -64,17 +64,17 @@ class Points
             {
                 if(startPos != Field.StartPos.START_R_PUSHER)
                 {
-                    addPoint(points, fwd, 0.7, 1.00, Segment.TargetType.ENCODER, none, CLRA1_PT);
+                    addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER, none, CLRA1_PT);
                 }
                 else
                 {
-                    addPoint(points, fwd, 0.7, 1.00, Segment.TargetType.ENCODER, none, CLRR1_PT);
+                    addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER, none, CLRR1_PT);
                 }
                 addPoint(points, fwd, 0.30,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
             }
             else
             {
-                addPoint(points, fwd, 0.7, 1.00, Segment.TargetType.ENCODER, beacon, SCAN1_PT);
+                addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER, beacon, SCAN1_PT);
             }
 
             if(startPos == Field.StartPos.START_R_PUSHER)
@@ -88,7 +88,7 @@ class Points
 
         if(pushChoice == Field.BeaconChoice.FAR && startPos == Field.StartPos.START_B_SWEEPER)
         {
-            addPoint(points, fwd, 0.7, 1.00, Segment.TargetType.ENCODER, none, B_MID_PT);
+            addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER, none, B_MID_PT);
         }
 
         if(pushChoice == Field.BeaconChoice.FAR ||
@@ -96,12 +96,12 @@ class Points
         {
             if(!useFly2Light)
             {
-                addPoint(points, fwd, 0.7, 1.00, Segment.TargetType.ENCODER, none, CLR_2_PT);
-                addPoint(points, fwd, 0.30, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
+                addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER, none, CLR_2_PT);
+                addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
             }
             else
             {
-                addPoint(points, fwd, 0.7, 1.00, Segment.TargetType.ENCODER, beacon, SCAN2_PT);
+                addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER, beacon, SCAN2_PT);
             }
 
             //addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   push, PRSS2_PT);
@@ -109,7 +109,7 @@ class Points
         }
 
         //PARK PTS
-        addPoint(points, fwd, 0.7, 1.00, Segment.TargetType.ENCODER,   none, park_pt);
+        addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER,   none, park_pt);
 
         return points;
     }
@@ -263,7 +263,6 @@ class Points
         rpt.setX(bx);
         rpt.setY(by);
         return rpt;
-        //return new Point2d("B"+rpt.getName(), bx, by);
     }
     
     public String toString()
@@ -272,27 +271,8 @@ class Points
         for (int i=0; i<segments.length; i++)
         {
             sbldr.append(segments[i].toString()).append("\n");
-//            if(i<turns.length)
-//            {
-//                sbldr.append("  turn: ").append(turns[i]).append("\n");
-//            }
-
-            sbldr.append(" speed: ").append(segSpeeds.get(i));
-            sbldr.append(" action: ").append(actions.get(i)).append("\n");
         }
         return sbldr.toString();
-    }
-
-    private enum STATES
-    {
-        TURN_START,
-        MOVE_PRSHT,
-        TURN_PRSHT,
-        MOVE_SHOOT,
-        SCAN1,
-        BECN1,
-        PRSS1,
-        REVS1
     }
 
     private final static double DEF_DRV_TUNER = 1.0;
@@ -308,9 +288,9 @@ class Points
     private static final double BECN2_Y =  36.0 - FUDGE;
 
     private static final double ASTARTX =  -12.0;
-    private static final double ASTARTY =  S_WALL + REAR_OFFSET;
+    private static final double ASTARTY =  S_WALL + REAR_OFFSET + 0.5;
     private static final double AIMERY  =  ASTARTY + 3.0;
-    private static final double ASHOOTY =  -27.0 - FRNT_OFFSET;
+    private static final double ASHOOTY =  -29.0 - FRNT_OFFSET;
     private static final double AIMTOX  =  -12.0;
     private static final double AIMTOY  =  -10.5;
 

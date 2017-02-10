@@ -92,12 +92,35 @@ public class DriveTestOpMode extends LinearOpMode
 
     public void do_main_loop()
     {
+        robot.gyro.resetZAxisIntegrator();
         sleep(100);
         drvTrn.setBusyAnd(false);
-        Point2d tPt = new Point2d(48.0, 0.0);
+
+        //Test speed and accel/decel for various setPower settings
+        double tHdg = 0.0;
+        for(double s = 0.1; s <= 1.0; s+=0.1)
+        {
+            drvTrn.ctrTurnToHeading(tHdg, 0.2);
+            tHdg += 180.0; if(tHdg >= 360) tHdg = 0.0;
+            dtu.doSpeedTest(DcMotor.RunMode.RUN_USING_ENCODER, s, 0.5, 0.5, 0.5);
+            sleep(2000);
+        }
+
+        //Find optimal drive speeds
+        //dtu.findBestDriveSpeed();
+
+        //Find optimal encoder speed
+        //dtu.findBestEncTurnSpeed();
+
+        //Find optimal gyro speed/gain
+        //dtu.findBestGyroTurnSpeedGain();
+
+        //Test some common distance and turns from auton
+        //Point2d tPt = new Point2d(48.0, 0.0);
         //drvTrn.driveToPointLinear(tPt, 0.8, Drivetrain.Direction.FORWARD);
-        drvTrn.ctrTurnLinear(-122.0, 0.4);
-        drvTrn.ctrTurnToHeading(-122.0, 0.4);
+        //drvTrn.ctrTurnToHeading(-122.0, 0.4);
+
+
 //        dtu.doMaxSpeedTest(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 //        sleep(5000);
 //        dtu.doMaxSpeedTest(DcMotor.RunMode.RUN_USING_ENCODER);

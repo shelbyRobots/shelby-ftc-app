@@ -42,6 +42,7 @@ public class DriveTestUtil
         robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
         dl.addField("RUNNING MAX DRIVE SPEED TEST SWEEPER " + runMode.toString()); dl.newLine();
         drvTrn.stopAndReset();
+        op.sleep(50);
         robot.leftMotor.setMode(runMode);
         robot.rightMotor.setMode(runMode);
         drvTrn.logData();
@@ -117,6 +118,46 @@ public class DriveTestUtil
         }
     }
 
+    public void doSpeedTest(DcMotor.RunMode runMode, double spd,
+                            double atime, double rtime, double dtime)
+    {
+        robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
+        dl.addField("RUNNING MAX DRIVE SPEED TEST SWEEPER " + runMode.toString());
+        dl.newLine();
+        drvTrn.stopAndReset();
+        op.sleep(50);
+        robot.leftMotor.setMode(runMode);
+        robot.rightMotor.setMode(runMode);
+        drvTrn.logData(true, "SETTING POWER " + spd);
+        et.reset();
+        drvTrn.moveInit(spd, spd);
+        while (op.opModeIsActive() && et.seconds() < atime)
+        {
+            estAndLog();
+        }
+        drvTrn.logData(true, "DONE ACCEL");
+        double t0 = et.seconds();
+        int p0 = (robot.leftMotor.getCurrentPosition() + robot.rightMotor.getCurrentPosition())/2;
+        while (op.opModeIsActive() && et.seconds() < rtime)
+        {
+            estAndLog();
+        }
+        double t1 = et.seconds();
+        int p1 = (robot.leftMotor.getCurrentPosition() + robot.rightMotor.getCurrentPosition())/2;
+        double rate = (p1-p0)/(t1-t0);
+        dl.addField("SPEED FOR POWER");
+        dl.addField(spd);
+        dl.addField(" = ");
+        dl.addField(rate);
+        dl.newLine();
+        drvTrn.logData(true, "SETTING POWER 0.0");
+        drvTrn.stopMotion();
+        while (op.opModeIsActive() && et.seconds() < dtime)
+        {
+            estAndLog();
+        }
+    }
+
     public void driveDist(double dist, double pwr, boolean useAnd)
     {
         int counts = drvTrn.distanceToCounts(dist);
@@ -133,5 +174,67 @@ public class DriveTestUtil
         while(op.opModeIsActive() && et.seconds() < 5.0) { }
         robot.invertDriveDir();
         drvTrn.driveToPointLinear(strtPt, pwr, Drivetrain.Direction.FORWARD);
+    }
+
+    public void findBestDriveSpeed()
+    {
+        double distances[] = {24, 43};
+        drvTrn.setLogOverrun(true);
+        double tHdg = 0.0;
+        for(int d=0; d < distances.length; d++)
+        {
+            double dist = distances[d];
+            for (double spd = 0.1; spd <= 1.0; spd += 0.1)
+            {
+                drvTrn.ctrTurnToHeading(tHdg, 0.2);
+                tHdg += 180.0;
+                if (tHdg >= 360) tHdg = 0.0;
+                drvTrn.logData(true, "START SPD OPT " + spd + " " + dist);
+                drvTrn.driveDistanceLinear(dist, spd, Drivetrain.Direction.FORWARD);
+            }
+        }
+    }
+
+    public void findBestEncTurnSpeed()
+    {
+        double turnAngles[] = {33, 90, 123};
+        drvTrn.setLogOverrun(true);
+        double tHdg = 0.0;
+        drvTrn.ctrTurnToHeading(tHdg, 0.2);
+        for( int a = 0; a < turnAngles.length; a++)
+        {
+            double angle = turnAngles[a];
+            for(double spd = 0.1; spd <= 1.0; spd+=0.1)
+            {
+                dl.addField("START ENC SPD OPT " + angle + " " + spd);
+                drvTrn.ctrTurnLinear(angle, spd);
+            }
+        }
+    }
+
+    public void findBestGyroTurnSpeedGain()
+    {
+        int turnAngles[] = {10};
+        drvTrn.setLogOverrun(true);
+        double tHdg = 0.0;
+        drvTrn.ctrTurnToHeading(tHdg, 0.2);
+        for( int a = 0; a < turnAngles.length; a++)
+        {
+            int angle = turnAngles[a];
+            for(double spd = 0.1; spd <= 0.5; spd+=0.1)
+            {
+                double startGain = 0.01;
+                double endGain = 0.04;
+                double gainStep = 0.005;
+                for(double gain = startGain; gain < endGain; gain += gainStep)
+                {
+                    dl.addField("START GYRO SPD OPT " + angle + " " + spd + " " + gain);
+                    int curH = robot.getGyroFhdg();
+                    int trgH = curH + angle;
+                    drvTrn.Kp_GyroTurn = gain;
+                    drvTrn.ctrTurnToHeading(curH, spd);
+                }
+            }
+        }
     }
 }

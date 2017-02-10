@@ -80,8 +80,12 @@ class Segment
 
     public String toString()
     {
-        return String.format(Locale.US, "%s: %s - %s %s %5.2f",
-                name, strtPt, tgtPt, dir, fldHdg);
+        double pturn = 0.0;
+        if(postTurn != null) pturn = postTurn;
+
+        return String.format(Locale.US, "%s: %s - %s len: %5.2f %s hdg: %5.2f " +
+                                        " spd: %.3f act: %s post: %5.2f",
+                name, strtPt, tgtPt, len, dir.toString(), fldHdg, speed, act.toString(), pturn);
     }
 
     //enum SegDir {FORWARD, REVERSE}
