@@ -165,18 +165,6 @@ public class TeleopTank_Driver extends LinearOpMode
             }
             last_bkwr_shoot_pressed = bkwr_shoot_pressed;
 
-            lpush = gamepad1.left_trigger  > 0.1;
-            rpush = gamepad1.right_trigger > 0.1;
-            if(lpush && !lpush_last)
-            {
-                do_pushButton(ButtonSide.LEFT);
-            }
-            else if (rpush && !rpush_last)
-            {
-                do_pushButton(ButtonSide.RIGHT);
-            }
-            lpush_last = lpush;
-            rpush_last = rpush;
 
             if(b_pressed && !b_pressed_last)
             {
@@ -281,16 +269,14 @@ public class TeleopTank_Driver extends LinearOpMode
     {
         if (bside == ButtonSide.LEFT) {
             robot.lpusher.setPosition(L_UP_PUSH_POS);
-            robot.rpusher.setPosition(R_DN_PUSH_POS);
+            robot.rpusher.setPosition(R_UP_PUSH_POS);
         }
 
         if (bside == ButtonSide.RIGHT) {
             robot.lpusher.setPosition(L_DN_PUSH_POS);
-            robot.rpusher.setPosition(R_UP_PUSH_POS);
+            robot.rpusher.setPosition(R_DN_PUSH_POS);
         }
     }
-
-    //This line of text has no use. It can be deleted.
 
     private enum ButtonSide
     {
@@ -298,6 +284,11 @@ public class TeleopTank_Driver extends LinearOpMode
         LEFT,
         RIGHT
     }
+
+
+
+    //This line of text has no use. It can be deleted.
+
 
     private final static double L_DN_PUSH_POS = 1.0;
     private final static double R_DN_PUSH_POS = 0.05;
