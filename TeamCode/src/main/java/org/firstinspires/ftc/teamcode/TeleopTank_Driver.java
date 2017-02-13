@@ -50,6 +50,7 @@ public class TeleopTank_Driver extends LinearOpMode
         double right;                            //driver right joy
         double shooter;                          //operator right trigger float
         double bkwr_shooter;
+
         boolean shoot_pressed;                   //operator right trigger boolean
         boolean flicker_pressed;                 //driver a button
         boolean last_shoot_pressed = false;
@@ -66,6 +67,8 @@ public class TeleopTank_Driver extends LinearOpMode
         boolean bkwr_shoot_pressed;              //with prefix bkwr_, variable is used to run shooters backwards
         boolean last_bkwr_shoot_pressed = false;
 
+        double lpushed;
+        double rpushed;
         boolean lpush;                           //driver left trigger -> move lpusher left
         boolean rpush;                           //driver left trigger -> move lpusher right
         boolean lpush_last = false;
@@ -105,6 +108,11 @@ public class TeleopTank_Driver extends LinearOpMode
 
         robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
 
+        double curLpushPos = L_DN_PUSH_POS;
+        double curRpushPos = R_DN_PUSH_POS;
+        robot.rpusher.setPosition(curRpushPos);
+        robot.lpusher.setPosition(curLpushPos);
+
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
@@ -126,6 +134,8 @@ public class TeleopTank_Driver extends LinearOpMode
             right = -gamepad1.right_stick_y;
             shooter = gamepad2.right_trigger;
             bkwr_shooter = gamepad2.left_trigger;
+            lpushed = gamepad1.left_trigger;
+            rpushed = gamepad1.right_trigger;
             flicker_pressed = gamepad1.a;
 
             b_pressed = gamepad1.b;
@@ -164,6 +174,38 @@ public class TeleopTank_Driver extends LinearOpMode
                     shooter_motors(0.0);
             }
             last_bkwr_shoot_pressed = bkwr_shoot_pressed;
+
+            rpush = (rpushed > 0);
+
+            if(rpush && !rpush_last)
+            {
+                if(curRpushPos == R_UP_PUSH_POS)
+                {
+                    curRpushPos = R_DN_PUSH_POS;
+                }
+                else
+                {
+                    curRpushPos = R_UP_PUSH_POS;
+                }
+                robot.rpusher.setPosition(curRpushPos);
+            }
+            rpush_last = rpush;
+
+            lpush = (lpushed > 0);
+
+            if(lpush && !lpush_last)
+            {
+                if(curLpushPos == L_UP_PUSH_POS)
+                {
+                    curLpushPos = L_DN_PUSH_POS;
+                }
+                else
+                {
+                    curLpushPos = L_UP_PUSH_POS;
+                }
+                robot.lpusher.setPosition(curLpushPos);
+            }
+            lpush_last = lpush;
 
 
             if(b_pressed && !b_pressed_last)
@@ -265,16 +307,25 @@ public class TeleopTank_Driver extends LinearOpMode
         robot.shotmotor2.setPower(-1.0);
     }
 
-    private void do_pushButton(ButtonSide bside)
+    private void do_pushButtonright (ButtonSide bside)
     {
         if (bside == ButtonSide.LEFT) {
-            robot.lpusher.setPosition(L_UP_PUSH_POS);
             robot.rpusher.setPosition(R_UP_PUSH_POS);
         }
 
         if (bside == ButtonSide.RIGHT) {
-            robot.lpusher.setPosition(L_DN_PUSH_POS);
             robot.rpusher.setPosition(R_DN_PUSH_POS);
+        }
+    }
+
+    private void do_pushButtonleft (ButtonSide bside)
+    {
+        if (bside == ButtonSide.LEFT) {
+            robot.lpusher.setPosition(L_UP_PUSH_POS);
+        }
+
+        if (bside == ButtonSide.RIGHT) {
+            robot.lpusher.setPosition(L_DN_PUSH_POS);
         }
     }
 
