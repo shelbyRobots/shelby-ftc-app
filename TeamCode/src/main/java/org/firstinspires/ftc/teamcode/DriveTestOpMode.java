@@ -90,30 +90,48 @@ public class DriveTestOpMode extends LinearOpMode
         do_main_loop();
     }
 
+    boolean doMaxSpeed = false;
+    boolean doFindBestDriveSpeed = true;
+    boolean doFindBestEncTrunSpeed = false;
+    boolean doFindBestGyroTurnSpeed = false;
+
     public void do_main_loop()
     {
+        DbgLog.msg("SJH: Starting test do_main_loop");
         robot.gyro.resetZAxisIntegrator();
         sleep(100);
         drvTrn.setBusyAnd(false);
 
         //Test speed and accel/decel for various setPower settings
         double tHdg = 0.0;
-        for(double s = 0.1; s <= 1.0; s+=0.1)
+        if(doMaxSpeed)
         {
-            drvTrn.ctrTurnToHeading(tHdg, 0.2);
-            tHdg += 180.0; if(tHdg >= 360) tHdg = 0.0;
-            dtu.doSpeedTest(DcMotor.RunMode.RUN_USING_ENCODER, s, 0.5, 0.5, 0.5);
-            sleep(2000);
+            for (double s = 0.1; s <= 1.0; s += 0.1)
+            {
+                DbgLog.msg("SJH: Test speed " + s);
+                drvTrn.logData(true, "TURNING");
+                drvTrn.ctrTurnLinear(tHdg - robot.getGyroFhdg(), 0.4);
+                drvTrn.ctrTurnToHeading(tHdg, 0.2);
+                tHdg += 180.0;
+                if (tHdg >= 360) tHdg = 0.0;
+                drvTrn.stopAndReset();
+                sleep(100);
+                robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                sleep(100);
+                dtu.doSpeedTest(DcMotor.RunMode.RUN_USING_ENCODER, s, 0.5, 0.5, 0.5);
+                sleep(2000);
+            }
         }
 
         //Find optimal drive speeds
-        //dtu.findBestDriveSpeed();
+        if(doFindBestDriveSpeed) dtu.findBestDriveSpeed();
 
         //Find optimal encoder speed
-        //dtu.findBestEncTurnSpeed();
+        if(doFindBestEncTrunSpeed) dtu.findBestEncTurnSpeed();
 
         //Find optimal gyro speed/gain
-        //dtu.findBestGyroTurnSpeedGain();
+        if(doFindBestGyroTurnSpeed) dtu.findBestGyroTurnSpeedGain();
 
         //Test some common distance and turns from auton
         //Point2d tPt = new Point2d(48.0, 0.0);
@@ -151,6 +169,7 @@ public class DriveTestOpMode extends LinearOpMode
         {
             Date day = new Date();
             dl = new DataLogger("driveTest");
+            dl.addField("Frame");
             dl.addField("Gyro");
             dl.addField("LENC");
             dl.addField("RENC");

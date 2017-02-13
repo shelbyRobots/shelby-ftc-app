@@ -268,9 +268,9 @@ class Points
     public String toString()
     {
         StringBuilder sbldr = new StringBuilder();
-        for (int i=0; i<segments.length; i++)
+        for (Segment segment : segments)
         {
-            sbldr.append(segments[i].toString()).append("\n");
+            sbldr.append(segment.toString()).append("\n");
         }
         return sbldr.toString();
     }
