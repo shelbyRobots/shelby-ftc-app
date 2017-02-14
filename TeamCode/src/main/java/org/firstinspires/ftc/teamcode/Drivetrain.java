@@ -16,18 +16,8 @@ class Drivetrain
 
     public void moveInit(double lPwr, double rPwr)
     {
-        if(rampUp)
-        {
-            int steps = 5;
-            double lPwrIn = Math.abs(robot.leftMotor.getPower());
-            double rPwrIn = Math.abs(robot.rightMotor.getPower());
-            double sSize = (lPwr - Math.abs(lPwrIn)) / steps;
-            for (int p = 1; p <= steps; p++)
-            {
-                robot.leftMotor.setPower(p * sSize + lPwrIn);
-                robot.rightMotor.setPower(p * sSize + rPwrIn);
-            }
-        }
+        curLpower = lPwr;
+        curRpower = rPwr;
 
         if(!gangMotors)
         {
@@ -45,6 +35,9 @@ class Drivetrain
 
     public void move(double lPwr, double rPwr)
     {
+        curLpower = lPwr;
+        curRpower = rPwr;
+
         if(!gangMotors)
         {
             //long t0 = System.nanoTime();
@@ -122,7 +115,7 @@ class Drivetrain
         robot.leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         robot.rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-        op.idle();
+        op.sleep(50);
 
         moveInit(pwr, pwr);
     }
@@ -138,7 +131,15 @@ class Drivetrain
 
         resetLastPos();
 
-        driveDistance(dst, pwr, dir);
+        double startPwr = 0.1;
+
+        initLpower = startPwr;
+        initRpower = startPwr;
+        int pwrSteps = 5;
+        double pwrLIncr = (pwr - initLpower)/pwrSteps;
+        double pwrRIncr = (pwr - initRpower)/pwrSteps;
+
+        driveDistance(dst, startPwr, dir);
 
         while(op.opModeIsActive()    &&
               !op.isStopRequested()  &&
@@ -150,6 +151,13 @@ class Drivetrain
             estimatePosition();
 
             double ppwr = pwr;
+
+            if(rampUp)
+            {
+                if(curLpower < pwr) curLpower = Math.min(pwr, curLpower + pwrLIncr);
+                if(curRpower < pwr) curRpower = Math.min(pwr, curRpower + pwrRIncr);
+                ppwr = (curLpower + curRpower)/2;
+            }
 
             if(rampDown)
             {
@@ -163,8 +171,16 @@ class Drivetrain
 
             if(stopIndidualMotorWhenNotBusy)
             {
-                if(!isMotorBusy(MotorSide.LEFT))  robot.leftMotor.setPower(0.0);
-                if(!isMotorBusy(MotorSide.RIGHT)) robot.rightMotor.setPower(0.0);
+                if(!isMotorBusy(MotorSide.LEFT))
+                {
+                    curLpower = 0.0;
+                    robot.leftMotor.setPower(0.0);
+                }
+                if(!isMotorBusy(MotorSide.RIGHT))
+                {
+                    curRpower = 0.0;
+                    robot.rightMotor.setPower(0.0);
+                }
             }
 
             makeGyroCorrections(ppwr, trgtHdg);
@@ -229,7 +245,8 @@ class Drivetrain
         robot.leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         robot.rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-        op.idle();
+        op.sleep(50);
+
         moveInit(pwr, pwr);
     }
 
@@ -304,7 +321,18 @@ class Drivetrain
         resetLastPos();
 
         ElapsedTime tTimer = new ElapsedTime();
-        ctrTurnEncoder(angle, pwr);
+
+        double startPwr = 0.1;
+        initLpower = startPwr;
+        initRpower = startPwr;
+
+        int pwrSteps = 5;
+        double pwrLIncr = (pwr - initLpower)/pwrSteps;
+        double pwrRIncr = (pwr - initRpower)/pwrSteps;
+
+        ctrTurnEncoder(angle, startPwr);
+
+
 
         while(op.opModeIsActive() &&
               !op.isStopRequested() &&
@@ -318,6 +346,13 @@ class Drivetrain
 
             double ppwr = pwr;
 
+            if(rampUp)
+            {
+                if(curLpower < pwr) curLpower = Math.min(pwr, curLpower + pwrLIncr);
+                if(curRpower < pwr) curRpower = Math.min(pwr, curRpower + pwrRIncr);
+                ppwr = (curLpower + curRpower)/2;
+            }
+
             if(rampDown)
             {
                 int lcnt = curLpos;
@@ -328,13 +363,23 @@ class Drivetrain
                 if (Math.abs(remaining) < 480) ppwr = Math.min(pwr, 0.25);
                 if (Math.abs(remaining) < 240) ppwr = Math.min(pwr, 0.10);
             }
+            curLpower = ppwr;
+            curRpower = ppwr;
             robot.leftMotor.setPower(ppwr);
             robot.rightMotor.setPower(ppwr);
 
             if(stopIndidualMotorWhenNotBusy)
             {
-                if(!isMotorBusy(MotorSide.LEFT))  robot.leftMotor.setPower(0.0);
-                if(!isMotorBusy(MotorSide.RIGHT)) robot.rightMotor.setPower(0.0);
+                if(!isMotorBusy(MotorSide.LEFT))
+                {
+                    curLpower = 0.0;
+                    robot.leftMotor.setPower(0.0);
+                }
+                if(!isMotorBusy(MotorSide.RIGHT))
+                {
+                    curRpower = 0.0;
+                    robot.rightMotor.setPower(0.0);
+                }
             }
 
             if(tickRate > 0) waitForTick(tickRate);
@@ -522,13 +567,12 @@ class Drivetrain
 
         if (!op.opModeIsActive() || op.isStopRequested())
         {
-            robot.rightMotor.setPower( 0.0 );
-            robot.leftMotor.setPower( 0.0 );
+            stopMotion();
             return;
         }
 
-        double ldp; // = Math.abs(robot.leftMotor.getPower());
-        double rdp; // = Math.abs(robot.rightMotor.getPower());
+        double ldp;
+        double rdp;
 
         double err = getGyroError(thdg);
 
@@ -548,6 +592,8 @@ class Drivetrain
             ldp = ldp / max;
         }
 
+        curLpower = rdp;
+        curRpower = ldp;
         robot.rightMotor.setPower( rdp );
         robot.leftMotor.setPower( ldp );
 
@@ -736,8 +782,8 @@ class Drivetrain
         {
             int lc = Math.abs(curLpos);
             int rc = Math.abs(curRpos);
-            double lp = Math.abs(robot.leftMotor.getPower());
-            double rp = Math.abs(robot.rightMotor.getPower());
+            double lp = Math.abs(curLpower);
+            double rp = Math.abs(curRpower);
 
             //If power is above threshold and encoders aren't changing,
             //stop after noMoveTimeout
@@ -764,8 +810,8 @@ class Drivetrain
         {
             int lc = Math.abs(curLpos);
             int rc = Math.abs(curRpos);
-            double lp = Math.abs(robot.leftMotor.getPower());
-            double rp = Math.abs(robot.rightMotor.getPower());
+            double lp = Math.abs(curLpower);
+            double rp = Math.abs(curRpower);
 
             //If power is above threshold and encoders aren't changing,
             //stop after noMoveTimeout
@@ -893,8 +939,8 @@ class Drivetrain
             else                   dl.addField("");
             dl.addField(curLpos);
             dl.addField(curRpos);
-            dl.addField("",robot.leftMotor.getPower());
-            dl.addField("",robot.rightMotor.getPower());
+            dl.addField(curLpower);
+            dl.addField(curRpower);
             if(robot.colorSensor != null)
             {
                 dl.addField(robot.colorSensor.red());
@@ -971,6 +1017,11 @@ class Drivetrain
     private int trgtHdg;
     private int doneHdg;
     private int overHdg;
+
+    private double initLpower;
+    private double initRpower;
+    private double curLpower;
+    private double curRpower;
 
     private double xPos = 0.0;
     private double yPos = 0.0;
