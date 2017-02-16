@@ -86,7 +86,7 @@ class ShelbyBot
         if(leftMotor  != null)  leftMotor.setDirection(LEFT_DIR);
         if(rightMotor != null) rightMotor.setDirection(RIGHT_DIR);
         if(elevMotor  != null)  elevMotor.setDirection(DcMotor.Direction.REVERSE);
-        if(sweepMotor != null) sweepMotor.setDirection(DcMotor.Direction.REVERSE);
+        if(sweepMotor != null) sweepMotor.setDirection(DcMotor.Direction.FORWARD);
         if(shotmotor1 != null) shotmotor1.setDirection(DcMotor.Direction.FORWARD);
         if(shotmotor2 != null) shotmotor2.setDirection(DcMotor.Direction.REVERSE);
 

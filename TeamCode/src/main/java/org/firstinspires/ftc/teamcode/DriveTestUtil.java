@@ -176,23 +176,24 @@ public class DriveTestUtil
 
     public void findBestDriveSpeed()
     {
-        double distances[] = {24, 43};
+        robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
+        double distances[] = {24}; //{24, 43};
         drvTrn.setLogOverrun(true);
         double tHdg = 0.0;
         op.sleep(200);
         for(int d=0; d < distances.length; d++)
         {
             double dist = distances[d];
-            for (double spd = 0.1; spd <= 1.0; spd += 0.1)
+            for (double spd = 0.3; spd <= 0.8; spd += 0.1)
             {
                 double cHdg = robot.getGyroFhdg();
                 drvTrn.ctrTurnLinear(tHdg-cHdg, 0.4);
                 drvTrn.ctrTurnToHeading(tHdg, 0.2);
                 tHdg += 180.0;
                 if (tHdg >= 360) tHdg = 0.0;
-                dl.resetTime();
                 drvTrn.stopAndReset();
                 drvTrn.logData(true, "START SPD OPT " + spd + " " + dist);
+                dl.resetTime();
                 drvTrn.driveDistanceLinear(dist, spd, Drivetrain.Direction.FORWARD);
             }
         }
