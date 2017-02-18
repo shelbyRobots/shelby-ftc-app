@@ -2,12 +2,15 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.ftccommon.DbgLog;
 
+
 import java.util.Vector;
 
 class Points
 {
     private Vector<Point2d> initPoints()
     {
+        boolean useSquare = true;
+
         Point2d start_pt = ASTART_PT;
         Point2d shoot_pt = ASHOOT_PT;
 
@@ -54,7 +57,7 @@ class Points
 
         if(startPos != Field.StartPos.START_R_PUSHER)
         {
-            addPoint(points, rev, 0.5, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
+            addPoint(points, rev, 0.6, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
         }
 
         if(pushChoice == Field.BeaconChoice.NEAR ||
@@ -64,7 +67,15 @@ class Points
             {
                 if(startPos != Field.StartPos.START_R_PUSHER)
                 {
-                    addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER, none, CLRA1_PT);
+                    if(useSquare)
+                    {
+                        addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER, none, SQUARE_PT);
+                        addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER, none, CLRA1_PT);
+                    }
+                    else
+                    {
+                        addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER, none, CLRA1_PT);
+                    }
                 }
                 else
                 {
@@ -334,6 +345,8 @@ class Points
 
     private Point2d ASTART_PT = new Point2d("ASTART", ASTARTX, ASTARTY);
     private Point2d ASHOOT_PT = new Point2d("ASHOOT", ASTARTX, ASHOOTY);
+
+    private Point2d SQUARE_PT = new Point2d("SQUARE", CLRA1_X, ASHOOTY);
 
     private Point2d BASKET_PT = new Point2d("BASKET", AIMTOX, AIMTOY);
 

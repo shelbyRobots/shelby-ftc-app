@@ -367,7 +367,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
                 if (totColor > COLOR_THRESH)
                 {
-                    drvTrn.setEndValues();
+                    drvTrn.setEndValues("COLOR_FIND");
                     drvTrn.stopAndReset();
                     DbgLog.msg("SJH: FOUND LINE");
                     robot.turnColorOff();
@@ -377,8 +377,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                 else if(Math.abs(lTrav) > (segOver) ||
                         Math.abs(rTrav) > (segOver))
                 {
-                    drvTrn.setEndValues();
-                    drvTrn.logData(true, "COLOR_MISS");
+                    drvTrn.setEndValues("COLOR_MISS");
                     drvTrn.stopAndReset();
                     DbgLog.msg("SJH: REACHED OVERRUN PT - Backing up a bit");
                     robot.turnColorOff();
