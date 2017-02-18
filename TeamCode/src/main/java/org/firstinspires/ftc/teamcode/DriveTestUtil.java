@@ -26,6 +26,7 @@ public class DriveTestUtil
 
     void estAndLog()
     {
+        drvTrn.setCurValues();
         drvTrn.estimatePosition();
         drvTrn.logData();
         robot.waitForTick(5);
@@ -124,18 +125,16 @@ public class DriveTestUtil
         robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
         dl.addField("RUNNING MAX DRIVE SPEED TEST SWEEPER " + runMode.toString());
         dl.newLine();
-        drvTrn.stopAndReset();
-        op.sleep(50);
-        robot.leftMotor.setMode(runMode);
-        robot.rightMotor.setMode(runMode);
         drvTrn.logData(true, "SETTING POWER " + spd);
         et.reset();
+        dl.resetTime();
         drvTrn.moveInit(spd, spd);
         while (op.opModeIsActive() && et.seconds() < atime)
         {
             estAndLog();
         }
         drvTrn.logData(true, "DONE ACCEL");
+        et.reset();
         double t0 = et.seconds();
         int p0 = (robot.leftMotor.getCurrentPosition() + robot.rightMotor.getCurrentPosition())/2;
         while (op.opModeIsActive() && et.seconds() < rtime)
@@ -145,13 +144,10 @@ public class DriveTestUtil
         double t1 = et.seconds();
         int p1 = (robot.leftMotor.getCurrentPosition() + robot.rightMotor.getCurrentPosition())/2;
         double rate = (p1-p0)/(t1-t0);
-        dl.addField("SPEED FOR POWER");
-        dl.addField(spd);
-        dl.addField(" = ");
-        dl.addField(rate);
-        dl.newLine();
+        drvTrn.logData(true, "SPEED FOR POWER " + spd + "=" + rate);
         drvTrn.logData(true, "SETTING POWER 0.0");
         drvTrn.stopMotion();
+        et.reset();
         while (op.opModeIsActive() && et.seconds() < dtime)
         {
             estAndLog();
@@ -169,6 +165,8 @@ public class DriveTestUtil
         robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
         dl.addField("TEST DRIVE DISTANCE at power");
         dl.addField("", dist); dl.addField("", pwr); dl.newLine();
+        op.sleep(200);
+        dl.resetTime();
         drvTrn.driveToPointLinear(tgtPt, pwr, Drivetrain.Direction.FORWARD);
         et.reset();
         while(op.opModeIsActive() && et.seconds() < 5.0) { }
@@ -178,18 +176,24 @@ public class DriveTestUtil
 
     public void findBestDriveSpeed()
     {
-        double distances[] = {24, 43};
+        robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
+        double distances[] = {24}; //{24, 43};
         drvTrn.setLogOverrun(true);
         double tHdg = 0.0;
+        op.sleep(200);
         for(int d=0; d < distances.length; d++)
         {
             double dist = distances[d];
-            for (double spd = 0.1; spd <= 1.0; spd += 0.1)
+            for (double spd = 0.3; spd <= 0.8; spd += 0.1)
             {
+                double cHdg = robot.getGyroFhdg();
+                drvTrn.ctrTurnLinear(tHdg-cHdg, 0.4);
                 drvTrn.ctrTurnToHeading(tHdg, 0.2);
                 tHdg += 180.0;
                 if (tHdg >= 360) tHdg = 0.0;
+                drvTrn.stopAndReset();
                 drvTrn.logData(true, "START SPD OPT " + spd + " " + dist);
+                dl.resetTime();
                 drvTrn.driveDistanceLinear(dist, spd, Drivetrain.Direction.FORWARD);
             }
         }
@@ -206,6 +210,7 @@ public class DriveTestUtil
             double angle = turnAngles[a];
             for(double spd = 0.1; spd <= 1.0; spd+=0.1)
             {
+                dl.resetTime();
                 dl.addField("START ENC SPD OPT " + angle + " " + spd);
                 drvTrn.ctrTurnLinear(angle, spd);
             }

@@ -60,6 +60,12 @@ public class DataLogger {
         }
     }
 
+    public void resetTime()
+    {
+        msBase = System.currentTimeMillis();
+        nsBase = System.nanoTime();
+    }
+
     private void flushLineBuffer()
     {
         try
