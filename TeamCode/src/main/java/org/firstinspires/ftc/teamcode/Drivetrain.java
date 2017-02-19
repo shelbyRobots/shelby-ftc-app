@@ -1041,7 +1041,7 @@ class Drivetrain
 
     private double printTimeout = 0.05;
 
-    private double minSpeed = 0.07;
+    private double minSpeed = 0.08;
 
     private LinearOpMode op = null;
 
