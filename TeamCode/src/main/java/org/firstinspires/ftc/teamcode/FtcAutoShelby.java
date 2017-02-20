@@ -1,4 +1,3 @@
-
 package org.firstinspires.ftc.teamcode;
 
 import android.widget.TextView;
@@ -311,6 +310,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
     private void doMove(Segment seg)
     {
         if(!opModeIsActive() || isStopRequested()) return;
+        drvTrn.setBusyAnd(false);
         String  snm = seg.getName();
         Point2d spt = seg.getStrtPt();
         Point2d ept = seg.getTgtPt();
@@ -332,26 +332,33 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
         if(robot.colorSensor != null && seg.getTgtType() == Segment.TargetType.COLOR)
         {
+            double pct = 0.90;
+            Point2d cept = new Point2d(pct * (ept.getX() - spt.getX()) + spt.getX(),
+                                       pct * (ept.getY() - spt.getY()) + spt.getY());
+
+            int targetHdg = (int) Math.round(seg.getFieldHeading());
+            drvTrn.driveToPointLinear(cept, speed, ddir, targetHdg);
+
             DbgLog.msg("SJH: Turning on colorSensor LED");
             robot.turnColorOn();
-            DcMotor.RunMode lRunMode = robot.leftMotor.getMode();
-            DcMotor.RunMode rRunMode = robot.rightMotor.getMode();
+
             robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            int segCounts = drvTrn.distanceToCounts(seg.getLength());
-            int segOver = (int)(0.2 * segCounts);
+            double colDist = cept.distance(ept);
+            int segOver = drvTrn.distanceToCounts(3.0);
 
             drvTrn.stopAndReset();
             drvTrn.resetLastPos();
             drvTrn.setInitValues();
 
-            DbgLog.msg("SJH: Color Driving to pt %s at speed %4.2f", ept, speed);
-            drvTrn.logData(true, "FIND_LINE");
-            sleep(50);
-            drvTrn.move(speed);
+            sleep(1000); //TAKE THIS OUT AFTER TESTING
 
-            while(opModeIsActive() &&
-                    !isStopRequested())
+            double colSpd = 0.2;
+            DbgLog.msg("SJH: Color Driving to pt %s at speed %4.2f", ept, colSpd);
+            drvTrn.logData(true, "FIND_LINE");
+            drvTrn.move(colSpd);
+
+            while(opModeIsActive() && !isStopRequested())
             {
                 int r = robot.colorSensor.red();
                 int g = robot.colorSensor.green();
@@ -368,26 +375,26 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                 if (totColor > COLOR_THRESH)
                 {
                     drvTrn.setEndValues("COLOR_FIND");
-                    drvTrn.stopAndReset();
+                    drvTrn.stopMotion();
                     DbgLog.msg("SJH: FOUND LINE");
                     robot.turnColorOff();
                     drvTrn.setCurrPt(ept);
                     break;
                 }
-                else if(Math.abs(lTrav) > (segOver) ||
-                        Math.abs(rTrav) > (segOver))
+                else if(Math.abs(lTrav) > (colDist + segOver) ||
+                        Math.abs(rTrav) > (colDist + segOver))
                 {
                     drvTrn.setEndValues("COLOR_MISS");
                     drvTrn.stopAndReset();
                     DbgLog.msg("SJH: REACHED OVERRUN PT - Backing up a bit");
                     robot.turnColorOff();
                     double rDst = drvTrn.countsToDistance(segOver);
-                    drvTrn.driveDistanceLinear(rDst, 0.3, Drivetrain.Direction.REVERSE);
+                    drvTrn.driveDistanceLinear(rDst, 0.2, Drivetrain.Direction.REVERSE);
                     drvTrn.setCurrPt(ept);
                     break;
                 }
 
-                robot.waitForTick(5);
+                robot.waitForTick(10);
             }
         }
         else
@@ -404,6 +411,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
     private void doEncoderTurn(double fHdg)
     {
         if(!opModeIsActive() || isStopRequested()) return;
+        drvTrn.setBusyAnd(true);
         int cHdg = robot.getGyroFhdg();
         int tHdg = (int) Math.round(fHdg);
         double angle = tHdg - cHdg;
@@ -1044,3 +1052,4 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
     private DataLogger dl;
     private boolean logData = true;
 }
+

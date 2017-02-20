@@ -179,15 +179,20 @@ public class DriveTestOpMode extends LinearOpMode
         //Test some common distance and turns from auton
         if(doDriveDist)
         {
-            double dist = 48.0;
-            Point2d tPt = new Point2d(dist, 0.0);
-            dl.addField("doDriveDist " + dist);
-            drvTrn.driveToPointLinear(tPt, 0.8, Drivetrain.Direction.FORWARD);
+            double dist[] = {24.0, 48.0};
+            for (int i = 0 ; i < dist.length; i++)
+            {
+                drvTrn.setCurrPt(new Point2d(0,0));
+                Point2d tPt = new Point2d(dist[i], 0.0);
+                dl.addField("doDriveDist " + dist);
+                drvTrn.driveToPointLinear(tPt, 0.8, Drivetrain.Direction.FORWARD);
+            }
         }
 
         if(doTurnAngle)
         {
-            double angle = -122.0;
+            double angle = -90.0;
+            drvTrn.ctrTurnLinear(angle - robot.getGyroFhdg(), 0.4);
             dl.addField("doTurnAngle"); dl.newLine();
             drvTrn.ctrTurnToHeading(angle, 0.4);
         }

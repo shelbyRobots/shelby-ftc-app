@@ -30,7 +30,6 @@ public class DriveTestUtil
         drvTrn.setCurValues();
         drvTrn.estimatePosition();
         drvTrn.logData();
-        robot.waitForTick(5);
     }
 
     /*
@@ -51,10 +50,10 @@ public class DriveTestUtil
         et.reset();
         dl.addField("SETTING POWER 1.0"); dl.newLine();
         drvTrn.move(1.0);
-        while(op.opModeIsActive() && et.seconds() < 2.0) { estAndLog(); }
+        while(op.opModeIsActive() && et.seconds() < 2.0) { estAndLog(); drvTrn.waitForTick(10); }
         dl.addField("SETTING POWER 0.0"); dl.newLine();
         drvTrn.move(0.0);
-        while(op.opModeIsActive() && et.seconds() < 3.0) { estAndLog(); }
+        while(op.opModeIsActive() && et.seconds() < 3.0) { estAndLog(); drvTrn.waitForTick(10); }
         dl.addField("DONE MAX SPEED TEST " + runMode.toString()); dl.newLine();
         op.sleep(2000);
         robot.setDriveDir(ShelbyBot.DriveDir.PUSHER);
@@ -64,30 +63,30 @@ public class DriveTestUtil
         et.reset();
         dl.addField("SETTING POWER 1.0"); dl.newLine();
         drvTrn.move(1.0);
-        while(op.opModeIsActive() && et.seconds() < 2.0) { estAndLog(); }
+        while(op.opModeIsActive() && et.seconds() < 2.0) { estAndLog(); drvTrn.waitForTick(10);}
         dl.addField("SETTING POWER 0.0"); dl.newLine();
         drvTrn.move(0.0);
-        while(op.opModeIsActive() && et.seconds() < 3.0) { estAndLog(); }
+        while(op.opModeIsActive() && et.seconds() < 3.0) { estAndLog(); drvTrn.waitForTick(10);}
         dl.addField("DONE MAX SPEED TEST " + runMode.toString()); dl.newLine();
         et.reset();
         while(op.opModeIsActive() && et.seconds() < 2.0) op.sleep(0);
         dl.addField("RUNNING MAX RT TURN SPEED TEST " + runMode.toString()); dl.newLine();
         et.reset();
         drvTrn.move(1.0, -1.0);
-        while(op.opModeIsActive() && et.seconds() < 2.0) { estAndLog(); }
+        while(op.opModeIsActive() && et.seconds() < 2.0) { estAndLog(); drvTrn.waitForTick(10);}
         dl.addField("SETTING POWER 0.0"); dl.newLine();
         drvTrn.move(0.0);
-        while(op.opModeIsActive() && et.seconds() < 3.0) { estAndLog(); }
+        while(op.opModeIsActive() && et.seconds() < 3.0) { estAndLog(); drvTrn.waitForTick(10);}
         dl.addField("DONE MAX RT TURN SPEED TEST " + runMode.toString()); dl.newLine();
         et.reset();
         while(op.opModeIsActive() && et.seconds() < 2.0) op.sleep(0);
         dl.addField("RUNNING MAX LT TURN SPEED TEST " + runMode.toString()); dl.newLine();
         et.reset();
         drvTrn.move(-1.0, 1.0);
-        while(op.opModeIsActive() && et.seconds() < 2.0) { estAndLog(); }
+        while(op.opModeIsActive() && et.seconds() < 2.0) { estAndLog(); drvTrn.waitForTick(10);}
         dl.addField("SETTING POWER 0.0"); dl.newLine();
         drvTrn.move(0.0);
-        while(op.opModeIsActive() && et.seconds() < 3.0) { estAndLog(); }
+        while(op.opModeIsActive() && et.seconds() < 3.0) { estAndLog(); drvTrn.waitForTick(10);}
         dl.addField("DONE MAX LT TURN SPEED TEST " + runMode.toString()); dl.newLine();
     }
 
@@ -109,6 +108,7 @@ public class DriveTestUtil
             while(op.opModeIsActive() && et.seconds() < spdDur)
             {
                 estAndLog();
+                drvTrn.waitForTick(10);
             }
             drvTrn.move(0);
             boolean moved = true;
@@ -133,6 +133,7 @@ public class DriveTestUtil
         while (op.opModeIsActive() && et.seconds() < atime)
         {
             estAndLog();
+            drvTrn.waitForTick(10);
         }
         drvTrn.logData(true, "DONE ACCEL");
         et.reset();
@@ -141,6 +142,7 @@ public class DriveTestUtil
         while (op.opModeIsActive() && et.seconds() < rtime)
         {
             estAndLog();
+            drvTrn.waitForTick(10);
         }
         double t1 = et.seconds();
         int p1 = (robot.leftMotor.getCurrentPosition() + robot.rightMotor.getCurrentPosition())/2;
@@ -152,6 +154,7 @@ public class DriveTestUtil
         while (op.opModeIsActive() && et.seconds() < dtime)
         {
             estAndLog();
+            drvTrn.waitForTick(10);
         }
     }
 
@@ -183,7 +186,7 @@ public class DriveTestUtil
         for(int d=0; d < distances.length; d++)
         {
             double dist = distances[d];
-            for (double spd = 0.3; spd <= 0.8; spd += 0.1)
+            for (double spd = 0.35; spd <= 0.75; spd += 0.1)
             {
                 double cHdg = robot.getGyroFhdg();
                 drvTrn.ctrTurnLinear(tHdg-cHdg, 0.4);
@@ -206,7 +209,7 @@ public class DriveTestUtil
         for( int a = 0; a < turnAngles.length; a++)
         {
             double angle = turnAngles[a];
-            for(double spd = 0.1; spd <= 1.0; spd+=0.1)
+            for(double spd = 0.15; spd <= 0.75; spd+=0.1)
             {
                 dl.resetTime();
                 dl.addField("START ENC SPD OPT " + angle + " " + spd);
@@ -217,7 +220,7 @@ public class DriveTestUtil
 
     public void findBestGyroTurnSpeedGain()
     {
-        int turnAngles[] = {10};
+        int turnAngles[] = {3, 10};
         double tHdg = 0.0;
         drvTrn.ctrTurnToHeading(tHdg, 0.2);
         for( int a = 0; a < turnAngles.length; a++)
@@ -243,11 +246,11 @@ public class DriveTestUtil
     public void doMotionProfile(double dist, double spd)
     {
         ElapsedTime mpTimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
-        double accEndTime = 500;
+        double accEndPos = 400;
         int tgtPos = drvTrn.distanceToCounts(dist);
         int crzEndPos = tgtPos - 280;
 
-        boolean filter = false;
+        boolean filter = true;
 
         int f1Ticks = 12;
         int f2Ticks = 6;
@@ -284,15 +287,15 @@ public class DriveTestUtil
         }
 
         frm = 0;
-        robot.waitForTick(10);
-        while(op.opModeIsActive() && mpTimer.milliseconds() < accEndTime)
+        drvTrn.waitForTick(10);
+        while(op.opModeIsActive() && robot.leftMotor.getCurrentPosition() < accEndPos)
         {
             estAndLog();
             double cspd = spd;
-            if(filter && frm <= nFiltFrms) cspd = aspds[frm++];
+            if(filter && frm < nFiltFrms) cspd = aspds[frm];
             drvTrn.move(cspd);
-            DbgLog.msg("dspds["+frm+"]="+dspds[frm]);
-            robot.waitForTick(10);
+            drvTrn.waitForTick(10);
+            frm++;
         }
 
         drvTrn.move(spd);
@@ -300,16 +303,18 @@ public class DriveTestUtil
         while(op.opModeIsActive() && robot.leftMotor.getCurrentPosition() < crzEndPos)
         {
             estAndLog();
-            robot.waitForTick(10);
+            drvTrn.waitForTick(10);
         }
 
+        frm = 0;
         while(op.opModeIsActive() && robot.leftMotor.getCurrentPosition() < tgtPos)
         {
             estAndLog();
             double cspd = 0;
-            if(filter && frm <= nFiltFrms) cspd = dspds[frm++];
+            if(filter && frm < nFiltFrms) cspd = dspds[frm];
             drvTrn.move(cspd);
-            robot.waitForTick(10);
+            drvTrn.waitForTick(10);
+            frm++;
         }
 
         drvTrn.stopMotion();
