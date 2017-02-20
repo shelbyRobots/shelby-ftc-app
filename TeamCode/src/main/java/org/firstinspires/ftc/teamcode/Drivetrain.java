@@ -348,7 +348,7 @@ class Drivetrain
             curLpower = ppwr;
             curRpower = ppwr;
 
-            if(stopIndidualMotorWhenNotBusy)
+            if(stopIndividualMotorWhenNotBusy)
             {
                 if(!isMotorBusy(MotorSide.LEFT))  curLpower = 0.0;
                 if(!isMotorBusy(MotorSide.RIGHT)) curRpower = 0.0;
@@ -485,8 +485,8 @@ class Drivetrain
         double degHdg = Math.toRadians(curHdg);
         int dCntL = curLcnt - lastLcnt;
         int dCntR = curRcnt - lastRcnt;
-        double dX = 0.5*(dCntL+dCntR)/CPI * Math.cos(degHdg);
-        double dY = 0.5*(dCntL+dCntR)/CPI * Math.sin(degHdg);
+        double dX = 0.5*(dCntL+dCntR)/DEF_CPI * Math.cos(degHdg);
+        double dY = 0.5*(dCntL+dCntR)/DEF_CPI * Math.sin(degHdg);
         xPos += dX;
         yPos += dY;
         estPos.setX(xPos);
@@ -580,7 +580,7 @@ class Drivetrain
         curLpower = rdp;
         curRpower = ldp;
 
-        if(stopIndidualMotorWhenNotBusy)
+        if(stopIndividualMotorWhenNotBusy)
         {
             if(!isMotorBusy(MotorSide.LEFT))  curLpower = 0.0;
             if(!isMotorBusy(MotorSide.RIGHT)) curRpower = 0.0;
@@ -908,9 +908,9 @@ class Drivetrain
 //        this.gangMotors = gangMotors;
 //    }
 
-    public void setStopIndidualMotorWhenNotBusy(boolean stopIndvid)
+    public void setStopIndividualMotorWhenNotBusy(boolean stopIndvid)
     {
-        this.stopIndidualMotorWhenNotBusy = stopIndvid;
+        this.stopIndividualMotorWhenNotBusy = stopIndvid;
     }
 
     public void setDrvTuner(double dtnr)
@@ -977,6 +977,7 @@ class Drivetrain
 
     private static double CIRCUMFERENCE = Math.PI * WHL_DIAMETER;
     private static double CPI = ENCODER_CPR *GEAR_REDUC / (CIRCUMFERENCE * DRV_TUNER);
+    private static final double DEF_CPI = CPI;
 
     private static final double Kp_GyrCorrection = 0.008;
     private static final double Kp_EncCorrection = 0.01;
@@ -1040,7 +1041,7 @@ class Drivetrain
 
     private double printTimeout = 0.05;
 
-    private double minSpeed = 0.07;
+    private double minSpeed = 0.08;
 
     private LinearOpMode op = null;
 
@@ -1072,13 +1073,13 @@ class Drivetrain
     private boolean busyAnd = false;
     private boolean rampUp = true;
     private boolean rampDown = true;
-    private boolean stopIndidualMotorWhenNotBusy = false;
+    private boolean stopIndividualMotorWhenNotBusy = false;
     //private boolean gangMotors = false;
 
     //private ModernRoboticsUsbGangedDcMotorController mc;
 
     private int tickRate = 10;
-    private static final int BUSYTHRESH = 20;
+    private static int BUSYTHRESH = 20;
 
     private ElapsedTime busyTimer = new ElapsedTime();
     private double busyTimeOut = 20;
