@@ -16,20 +16,7 @@ class Drivetrain
 
     public void moveInit(double lPwr, double rPwr)
     {
-        curLpower = lPwr;
-        curRpower = rPwr;
-
-//        if(!gangMotors)
-//        {
-            robot.leftMotor.setPower(lPwr);
-            robot.rightMotor.setPower(rPwr);
-//        }
-//        else
-//        {
-//            double[] powers = {lPwr, rPwr};
-//            mc.setMotorsPower(powers);
-//        }
-
+        move(lPwr, rPwr);
         logData(true, "INIT PWR SET");
     }
 
@@ -345,22 +332,21 @@ class Drivetrain
                 if (Math.abs(remaining) < 480) ppwr = Math.min(pwr, 0.25);
                 if (Math.abs(remaining) < 240) ppwr = Math.min(pwr, 0.10);
             }
-            curLpower = ppwr;
-            curRpower = ppwr;
+            double lpwr = ppwr;
+            double rpwr = ppwr;
 
             if(stopIndividualMotorWhenNotBusy)
             {
-                if(!isMotorBusy(MotorSide.LEFT))  curLpower = 0.0;
-                if(!isMotorBusy(MotorSide.RIGHT)) curRpower = 0.0;
+                if(!isMotorBusy(MotorSide.LEFT))  lpwr = 0.0;
+                if(!isMotorBusy(MotorSide.RIGHT)) rpwr = 0.0;
             }
             else if(!isBusy())
             {
-                curLpower = 0.0;
-                curRpower = 0.0;
+                lpwr = 0.0;
+                rpwr = 0.0;
             }
 
-            robot.leftMotor.setPower(curLpower);
-            robot.rightMotor.setPower(curRpower);
+            move(lpwr, rpwr);
 
             if(tickRate > 0) waitForTick(tickRate);
             frame++;
@@ -483,6 +469,15 @@ class Drivetrain
         int curLcnt = curLpos;
         int curRcnt = curRpos;
         double degHdg = Math.toRadians(curHdg);
+
+        if(curDriveDir != robot.getDriveDir())
+        {
+            curDriveDir = robot.getDriveDir();
+            lastLcnt = curLcnt;
+            lastRcnt = curRcnt;
+            logData(true, "DDIR=" + curDriveDir.toString());
+        } 
+
         int dCntL = curLcnt - lastLcnt;
         int dCntR = curRcnt - lastRcnt;
         double dX = 0.5*(dCntL+dCntR)/DEF_CPI * Math.cos(degHdg);
@@ -522,9 +517,12 @@ class Drivetrain
         robot.leftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         robot.rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         //mc = (ModernRoboticsUsbGangedDcMotorController)robot.leftMotor.getController();
+
+        curDriveDir = robot.getDriveDir();
+        lastDriveDir = curDriveDir;
     }
 
-    private void waitForTick(long periodMs)
+    public void waitForTick(long periodMs)
     {
         long  remaining = periodMs - (long)period.milliseconds();
 
@@ -540,19 +538,10 @@ class Drivetrain
     {
         if(gyro == null || !robot.gyroReady) return;
 
-        if (!op.opModeIsActive() || op.isStopRequested())
-        {
-            stopMotion();
-            return;
-        }
-
         double ldp;
         double rdp;
 
         double err = getGyroError(thdg);
-
-        //if (Math.abs(err) < TURN_TOLERANCE)
-        //   return;
 
         double steer = getSteer(err, Kp_GyrCorrection);
         //if (dir == Direction.REVERSE) steer *= -1;
@@ -577,22 +566,18 @@ class Drivetrain
             rdp = Math.signum(rdp) * minSpeed;
         }
 
-        curLpower = rdp;
-        curRpower = ldp;
-
         if(stopIndividualMotorWhenNotBusy)
         {
-            if(!isMotorBusy(MotorSide.LEFT))  curLpower = 0.0;
-            if(!isMotorBusy(MotorSide.RIGHT)) curRpower = 0.0;
+            if(!isMotorBusy(MotorSide.LEFT))  ldp = 0.0;
+            if(!isMotorBusy(MotorSide.RIGHT)) rdp = 0.0;
         }
         else if(!isBusy())
         {
-            curLpower = 0.0;
-            curRpower = 0.0;
+            ldp = 0.0;
+            rdp = 0.0;
         }
 
-        robot.rightMotor.setPower( curRpower );
-        robot.leftMotor.setPower( curLpower );
+        move(ldp, rdp);
 
         double ct = ptmr.seconds();
         if (ct > nextPrintTime)
@@ -605,8 +590,8 @@ class Drivetrain
 
 //    void makeCorrections(double pwr, Direction dir)
 //    {
-//        double ldp; // = Math.abs(robot.leftMotor.getPower());
-//        double rdp; // = Math.abs(robot.rightMotor.getPower());
+//        double ldp;
+//        double rdp;
 //
 //        double err = getEncoderError();
 //
@@ -858,12 +843,12 @@ class Drivetrain
         return motorBusy;
     }
 
-    boolean isBusy()
+    boolean isBusy(int thresh)
     {
-        if(op != null && (!op.opModeIsActive() || op.isStopRequested()))
-        {
-            return false;
-        }
+//        if(op != null && (!op.opModeIsActive() || op.isStopRequested()))
+//        {
+//            return false;
+//        }
 
         double ct = ptmr.seconds();
         if(ct > nextBusyPrintTime)
@@ -872,6 +857,8 @@ class Drivetrain
             DbgLog.msg("SJH: ldc %6d rdc %6d  mptimer: %4.2f chdg %5d",
                     curLpos, curRpos, noMoveTimer.seconds(), curHdg);
         }
+
+        BUSYTHRESH= thresh;
 
         boolean lBusy = isMotorBusy(MotorSide.LEFT);
         boolean rBusy = isMotorBusy(MotorSide.RIGHT);
@@ -886,6 +873,11 @@ class Drivetrain
             busy = lBusy || rBusy; //true if 1 is busy
         }
         return busy;
+    }
+
+    boolean isBusy()
+    {
+       return isBusy(DEF_BUSYTHRESH);
     }
 
     public void setBusyAnd(boolean busyAnd)
@@ -1024,6 +1016,9 @@ class Drivetrain
     private double curLpower;
     private double curRpower;
 
+    private ShelbyBot.DriveDir lastDriveDir;
+    private ShelbyBot.DriveDir curDriveDir;
+
     private double xPos = 0.0;
     private double yPos = 0.0;
     private Point2d estPos = new Point2d(xPos, yPos);
@@ -1041,7 +1036,7 @@ class Drivetrain
 
     private double printTimeout = 0.05;
 
-    private double minSpeed = 0.08;
+    private double minSpeed = 0.10;
 
     private LinearOpMode op = null;
 
@@ -1079,7 +1074,8 @@ class Drivetrain
     //private ModernRoboticsUsbGangedDcMotorController mc;
 
     private int tickRate = 10;
-    private static int BUSYTHRESH = 20;
+    private static int DEF_BUSYTHRESH = 20;
+    private static int BUSYTHRESH = DEF_BUSYTHRESH;
 
     private ElapsedTime busyTimer = new ElapsedTime();
     private double busyTimeOut = 20;
@@ -1088,3 +1084,5 @@ class Drivetrain
 
     private double turnTimeLimit = 5;
 }
+
+
