@@ -241,13 +241,24 @@ class Drivetrain
 
         if (Math.abs(error) <= TURN_TOLERANCE)
         {
+            gyroGoodCount++;
+            if(!gyroFirstGood)
+            {
+                gyroFirstGood = true;
+                gyroGoodTimer.reset();
+            }
+            dl.addField("GYRO GOOD " + gyroGoodCount + " TIME: " + gyroFrameTime.milliseconds());
+            dl.newLine();
             steer = 0.0;
             leftSpeed  = 0.0;
             rightSpeed = 0.0;
-            onTarget = true;
+            onTarget = gyroGoodTimer.milliseconds() > gyroTimeout;
         }
         else
         {
+            gyroGoodCount = 0;
+            gyroFirstGood = false;
+            gyroGoodTimer.reset();
             double deltaErr = (error - lastGyroError)/gyroFrameTime.seconds();
             double d = Kd_GyroTurn * deltaErr;
             gyroFrameTime.reset();
@@ -1036,7 +1047,7 @@ class Drivetrain
 
     private double printTimeout = 0.05;
 
-    private double minSpeed = 0.10;
+    private double minSpeed = 0.09;
 
     private LinearOpMode op = null;
 
@@ -1045,6 +1056,10 @@ class Drivetrain
 
     private double lastGyroError = 0;
     private boolean useDterm = false;
+    private boolean gyroFirstGood = false;
+    private ElapsedTime gyroGoodTimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
+    private double gyroTimeout = 100;
+    private int gyroGoodCount = 0;
 
     private ElapsedTime gyroFrameTime = new ElapsedTime();
     private ElapsedTime datalogtimer = new ElapsedTime();
@@ -1059,7 +1074,7 @@ class Drivetrain
     double nextPrintTime = ptmr.seconds();
     double nextBusyPrintTime = ptmr.seconds();
 
-    private boolean logOverrun = true;
+    private boolean logOverrun = false;
     private double overtime = 0.5;
 
     private double reducePower = 0.3;

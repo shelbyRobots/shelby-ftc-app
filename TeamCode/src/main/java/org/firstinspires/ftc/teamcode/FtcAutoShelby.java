@@ -344,18 +344,18 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
             robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            double colDist = cept.distance(ept);
+            int colDist = drvTrn.distanceToCounts(cept.distance(ept));
             int segOver = drvTrn.distanceToCounts(3.0);
 
             drvTrn.stopAndReset();
             drvTrn.resetLastPos();
             drvTrn.setInitValues();
 
-            sleep(1000); //TAKE THIS OUT AFTER TESTING
+            sleep(100); //TAKE THIS OUT AFTER TESTING
 
             double colSpd = 0.2;
             DbgLog.msg("SJH: Color Driving to pt %s at speed %4.2f", ept, colSpd);
-            drvTrn.logData(true, "FIND_LINE");
+            drvTrn.logData(true, "FIND_LINE CDIST: " + colDist);
             drvTrn.move(colSpd);
 
             while(opModeIsActive() && !isStopRequested())
@@ -366,8 +366,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                 int totColor = r + g + b;
 
                 drvTrn.setCurValues();
-                drvTrn.logData();
                 drvTrn.estimatePosition();
+                drvTrn.logData();
 
                 int lTrav = drvTrn.curLpos  - drvTrn.initLpos;
                 int rTrav = drvTrn.curRpos  - drvTrn.initRpos;
@@ -1040,7 +1040,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
     private int RED_THRESH = 15;
     private int GRN_THRESH = 15;
     private int BLU_THRESH = 15;
-    private int COLOR_THRESH = 40;
+    private int COLOR_THRESH = 20;
 
     private double delay = 0.0;
 

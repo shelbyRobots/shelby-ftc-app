@@ -98,8 +98,8 @@ public class DriveTestOpMode extends LinearOpMode
     boolean doFindBestEncTurnSpeed = false;
     boolean doFindBestGyroTurnSpeed = false;
     boolean doDriveDist = false;
-    boolean doTurnAngle = false;
-    boolean doMotionProfile = true;
+    boolean doTurnAngle = true;
+    boolean doMotionProfile = false;
 
     boolean useAnd = true;
     boolean rampUp = true;
@@ -191,9 +191,11 @@ public class DriveTestOpMode extends LinearOpMode
 
         if(doTurnAngle)
         {
-            double angle = -90.0;
-            drvTrn.ctrTurnLinear(angle - robot.getGyroFhdg(), 0.4);
-            dl.addField("doTurnAngle"); dl.newLine();
+            robot.gyro.resetZAxisIntegrator();
+            double angle = 5.0; //-90.0;
+            dl.addField("doTurnAngle ENC " + angle);
+            //drvTrn.ctrTurnLinear(angle - robot.getGyroFhdg(), 0.4);
+            dl.addField("doTurnAngle GYRO " + angle); dl.newLine();
             drvTrn.ctrTurnToHeading(angle, 0.4);
         }
 
