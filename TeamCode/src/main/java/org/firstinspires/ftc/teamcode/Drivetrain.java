@@ -784,8 +784,8 @@ class Drivetrain
             //stop after noMoveTimeout
             if(noMoveTimer.seconds() > noMoveTimeout)
             {
-                if ((lp >= 0.0 && Math.abs(lposLast - lc) < noMoveThreshLow) ||
-                    (rp >= 0.0 && Math.abs(rposLast - rc) < noMoveThreshLow))
+                if ((lp >= 0.0 && Math.abs(lc - lposLast) < noMoveThreshLow) &&
+                    (rp >= 0.0 && Math.abs(rc - rposLast) < noMoveThreshLow))
                 {
                     DbgLog.msg("SJH: MOTORS HAVE POWER BUT AREN'T MOVING - STOPPING %4.2f %4.2f",
                             lp, rp);
@@ -812,7 +812,7 @@ class Drivetrain
             //stop after noMoveTimeout
             if(noMoveTimer.seconds() > noDriveMoveTimeout)
             {
-                if ((lp >= 0.0 && Math.abs(lposLast - lc) < noMoveThreshLow) ||
+                if ((lp >= 0.0 && Math.abs(lposLast - lc) < noMoveThreshLow) &&
                     (rp >= 0.0 && Math.abs(rposLast - rc) < noMoveThreshLow))
                 {
                     DbgLog.msg("SJH: MOTORS HAVE POWER BUT AREN'T MOVING - STOPPING %4.2f %4.2f",
@@ -1040,7 +1040,7 @@ class Drivetrain
 
     private double noMoveTimeout = 1.0;
     private double noDriveMoveTimeout = 1.0;
-    private int noMoveThreshLow = 10;
+    private int noMoveThreshLow = 4;
     private int noMoveThreshHi = 20;
     private double noMovePwrHi = 0.15;
     private ElapsedTime noMoveTimer = new ElapsedTime();
@@ -1058,7 +1058,7 @@ class Drivetrain
     private boolean useDterm = false;
     private boolean gyroFirstGood = false;
     private ElapsedTime gyroGoodTimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
-    private double gyroTimeout = 100;
+    private double gyroTimeout = 60;
     private int gyroGoodCount = 0;
 
     private ElapsedTime gyroFrameTime = new ElapsedTime();

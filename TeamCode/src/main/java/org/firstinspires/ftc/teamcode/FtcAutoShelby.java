@@ -170,6 +170,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
     {
         timer.reset();
         startTimer.reset();
+        dl.resetTime();
 
         DbgLog.msg("SJH: STARTING AT %4.2f", timer.seconds());
         if(logData)
@@ -351,7 +352,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             drvTrn.resetLastPos();
             drvTrn.setInitValues();
 
-            sleep(100); //TAKE THIS OUT AFTER TESTING
+            sleep(10);
 
             double colSpd = 0.2;
             DbgLog.msg("SJH: Color Driving to pt %s at speed %4.2f", ept, colSpd);
@@ -516,7 +517,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         BeaconFinder.BeaconSide pushSide = BeaconFinder.BeaconSide.UNKNOWN;
 
         imgProc.startSensing();
-        sleep( 200 );
+        sleep( 50 );
 
         ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
 
@@ -529,6 +530,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             pushSide = findPushSide(blueSide, redSide);
             robot.waitForTick(20);
         }
+
+        imgProc.stopSensing();
 
         setPusher(pushSide);
         if(push && pushSide != BeaconFinder.BeaconSide.UNKNOWN)
@@ -561,9 +564,9 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
             double actDist = drvTrn.countsToDistance(dcount);
 
-            drvTrn.logData(true, "AT PUSH");
             double actTouchX = touchStart.getX();
             double actTouchY = touchStart.getY();
+
             if (alliance == Field.Alliance.RED)
             {
                 actTouchX -= tgtDist;
@@ -576,6 +579,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             }
             robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
             Point2d actTouchPt = new Point2d(actTouchX, actTouchY);
+            drvTrn.logData(true, "AT PUSH " + actTouchPt.toString());
             drvTrn.setCurrPt(actTouchPt);
             drvTrn.driveToPointLinear(touchStart, 0.2,
                     Drivetrain.Direction.FORWARD, targetHdg);
@@ -585,8 +589,6 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         }
 
         setPusher(BeaconFinder.BeaconSide.UNKNOWN);
-
-        imgProc.stopSensing();
 
         return pushSide != BeaconFinder.BeaconSide.UNKNOWN;
     }
@@ -610,7 +612,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         double bailPos = -1;
 
         imgProc.startSensing();
-        sleep( 500 );
+        sleep( 50 );
 
         while( opModeIsActive() && !allDone ) {
 
