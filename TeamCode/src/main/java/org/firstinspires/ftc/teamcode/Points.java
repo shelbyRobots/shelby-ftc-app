@@ -314,7 +314,7 @@ class Points
 
     private static final double BECNOFF =   2.0;
     private static final double SAFETY  =   0.0;
-    private static final double SCAN_X  = -38.0;
+    private static final double SCAN_X  = -48.0;
     private static final double BECN_X  = -52.0;
     private static final double BECN2X  = -52.0;
     private static final double TOUCHX  =  W_WALL + BECNOFF + REAR_OFFSET;
