@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.ftccommon.DbgLog;
-import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -523,7 +522,6 @@ class Drivetrain
         DbgLog.msg("SJH CPI: %5.2f", CPI);
         frame = 0;
         this.robot  = robot;
-        this.gyro   = robot.gyro;
 
         robot.leftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         robot.rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -547,7 +545,7 @@ class Drivetrain
 
     void makeGyroCorrections(double pwr, int thdg)
     {
-        if(gyro == null || !robot.gyroReady) return;
+        if(robot.gyro == null || !robot.gyroReady) return;
 
         double ldp;
         double rdp;
@@ -991,7 +989,6 @@ class Drivetrain
     public enum Direction {FORWARD, REVERSE}
 
     private ShelbyBot robot;
-    public ModernRoboticsI2cGyro gyro;
 
     private Point2d currPt = new Point2d(0.0, 0.0);
     private double startHdg = 0.0;
