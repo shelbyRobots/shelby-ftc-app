@@ -186,9 +186,9 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
         double rb_ratio_factor =
                 Math.pow( Range.clip( 0.4 - ( red_rt + blue_rt ) / 2, -0.4, 0.4 ) * 2.5, 2 );
 
-        DbgLog.msg("SJH: scoreFit beac_apsect_factor %4.3f" +
-                   "wb_ratio_factor %4.3f rb_ratio_factor %4.3f",
-                beac_aspect_factor, wb_ratio_factor, rb_ratio_factor);
+        //DbgLog.msg("SJH: scoreFit beac_apsect_factor %4.3f" +
+        //           "wb_ratio_factor %4.3f rb_ratio_factor %4.3f",
+        //        beac_aspect_factor, wb_ratio_factor, rb_ratio_factor);
 
         return Range.clip( 1 - Math.sqrt(
                     ( beac_aspect_factor +

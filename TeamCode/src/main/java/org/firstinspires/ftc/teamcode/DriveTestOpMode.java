@@ -10,7 +10,6 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
 
-import java.util.Calendar;
 import java.util.Date;
 
 import hallib.HalDashboard;
@@ -95,24 +94,40 @@ public class DriveTestOpMode extends LinearOpMode
     boolean doSpeedTest = false;
     boolean doMaxSpeedTest = false;
     boolean doMinSpeedTest = false;
-    boolean doFindBestDriveSpeed = true;
-    boolean doFindBestEncTrunSpeed = false;
+    boolean doFindBestDriveSpeed = false; //true;
+    boolean doFindBestEncTurnSpeed = false;
     boolean doFindBestGyroTurnSpeed = false;
     boolean doDriveDist = false;
-    boolean doTurnAngle = false;
+    boolean doTurnAngle = true;
+    boolean doMotionProfile = false;
+
+    boolean useAnd = true;
+    boolean rampUp = true;
+    boolean rampDown = true;
+    boolean stopIndiv = false;
 
     public void do_main_loop()
     {
+        dl.addField("useAnd"); dl.addField(useAnd); dl.newLine();
+        dl.addField("rampUp"); dl.addField(rampUp); dl.newLine();
+        dl.addField("rampDown"); dl.addField(rampDown); dl.newLine();
+        dl.addField("stopIndiv"); dl.addField(stopIndiv); dl.newLine();
+
+        drvTrn.setLogOverrun(true);
+        drvTrn.setBusyAnd(useAnd);
+        drvTrn.setRampDown(rampDown);
+        drvTrn.setRampUp(rampUp);
+        drvTrn.setStopIndividualMotorWhenNotBusy(stopIndiv);
+
         DbgLog.msg("SJH: Starting test do_main_loop");
         robot.gyro.resetZAxisIntegrator();
         sleep(100);
-        drvTrn.setBusyAnd(false);
-        drvTrn.setStopIndidualMotorWhenNotBusy(false);
 
         //Test speed and accel/decel for various setPower settings
         double tHdg = 0.0;
         if(doSpeedTest)
         {
+            dl.addField("doSpeedTest"); dl.newLine();
             for (double s = 0.1; s <= 1.0; s += 0.1)
             {
                 DbgLog.msg("SJH: Test speed " + s);
@@ -132,26 +147,62 @@ public class DriveTestOpMode extends LinearOpMode
         }
 
         //Find optimal drive speeds
-        if(doFindBestDriveSpeed) dtu.findBestDriveSpeed();
+        if(doFindBestDriveSpeed)
+        {
+            dl.addField("doFindBestDriveSpeed"); dl.newLine();
+            dtu.findBestDriveSpeed();
+        }
+
+        //Drive motion profile test
+        if(doMotionProfile)
+        {
+            double d = 24.0;
+            double s = 0.7;
+            dl.addField("doMotionProfile_"+d+"_"+s); dl.newLine();
+            dtu.doMotionProfile(d, s);
+        }
 
         //Find optimal encoder speed
-        if(doFindBestEncTrunSpeed) dtu.findBestEncTurnSpeed();
+        if(doFindBestEncTurnSpeed)
+        {
+            dl.addField("doFindBestEncTurnSpeed"); dl.newLine();
+            dtu.findBestEncTurnSpeed();
+        }
 
         //Find optimal gyro speed/gain
-        if(doFindBestGyroTurnSpeed) dtu.findBestGyroTurnSpeedGain();
+        if(doFindBestGyroTurnSpeed)
+        {
+            dl.addField("doFindBestGyroTurnSpeed"); dl.newLine();
+            dtu.findBestGyroTurnSpeedGain();
+        }
 
         //Test some common distance and turns from auton
         if(doDriveDist)
         {
-            Point2d tPt = new Point2d(48.0, 0.0);
-            drvTrn.driveToPointLinear(tPt, 0.8, Drivetrain.Direction.FORWARD);
+            double dist[] = {24.0, 48.0};
+            for (int i = 0 ; i < dist.length; i++)
+            {
+                drvTrn.setCurrPt(new Point2d(0,0));
+                Point2d tPt = new Point2d(dist[i], 0.0);
+                dl.addField("doDriveDist " + dist);
+                drvTrn.driveToPointLinear(tPt, 0.8, Drivetrain.Direction.FORWARD);
+            }
         }
 
-        if(doTurnAngle) drvTrn.ctrTurnToHeading(-122.0, 0.4);
+        if(doTurnAngle)
+        {
+            robot.gyro.resetZAxisIntegrator();
+            double angle = 5.0; //-90.0;
+            dl.addField("doTurnAngle ENC " + angle);
+            //drvTrn.ctrTurnLinear(angle - robot.getGyroFhdg(), 0.4);
+            dl.addField("doTurnAngle GYRO " + angle); dl.newLine();
+            drvTrn.ctrTurnToHeading(angle, 0.4);
+        }
 
 
         if(doMaxSpeedTest)
         {
+            dl.addField("doMaxSpeedTest"); dl.newLine();
             dtu.doMaxSpeedTest(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             sleep(2000);
             dtu.doMaxSpeedTest(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -160,6 +211,7 @@ public class DriveTestOpMode extends LinearOpMode
 
         if(doMinSpeedTest)
         {
+            dl.addField("doMinSpeedTest"); dl.newLine();
             dtu.doMinSpeedTest();
             sleep(1000);
         }
