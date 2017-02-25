@@ -406,38 +406,38 @@ class Drivetrain
         if(logOverrun) logOverrun(overtime);
     }
 
-//    static void turn(double angle, double pwr, double radius)
-//    {
-//        int dir = 1;
-//        if (angle < 0) dir = -1;
-//        double rl = radius - dir*VEH_WIDTH/2.0;
-//        double rr = radius + dir*VEH_WIDTH/2.0;
-//        int lcnts = angleToCounts(angle, radius - dir * VEH_WIDTH/2.0);
-//        int rcnts = angleToCounts(angle, radius + dir * VEH_WIDTH/2.0);
-//
-//        robot.leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-//        robot.rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-//
-//        int lft_target = robot.leftMotor.getCurrentPosition() + lcnts;
-//        int rgt_target = robot.rightMotor.getCurrentPosition() + rcnts;
-//        robot.leftMotor.setTargetPosition(lft_target);
-//        robot.rightMotor.setTargetPosition(rgt_target);
-//
-//        double arl = Math.abs(rl);
-//        double arr = Math.abs(rr);
-//        double rad_ratio = Math.min(arl, arr) / Math.max(arl, arr);
-//
-//        double ipwr = pwr * rad_ratio;
-//
-//        if (arl >= arr)
-//        {
-//            move(ipwr, pwr);
-//        }
-//        else
-//        {
-//            move(pwr, ipwr);
-//        }
-//    }
+    void turn(double angle, double pwr, double radius)
+    {
+        int dir = 1;
+        if (angle < 0) dir = -1;
+        double rl = radius - dir*VEH_WIDTH/2.0;
+        double rr = radius + dir*VEH_WIDTH/2.0;
+        int lcnts = angleToCounts(angle, radius - dir * VEH_WIDTH/2.0);
+        int rcnts = angleToCounts(angle, radius + dir * VEH_WIDTH/2.0);
+
+        robot.leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        robot.rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        int lft_target = robot.leftMotor.getCurrentPosition() + lcnts;
+        int rgt_target = robot.rightMotor.getCurrentPosition() + rcnts;
+        robot.leftMotor.setTargetPosition(lft_target);
+        robot.rightMotor.setTargetPosition(rgt_target);
+
+        double arl = Math.abs(rl);
+        double arr = Math.abs(rr);
+        double rad_ratio = Math.min(arl, arr) / Math.max(arl, arr);
+
+        double ipwr = pwr * rad_ratio;
+
+        if (arl >= arr)
+        {
+            move(ipwr, pwr);
+        }
+        else
+        {
+            move(pwr, ipwr);
+        }
+    }
 
     int distanceToCounts(double distance)
     {
