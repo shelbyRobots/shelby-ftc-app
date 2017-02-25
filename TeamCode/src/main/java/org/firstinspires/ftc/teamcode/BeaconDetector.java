@@ -199,6 +199,7 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
 
     private void calcPosition()
     {
+        double beac_rto = 9.0 / 6.5;
 
         if ( beacon_box.height == 0 || beacon_box.width == 0)
         {
@@ -217,7 +218,7 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
         double beac_ctr = beacon_box.x + beacon_box.width / 2;
 
         beaconConf = beaconConfBuf.smooth( scoreFit( beacon_box, red_box, blue_box ) );
-        beaconPosZ = beaconPosZBuf.smooth( ((double) beacon_box.width * -0.0407 + 34.0829) / IMAGE_SCALE_FACTOR );
+        beaconPosZ = beaconPosZBuf.smooth( ((double) beac_rto * beacon_box.height * -0.0407 + 34.0829) / IMAGE_SCALE_FACTOR );
         beaconPosX = beaconPosXBuf.smooth( (beac_ctr - scrn_ctr) / (IMAGE_WIDTH / ( 1.3 * beaconPosZ - 2.4)));
 
         // Keep in mind that we flip the image before
