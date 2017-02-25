@@ -703,8 +703,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
                                 drvTrn.ctrTurnToHeading( desHdg, 0.25 );
 
-                                rDv = baseSpeed;
-                                lDv = baseSpeed;
+                                rDv = 0.1;
+                                lDv = 0.1;
 
                                 drvTrn.move( lDv, rDv );
 
@@ -798,7 +798,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                     }
 
                     DbgLog.msg("SJH: /BEACON/PUSH > GOING TO PUSH BUTTON" );
-                    drvTrn.move( 0.25, 0.25 );
+                    drvTrn.move( 0.1, 0.1 );
                     while ( opModeIsActive() && !drvTrn.areDriveMotorsStuck() )
                         idle();
 
