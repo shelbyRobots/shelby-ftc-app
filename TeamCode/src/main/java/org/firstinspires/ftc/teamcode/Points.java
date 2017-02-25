@@ -69,25 +69,22 @@ class Points
                 {
                     addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, SQUARE_PT);
                 }
-                addPoint(points, fwd, 0.30,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
+                addPoint(points, fwd, 0.5,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
             }
             else
             {
-                addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER, beacon, SCAN1_PT);
+                addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, beacon, SCAN1_PT);
             }
 
             if(startPos == Field.StartPos.START_R_PUSHER)
             {
                 addPoint(points, rev, 0.5, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
             }
-
-            //addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   push, PRSS1_PT);
-            //addPoint(points, rev, 0.8, 1.00, Segment.TargetType.ENCODER,  reset, RVRS1_PT);
         }
 
         if(pushChoice == Field.BeaconChoice.FAR && startPos == Field.StartPos.START_B_SWEEPER)
         {
-            addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER, none, B_MID_PT);
+            addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, B_MID_PT);
         }
 
         if(pushChoice == Field.BeaconChoice.FAR ||
@@ -95,15 +92,12 @@ class Points
         {
             if(!useFly2Light)
             {
-                addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
+                addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
             }
             else
             {
-                addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.ENCODER, beacon, SCAN2_PT);
+                addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, beacon, SCAN2_PT);
             }
-
-            //addPoint(points, fwd, 0.3, 1.00, Segment.TargetType.ENCODER,   push, PRSS2_PT);
-            //addPoint(points, rev, 0.8, 1.00, Segment.TargetType.ENCODER,  reset, RVRS2_PT);
         }
 
         //PARK PTS
@@ -310,13 +304,9 @@ class Points
     private static final double DFNPRKX = -12.0;
     private static final double DFNPRKY =  48.0;
 
-    private static final double BECNOFF =   2.0;
-    private static final double SAFETY  =   0.0;
     private static final double SCAN_X  = -38.0;
     private static final double BECN_X  = -52.0;
     private static final double BECN2X  = -52.0;
-    private static final double TOUCHX  =  W_WALL + BECNOFF + REAR_OFFSET;
-    private static final double TOUCH2  =  W_WALL + BECNOFF + REAR_OFFSET;
 
     private static final double BMID_X  = -24.0;
     private static final double BMID_Y  = -24.0;
@@ -337,12 +327,8 @@ class Points
 
     private Point2d SCAN1_PT = new Point2d("SCAN1", SCAN_X, BECN1_Y);
     private Point2d BECN1_PT = new Point2d("BECN1", BECN_X, BECN1_Y);
-    private Point2d PRSS1_PT = new Point2d("PRSS1", TOUCHX, BECN1_Y);
-    private Point2d RVRS1_PT = new Point2d("RVRS1", BECN_X, BECN1_Y);
     private Point2d SCAN2_PT = new Point2d("SCAN2", SCAN_X, BECN2_Y);
     private Point2d BECN2_PT = new Point2d("BECN2", BECN2X, BECN2_Y);
-    private Point2d PRSS2_PT = new Point2d("PRSS2", TOUCH2, BECN2_Y);
-    private Point2d RVRS2_PT = new Point2d("RVRS2", BECN_X, BECN2_Y);
     private Point2d B_MID_PT = new Point2d("B_MID", BMID_X, BMID_Y);
 
     private Point2d CTRPRKPT = new Point2d("CTRPRK", CTRPRKX, CTRPRKY);

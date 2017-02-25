@@ -37,7 +37,6 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
     private Mat maskImg;
     private Mat showImg;
     private Mat cvImage;
-    private Mat colorDiff;
     private Mat onesImg;
     private Mat zeroImg;
     private Mat white;
@@ -51,7 +50,6 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
     private boolean channels_initialized = false;
 
     private List<Mat>        hsv_channels = new ArrayList<>();
-    private List<Mat>        rgb_channels = new ArrayList<>();
     private List<MatOfPoint> red_blobs    = new ArrayList<>();
     private List<MatOfPoint> blue_blobs   = new ArrayList<>();
     private List<MatOfPoint> white_blobs  = new ArrayList<>();
@@ -125,34 +123,16 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
 
         if(!channels_initialized)
         {
-           channels_initialized = true;
-           for(int c = 0; c < img.channels(); c++)
-           {
-              rgb_channels.add(new Mat());
-           }
-
            for(int c = 0; c < hsvImg.channels(); c++)
            {
               hsv_channels.add(new Mat());
            }
         }
 
-        Core.split( img, rgb_channels );
-        Mat red = rgb_channels.get( 0 );
-        Mat blue = rgb_channels.get( 2 );
-
-        if(colorDiff == null) colorDiff = new Mat(red.rows(), red.cols(), red.type());
-
-        Core.absdiff( red, blue, colorDiff );
-
-        if(tmp1Img == null) tmp1Img = colorDiff.clone();
-        else colorDiff.copyTo(tmp1Img);
-
-        Imgproc.threshold( tmp1Img,  colorDiff, 20, 255, Imgproc.THRESH_BINARY );
-
         if ( !sensingActive ) return;
         findColors();
         firstCalcsDone = true;
+
     }
 
     public void logDebug()
@@ -206,9 +186,9 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
         double rb_ratio_factor =
                 Math.pow( Range.clip( 0.4 - ( red_rt + blue_rt ) / 2, -0.4, 0.4 ) * 2.5, 2 );
 
-        DbgLog.msg("SJH: scoreFit beac_apsect_factor %4.3f" +
-                   "wb_ratio_factor %4.3f rb_ratio_factor %4.3f",
-                beac_aspect_factor, wb_ratio_factor, rb_ratio_factor);
+        //DbgLog.msg("SJH: scoreFit beac_apsect_factor %4.3f" +
+        //           "wb_ratio_factor %4.3f rb_ratio_factor %4.3f",
+        //        beac_aspect_factor, wb_ratio_factor, rb_ratio_factor);
 
         return Range.clip( 1 - Math.sqrt(
                     ( beac_aspect_factor +
@@ -405,7 +385,26 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
         Core.merge( tmp, maskImg );
 
         Core.multiply( tmpHsvImg, maskImg, zonedImg );
-        zonedImg.copyTo(showImg);
+
+//        Mat blue_areas = new Mat();
+//        Core.inRange( zonedImg, new Scalar( 90,100,150 ), new Scalar( 115,255,255 ), blue_areas );
+//
+//        Mat red1 = new Mat();
+//        Mat red2 = new Mat();
+//        Mat red_areas = new Mat();
+//        Mat both_areas = new Mat();
+//
+//        Core.inRange( zonedImg, new Scalar( 0,100,100 ), new Scalar( 10,255,255 ), red1);
+//        Core.inRange( zonedImg, new Scalar( 140,100,100 ), new Scalar( 179,255,255 )ff, red2);
+//        Core.bitwise_or(red1, red2, red_areas);
+//        Core.bitwise_or(red_areas, blue_areas, both_areas);
+//        Core.split( hsvImg, tmp );
+//        tmp.set( 0, onesImg );
+//        tmp.set( 1, onesImg );
+//        tmp.set( 2, both_areas );
+//        Core.merge( tmp, maskImg );
+//        Core.multiply( zonedImg, maskImg, showImg );
+        //zonedImg.copyTo(showImg);
     }
 
     private void findButtons()
@@ -467,9 +466,8 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
 
         // Threshold based on color.  White regions match the desired color.  Black do not.
         // We now have a binary image to work with.  Contour detection looks for white blobs
-        Core.inRange( zonedImg, new Scalar( 105,100,100 ), new Scalar( 125,255,255 ), blue_areas );
-        blue_areas.copyTo(tmpHsvImg);
-        Core.multiply( tmpHsvImg, colorDiff, blue_areas );
+        Core.inRange( zonedImg, new Scalar( 90,100,150 ), new Scalar( 115,255,255 ), blue_areas );
+
         blue_areas.copyTo(tmpHsvImg);
         Imgproc.dilate( tmpHsvImg, blue_areas, new Mat() );
 
@@ -487,11 +485,10 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
         Mat red2 = new Mat();
         Mat red_areas = new Mat();
 
-        Core.inRange( zonedImg, new Scalar( 0,100,150 ), new Scalar( 10,255,255 ), red1);
-        Core.inRange( zonedImg, new Scalar( 140,100,150 ), new Scalar( 179,255,255 ), red2);
+        Core.inRange( zonedImg, new Scalar( 0,100,100 ), new Scalar( 10,255,255 ), red1);
+        Core.inRange( zonedImg, new Scalar( 140,100,100 ), new Scalar( 179,255,255 ), red2);
         Core.bitwise_or(red1, red2, red_areas);
-        red_areas.copyTo(tmpHsvImg);
-        Core.multiply( tmpHsvImg, colorDiff, red_areas );
+
         red_areas.copyTo(tmpHsvImg);
         Imgproc.dilate( tmpHsvImg, red_areas, new Mat() );
 
