@@ -73,7 +73,7 @@ class Points
             }
             else
             {
-                addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, beacon, SCAN1_PT);
+                addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, beacon, BECN1_PT);
             }
 
             if(startPos == Field.StartPos.START_R_PUSHER)
@@ -96,7 +96,7 @@ class Points
             }
             else
             {
-                addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, beacon, SCAN2_PT);
+                addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, beacon, BECN2_PT);
             }
         }
 

@@ -69,7 +69,7 @@ class Drivetrain
     void stopAndReset()
     {
         move(0.0, 0.0);
-        logData(true, "MOTORS STOPPED");
+        logData(true, "MOTORS STOPPED - RESETTING");
         resetCounts();
     }
 
@@ -110,9 +110,8 @@ class Drivetrain
         trgtHdg = targetHdg;
 
         DbgLog.msg("SJH: Starting drive");
-        logData(true, "PRERESET LINDST");
         if(doStopAndReset) stopAndReset();
-        logData(true, "POSTRESET LINDST");
+        logData(true, "LINDST");
 
         resetLastPos();
 
@@ -246,8 +245,7 @@ class Drivetrain
                 gyroFirstGood = true;
                 gyroGoodTimer.reset();
             }
-            dl.addField("GYRO GOOD " + gyroGoodCount + " TIME: " + gyroFrameTime.milliseconds());
-            dl.newLine();
+            logData(true, "GYRO GOOD " + gyroGoodCount + " TIME: " + gyroFrameTime.milliseconds());
             steer = 0.0;
             leftSpeed  = 0.0;
             rightSpeed = 0.0;
@@ -268,9 +266,9 @@ class Drivetrain
                 rightSpeed += d;
             }
             Range.clip(rightSpeed, -1, 1);
-            if(Math.abs(rightSpeed) < minSpeed)
+            if(Math.abs(rightSpeed) < minGyroTurnSpeed)
             {
-                rightSpeed = Math.signum(rightSpeed) * minSpeed;
+                rightSpeed = Math.signum(rightSpeed) * minGyroTurnSpeed;
             }
             leftSpeed   = -rightSpeed;
         }
@@ -293,9 +291,8 @@ class Drivetrain
     {
         DbgLog.msg("SJH: Starting turn of %f", angle);
 
-        logData(true, "PRERESET ENC TURN");
         if(doStopAndReset) stopAndReset();
-        logData(true, "POSTRESET ENC TURN");
+        logData(true, "ENC TURN");
 
         resetLastPos();
 
@@ -310,8 +307,6 @@ class Drivetrain
         double pwrRIncr = (pwr - initRpower)/pwrSteps;
 
         ctrTurnEncoder(angle, startPwr);
-
-
 
         while(op.opModeIsActive() &&
               !op.isStopRequested() &&
@@ -372,9 +367,7 @@ class Drivetrain
 
         DbgLog.msg("SJH: GYRO TURN to HDG %d", (int)tgtHdg);
 
-        logData(true, "PRERESET GYRO");
         if(doStopAndReset) stopAndReset();
-        logData(true, "POSTRESET GYRO");
 
         resetLastPos();
 
@@ -713,13 +706,19 @@ class Drivetrain
         curLpos = robot.leftMotor.getCurrentPosition();
         curRpos = robot.rightMotor.getCurrentPosition();
         curHdg  = robot.getGyroFhdg();
+        if(robot.colorEnabled)
+        {
+            curRed = robot.colorSensor.red();
+            curGrn = robot.colorSensor.green();
+            curBlu = robot.colorSensor.blue();
+        }
     }
 
     public void logStartValues(String note)
     {
         if(logData)
         {
-            dl.addField("BEGIN" + note);
+            dl.addField("BEGIN " + note);
             dl.addField(frame);
             dl.addField(initHdg);
             dl.addField(initLpos);
@@ -739,15 +738,8 @@ class Drivetrain
         doneLpos = robot.leftMotor.getCurrentPosition();
         doneRpos = robot.rightMotor.getCurrentPosition();
         doneHdg  = robot.getGyroFhdg();
-        if(logData)
-        {
-            dl.addField("DONE" + note);
-            dl.addField(frame);
-            dl.addField(doneHdg);
-            dl.addField(doneLpos);
-            dl.addField(doneRpos);
-            dl.newLine();
-        }
+        logData(true, "DONE " + note);
+
         DbgLog.msg("SJH: End ldc %6d rdc %6d Hdg %d",
                 doneLpos, doneRpos, doneHdg);
     }
@@ -942,12 +934,9 @@ class Drivetrain
             dl.addField(curRpos);
             dl.addField(curLpower);
             dl.addField(curRpower);
-            if(robot.colorSensor != null)
-            {
-                dl.addField(robot.colorSensor.red());
-                dl.addField(robot.colorSensor.green());
-                dl.addField(robot.colorSensor.blue());
-            }
+            dl.addField(curRed);
+            dl.addField(curGrn);
+            dl.addField(curBlu);
             dl.addField(estPos.getX());
             dl.addField(estPos.getY());
             dl.addField(Math.toDegrees(estHdg));
@@ -969,7 +958,7 @@ class Drivetrain
 
     private static double DRV_TUNER = 1.00;
     private final static double TRN_TUNER = 1.0;
-    private final static double TURN_TOLERANCE = 1.0;
+    private final static double TURN_TOLERANCE = 2.0;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
     private static double WHL_DIAMETER = 4.1875; //Diameter of the wheel (inches)
@@ -1014,10 +1003,14 @@ class Drivetrain
     private int overRpos;
 
     private int initHdg;
-    private int curHdg;
+    public int curHdg;
     private int trgtHdg;
     private int doneHdg;
     private int overHdg;
+
+    public int curRed = 0;
+    public int curGrn = 0;
+    public int curBlu = 0;
 
     private double initLpower;
     private double initRpower;
@@ -1045,6 +1038,7 @@ class Drivetrain
     private double printTimeout = 0.05;
 
     private double minSpeed = 0.09;
+    private double minGyroTurnSpeed = 0.10;
 
     private LinearOpMode op = null;
 
