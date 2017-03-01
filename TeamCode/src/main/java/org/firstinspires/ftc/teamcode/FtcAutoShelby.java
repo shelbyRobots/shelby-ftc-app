@@ -689,6 +689,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
                             zPos = bd.getBeaconPosZ();
                             xPos = bd.getBeaconPosX();
+                            drvTrn.logData(true, "INIT X:" + xPos + " Z:" + zPos);
 
                             if ( zPos < 15.0 && mDir == 1 && Math.abs( xPos ) > 1.5 ) {
                                 drvTrn.driveDistanceLinear(15.0 - zPos, baseSpeed, Drivetrain.Direction.REVERSE);
@@ -702,6 +703,16 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                             nAng = Math.atan( nPos / 9.0 );
                             dDist = ( zPos / 4.0 ) / Math.cos( nAng );
                             tPow = 2.0 * nAng / Math.PI;
+
+                            dl.addField("INIT");
+                            dl.addField(xPos);
+                            dl.addField(zPos);
+                            dl.addField(nOff);
+                            dl.addField(nPos);
+                            dl.addField(nAng);
+                            dl.addField(dDist);
+                            dl.addField(tPow);
+                            dl.newLine();
 
                             rDv = mDir * Range.clip( baseSpeed + mDir * tPow, -0.25, 0.25 );
                             lDv = mDir * Range.clip( baseSpeed - mDir * tPow, -0.25, 0.25 );
@@ -754,6 +765,9 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                         DbgLog.msg("SJH: /BEACON/FORWARD > FOUND %s ON %s", alliance, pushSide );
                     }
 
+                    dl.addField("PUSHER");
+                    dl.addField(pushSide.toString());
+                    dl.newLine();
                     setPusher(pushSide);
 
                     if ( driveStep.equals("READY") )
@@ -782,6 +796,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                     {
                         drvTrn.setCurValues();
                         drvTrn.estimatePosition();
+                        drvTrn.logData(false, "PUSH ");
+                        drvTrn.waitForTick(10);
                     }
 
                     DbgLog.msg("SJH: /BEACON/PUSH > PUSHED THE BUTTON" );
