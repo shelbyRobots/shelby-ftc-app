@@ -260,7 +260,12 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             DbgLog.msg("SJH: Setting drive tuner to %4.2f", curSeg.getDrvTuner());
             drvTrn.logData(true, segName + " move");
             drvTrn.setDrvTuner(curSeg.getDrvTuner());
-            doMove(curSeg);
+            if (curSeg.getAction() == Segment.Action.SHOOT)
+            {
+                robot.shotmotor1.setPower(DEF_SHT_PWR);
+                robot.shotmotor2.setPower(DEF_SHT_PWR);
+            }
+                doMove(curSeg);
 
             Double pturn = curSeg.getPostTurn();
 
@@ -845,9 +850,9 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         DbgLog.msg("SJH: SHOOT!!!");
         dashboard.displayPrintf(2, "STATE: %s", "SHOOT");
         ElapsedTime stimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
-        robot.shotmotor1.setPower(DEF_SHT_PWR);
-        robot.shotmotor2.setPower(DEF_SHT_PWR);
-        sleep(500);
+ //     robot.shotmotor1.setPower(DEF_SHT_PWR);
+ //     robot.shotmotor2.setPower(DEF_SHT_PWR);
+ //     sleep(500);
         robot.sweepMotor.setPower(-DEF_SWP_PWR);
         robot.elevMotor.setPower(-DEF_ELV_PWR);
         sleep(1500);
