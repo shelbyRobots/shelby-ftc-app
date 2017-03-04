@@ -46,7 +46,7 @@ class Point2d
 
     public String toString()
     {
-        return String.format(Locale.US, "%s(%5.2f, %5.2f)",
+        return String.format(Locale.US, "%s(%5.2f: %5.2f)",
                 name, x, y);
     }
 
