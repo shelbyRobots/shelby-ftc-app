@@ -371,7 +371,7 @@ class Drivetrain
 
         if(doStopAndReset) stopAndReset();
 
-        resetLastPos();
+        moveInit(0.0, 0.0);
 
         setInitValues();
         trgtLpos = 0;
@@ -778,12 +778,15 @@ class Drivetrain
                 return false;
             }
 
+            int dLpos = Math.abs(lposLast - curLpos);
+            int dRpos = Math.abs(rposLast - curRpos);
+
             //If power is above threshold and encoders aren't changing,
             //stop after noMoveTimeout
             if(noMoveTimer.seconds() > noMoveTimeout)
             {
-                if ((lp >= 0.0 && Math.abs(curLpos - lposLast) < noMoveThreshLow) &&
-                    (rp >= 0.0 && Math.abs(curRpos - rposLast) < noMoveThreshLow))
+                if ((lp >= 0.0 && dLpos < noMoveThreshLow) &&
+                    (rp >= 0.0 && dRpos < noMoveThreshLow))
                 {
                     DbgLog.msg("SJH: MOTORS HAVE POWER BUT AREN'T MOVING - STOPPING %4.2f %4.2f",
                             lp, rp);
@@ -804,9 +807,6 @@ class Drivetrain
             double lp = Math.abs(curLpower);
             double rp = Math.abs(curRpower);
 
-            int dLpos = Math.abs(lposLast - curLpos);
-            int dRpos = Math.abs(rposLast - curRpos);
-
             if(accelTimer.seconds() < 0.5)
             {
                 lposLast = curLpos;
@@ -814,6 +814,9 @@ class Drivetrain
                 noMoveTimer.reset();
                 return false;
             }
+
+            int dLpos = Math.abs(lposLast - curLpos);
+            int dRpos = Math.abs(rposLast - curRpos);
 
             //If power is above threshold and encoders aren't changing,
             //stop after noMoveTimeout
@@ -970,7 +973,7 @@ class Drivetrain
 
     private static double DRV_TUNER = 1.00;
     private final static double TRN_TUNER = 1.0;
-    private final static double TURN_TOLERANCE = 2.0;
+    private final static double TURN_TOLERANCE = 1.0;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
     private static double WHL_DIAMETER = 4.1875; //Diameter of the wheel (inches)

@@ -398,6 +398,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                     DbgLog.msg("SJH: FOUND LINE");
                     robot.turnColorOff();
                     drvTrn.setCurrPt(ept);
+                    drvTrn.driveDistanceLinear(1.5, 0.2, Drivetrain.Direction.REVERSE);
                     break;
                 }
                 else if(Math.abs(lTrav) > (colDist + segOver) ||
