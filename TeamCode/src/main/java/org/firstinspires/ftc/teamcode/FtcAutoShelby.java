@@ -76,7 +76,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
     public void stopMode()
     {
         cleanupCamera();
-        if(drvTrn != null) drvTrn.stopAndReset();
+        if(drvTrn != null) drvTrn.stopMotion();
         dl.closeDataLogger();
     }
 
@@ -242,19 +242,19 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             robot.setDriveDir(curSeg.getDir());
 
             drvTrn.setInitValues();
-            drvTrn.logData(true, segName + " " +
-                                 curSeg.getStrtPt().toString() + " - " +
-                                 curSeg.getTgtPt().toString()  + " H:" +
+            drvTrn.logData(true, segName + " \'" +
+                                 curSeg.getStrtPt().toString() + "\' - \'" +
+                                 curSeg.getTgtPt().toString()  + "\' H:" +
                                  curSeg.getFieldHeading());
 
             drvTrn.logData(true, segName + " encoderTurn");
             DbgLog.msg("SJH: ENCODER TURN %s", curSeg.getName());
             doEncoderTurn(curSeg.getFieldHeading()); //quick but rough
 
-            drvTrn.setInitValues();
-            drvTrn.logData(true, segName + " gyroTurn");
-            DbgLog.msg("SJH: GYRO TURN %s", curSeg.getName());
-            doGyroTurn(curSeg.getFieldHeading()); //fine tune using gyro
+            //drvTrn.setInitValues();
+            //drvTrn.logData(true, segName + " gyroTurn");
+            //DbgLog.msg("SJH: GYRO TURN %s", curSeg.getName());
+            //doGyroTurn(curSeg.getFieldHeading()); //fine tune using gyro
 
             drvTrn.setInitValues();
             DbgLog.msg("SJH: Setting drive tuner to %4.2f", curSeg.getDrvTuner());
@@ -271,15 +271,15 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                 drvTrn.logData(true, segName + " postEncoderTurn");
                 doEncoderTurn(pturn);
 
-                drvTrn.setInitValues();
-                DbgLog.msg("SJH: GRYO POST TURN %s", curSeg.getName());
-                drvTrn.logData(true, segName + " postGyroTurn");
-                doGyroTurn(pturn);
+//                drvTrn.setInitValues();
+//                DbgLog.msg("SJH: GRYO POST TURN %s", curSeg.getName());
+//                drvTrn.logData(true, segName + " postGyroTurn");
+//                doGyroTurn(pturn);
             }
 
             if(!opModeIsActive() || isStopRequested())
             {
-                drvTrn.stopAndReset();
+                drvTrn.stopMotion();
                 break;
             }
 
@@ -303,7 +303,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                     break;
 
                 case FIND_BEACON:
-                    do_findAndPushBeacon();
+                    do_findAndPushBeacon(curSeg.getTgtPt());
 
                     if(robot.dim != null)
                     {
@@ -352,7 +352,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             Point2d cept = new Point2d(pct * (ept.getX() - spt.getX()) + spt.getX(),
                                        pct * (ept.getY() - spt.getY()) + spt.getY());
 
-            int targetHdg = (int) Math.round(seg.getFieldHeading());
+            int targetHdg = (int) Math.round(fhd);
             drvTrn.driveToPointLinear(cept, speed, ddir, targetHdg);
 
             DbgLog.msg("SJH: Turning on colorSensor LED");
@@ -363,8 +363,6 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             int colDist = drvTrn.distanceToCounts(cept.distance(ept));
             int segOver = drvTrn.distanceToCounts(2.0);
 
-            drvTrn.stopAndReset();
-            drvTrn.resetLastPos();
             drvTrn.setInitValues();
 
             sleep(10);
@@ -372,7 +370,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             double colSpd = 0.15;
             DbgLog.msg("SJH: Color Driving to pt %s at speed %4.2f", ept, colSpd);
             drvTrn.logData(true, "FIND_LINE CDIST: " + colDist);
-            drvTrn.move(colSpd);
+            drvTrn.moveInit(colSpd, colSpd);
 
             while(opModeIsActive() && !isStopRequested())
             {
@@ -397,7 +395,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                         Math.abs(rTrav) > (colDist + segOver))
                 {
                     drvTrn.setEndValues("COLOR_MISS");
-                    drvTrn.stopAndReset();
+                    drvTrn.stopMotion();
                     DbgLog.msg("SJH: REACHED OVERRUN PT - Backing up a bit");
                     robot.turnColorOff();
                     double rDst = drvTrn.countsToDistance(segOver);
@@ -408,6 +406,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
                 robot.waitForTick(10);
             }
+
+            sleep(postSleep);
         }
         else
         {
@@ -432,7 +432,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
         while (angle <= -180.0) angle += 360.0;
         while (angle >   180.0) angle -= 360.0;
-        if(Math.abs(angle) <= 5.0) return;
+        if(Math.abs(angle) <= 2.0) return;
 
         DbgLog.msg("SJH: Turn %5.2f", angle);
         dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
@@ -606,7 +606,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         return pushSide != BeaconFinder.BeaconSide.UNKNOWN;
     }
 
-    private void do_findAndPushBeacon()
+    private void do_findAndPushBeacon(Point2d endPt)
     {
         DbgLog.msg("SJH: /BEACON/ > THE HUNT FOR BEACON");
 
@@ -617,25 +617,29 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         BeaconFinder.BeaconSide redSide  = BeaconFinder.BeaconSide.UNKNOWN;
         BeaconFinder.BeaconSide pushSide = BeaconFinder.BeaconSide.UNKNOWN;
 
-        boolean allDone = false;
-        double baseSpeed = 0.25;
+        boolean allDone = false, skipDrive = false;
+        double baseSpeed = 0.2;
         double bConf = 0, zPos = 0, xPos = 0, nPos = 0, rDv = 0, lDv = 0;
-        double tPow = 0, nAng = 0, dDist = 0;
+        double tPow = 0, nAng = 0;
         double cHdg, hErr, nOff, mDir = 1;
         double curDistCount = 0.0;
+        double curDist = 0.0;
 
         imgProc.startSensing();
 
         robot.setDriveDir(ShelbyBot.DriveDir.PUSHER);
 
         drvTrn.stopAndReset();
-        drvTrn.resetLastPos();
         drvTrn.setInitValues();
 
-        sleep( 100 );
+        sleep( 50 );
 
         double desHdg = 180;
         if (alliance == Field.Alliance.BLUE) desHdg = 90;
+
+        drvTrn.logData(true, "push encoderTurn");
+        doEncoderTurn(desHdg);
+        drvTrn.ctrTurnToHeading( desHdg, baseSpeed );
 
         while( opModeIsActive() && !allDone ) {
 
@@ -648,7 +652,9 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             //Determine which direction should go with sign of hErr
             hErr = desHdg - cHdg;
 
-            curDistCount = (drvTrn.curLpos + drvTrn.curRpos) / 2.0;
+            curDistCount = (drvTrn.curLpos - drvTrn.initLpos +
+                            drvTrn.curRpos - drvTrn.initRpos) / 2.0;
+            curDist = drvTrn.countsToDistance(curDistCount);
 
             switch ( beaconStep )
             {
@@ -678,7 +684,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                     redSide  = bd.getRedPosSide();
 
                     bConf = bd.getBeaconConf();
-                    zPos  = bd.getBeaconPosZ();
+                    //zPos  = bd.getBeaconPosZ();
 
                     switch ( driveStep ) {
                         case "TRY2":
@@ -691,15 +697,17 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                             xPos = bd.getBeaconPosX();
                             drvTrn.logData(true, "INIT X:" + xPos + " Z:" + zPos);
 
-                            if ( zPos < 12.0 && mDir == 1 && Math.abs( xPos ) > 1.5 ) {
-                                mDir = -1;
+                            if ( zPos < 15.0 && mDir == 1 && Math.abs( xPos ) > 1.5 ) {
+                                drvTrn.driveDistanceLinear(15.0 - zPos,
+                                        baseSpeed, Drivetrain.Direction.REVERSE);
+                                zPos = 15.0;
+                                xPos = bd.getBeaconPosX();
                             }
 
                             nOff = zPos * Math.tan( Math.toRadians( hErr ) );
                             nPos = xPos + nOff;
                             nAng = Math.atan( nPos / 9.0 );
-                            dDist = zPos / Math.cos( nAng );
-                            tPow = nAng / Math.PI;
+                            tPow = 2.0 * nAng / Math.PI;
 
                             dl.addField("INIT");
                             dl.addField(xPos);
@@ -707,33 +715,32 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                             dl.addField(nOff);
                             dl.addField(nPos);
                             dl.addField(nAng);
-                            dl.addField(dDist);
                             dl.addField(tPow);
                             dl.newLine();
 
-                            rDv = mDir * Range.clip( baseSpeed + tPow, -0.25, 0.25 );
-                            lDv = mDir * Range.clip( baseSpeed - tPow, -0.25, 0.25 );
+                            rDv = mDir * Range.clip( baseSpeed + mDir * tPow, -0.25, 0.25 );
+                            lDv = mDir * Range.clip( baseSpeed - mDir * tPow, -0.25, 0.25 );
 
-                            DbgLog.msg("SJH: /BEACON/INIT > nOff: %5.2f, nPos: %5.2f, nAng: %5.2f, dDist: %5.2f", nOff, nPos, nAng, dDist );
+                            DbgLog.msg("SJH: /BEACON/INIT > nOff: %5.2f, nPos: %5.2f, nAng: %5.2f",
+                                    nOff, nPos, nAng );
 
-                            drvTrn.move( lDv, rDv );
+                            if ( Math.abs( xPos ) > 1.5 )
+                                drvTrn.moveInit(lDv, rDv);
+                            else
+                                skipDrive = true;
 
                             driveStep = "CENTER";
                             break;
 
                         case "CENTER":
 
-                            if(firstInState)
+                            DbgLog.msg("SJH: /BEACON/CENTER > r: %5.2f, l: %5.2f, d: %5.2f, a: %5.2f"
+                                    , rDv, lDv, curDist, hErr );
+
+                            if (Math.abs(curDist) > zPos / 2.0 || skipDrive)
                             {
-                                firstInState = false;
-                                drvTrn.resetLastPos();
-                            }
-
-                            DbgLog.msg("SJH: /BEACON/CENTER > r: %5.2f, l: %5.2f, d: %5.2f, a: %5.2f", rDv, lDv, drvTrn.countsToDistance(curDistCount), hErr );
-
-                            if ( Math.abs( drvTrn.countsToDistance(curDistCount)) > dDist / 2.0 ) {
-
-                                drvTrn.ctrTurnToHeading( desHdg, baseSpeed );
+                                doEncoderTurn(desHdg);
+                                doGyroTurn(desHdg);
 
                                 drvTrn.stopMotion();
 
@@ -742,7 +749,6 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                                     driveStep = "READY";
                                 else
                                     driveStep = "TRY2";
-
                             }
 
                             break;
@@ -751,17 +757,14 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                     // Good when the beacon is in view enough or at least
                     // some driving done.
                     if ( pushSide == BeaconFinder.BeaconSide.UNKNOWN &&
-                            blueSide != BeaconFinder.BeaconSide.UNKNOWN &&
-                            redSide != BeaconFinder.BeaconSide.UNKNOWN &&
-                            driveStep.equals("CENTER") )
+                         blueSide != BeaconFinder.BeaconSide.UNKNOWN &&
+                         redSide != BeaconFinder.BeaconSide.UNKNOWN &&
+                         driveStep.equals("CENTER") )
                     {
                         pushSide = findPushSide(blueSide, redSide);
                         DbgLog.msg("SJH: /BEACON/FORWARD > FOUND %s ON %s", alliance, pushSide );
                     }
 
-                    dl.addField("PUSHER");
-                    dl.addField(pushSide.toString());
-                    dl.newLine();
                     setPusher(pushSide);
 
                     if ( driveStep.equals("READY") )
@@ -769,12 +772,14 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                         if ( pushSide == BeaconFinder.BeaconSide.UNKNOWN )
                         {
                             beaconStep = "BACKUP";
-                            DbgLog.msg("SJH: /BEACON/FORWARD > NO SIDE DETECTED, EXITING AT %5.2f ", curDistCount );
+                            DbgLog.msg("SJH: /BEACON/FORWARD > NO SIDE DETECTED, EXITING AT %5.2f ",
+                                    curDistCount );
                         }
                         else
                         {
                             beaconStep = "PUSH";
-                            DbgLog.msg("SJH: /BEACON/FORWARD > TIME TO PUSH BUTTON ON THE %s", pushSide );
+                            DbgLog.msg("SJH: /BEACON/FORWARD > TIME TO PUSH BUTTON ON THE %s",
+                                    pushSide );
                         }
                     }
 
@@ -783,27 +788,30 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                 case "PUSH":
 
                     DbgLog.msg("SJH: /BEACON/PUSH > GOING TO PUSH BUTTON" );
-                    drvTrn.stopAndReset();
-                    drvTrn.resetLastPos();
-                    drvTrn.move( baseSpeed, baseSpeed );
-                    while ( opModeIsActive() && !drvTrn.areDriveMotorsStuck() )
-                    {
-                        drvTrn.setCurValues();
-                        drvTrn.estimatePosition();
-                        drvTrn.logData(false, "PUSH ");
-                        drvTrn.waitForTick(10);
-                    }
+
+                    drvTrn.logData(false, "PUSH " + pushSide.toString());
+                    int c = drvTrn.driveDistanceLinear(18.0, baseSpeed,
+                                                       Drivetrain.Direction.FORWARD,
+                                                       (int)desHdg);
 
                     DbgLog.msg("SJH: /BEACON/PUSH > PUSHED THE BUTTON" );
                     beaconStep = "BACKUP";
-                    firstInState = true;
 
                     break;
 
                 case "BACKUP":
 
                     DbgLog.msg("SJH: /BEACON/BACKUP > BACKING UP %4.1f", curDistCount );
-                    drvTrn.driveDistanceLinear( drvTrn.countsToDistance( curDistCount ), baseSpeed, Drivetrain.Direction.REVERSE );
+
+                    int lDcnt = drvTrn.curLpos - drvTrn.initLpos;
+                    int rDcnt = drvTrn.curRpos - drvTrn.initRpos;
+                    double backDist = drvTrn.countsToDistance((lDcnt + rDcnt) / 2.0);
+                    backDist = Math.abs(backDist);
+
+                    drvTrn.logData(false, "BACKUP " + backDist);
+                    drvTrn.driveDistanceLinear(backDist, baseSpeed,
+                            Drivetrain.Direction.REVERSE, (int)desHdg);
+                    drvTrn.setCurrPt(endPt);
 
                     DbgLog.msg("SJH: /BEACON/BACKUP > BACKED UP" );
                     robot.lpusher.setPosition(L_DN_PUSH_POS);
@@ -815,6 +823,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                 case "LEAVE":
 
                     allDone = true;
+                    drvTrn.logData(true, "LEAVE");
                     DbgLog.msg("SJH: /BEACON/LEAVE > MOVING ALONG" );
                     break;
 
@@ -825,7 +834,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
         imgProc.stopSensing();
 
-        drvTrn.stopAndReset();
+        drvTrn.stopMotion();
         drvTrn.setEndValues("DONE FINDPUSH");
 
         DbgLog.msg("SJH: /BEACON/ > MISSION COMPLETE");

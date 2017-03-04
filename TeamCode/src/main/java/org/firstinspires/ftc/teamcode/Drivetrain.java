@@ -16,6 +16,7 @@ class Drivetrain
     public void moveInit(double lPwr, double rPwr)
     {
         move(lPwr, rPwr);
+        resetLastPos();
         logData(true, "INIT PWR SET");
     }
 
@@ -75,6 +76,7 @@ class Drivetrain
 
     public void resetLastPos()
     {
+        accelTimer.reset();
         noMoveTimer.reset();
         lposLast = robot.leftMotor.getCurrentPosition();
         rposLast = robot.rightMotor.getCurrentPosition();
@@ -113,8 +115,6 @@ class Drivetrain
         if(doStopAndReset) stopAndReset();
         logData(true, "LINDST");
 
-        resetLastPos();
-
         double startPwr = 0.1;
 
         initLpower = startPwr;
@@ -148,12 +148,12 @@ class Drivetrain
                 int lcnt = curLpos;
                 int rcnt = curRpos;
                 int remaining = Math.abs(((trgtLpos - lcnt) + (trgtRpos - rcnt)) / 2);
-                if (Math.abs(remaining) < 960) ppwr = Math.min(pwr, 0.5);
-                if (Math.abs(remaining) < 480) ppwr = Math.min(pwr, 0.25);
-                if (Math.abs(remaining) < 240) ppwr = Math.min(pwr, 0.08);
+                if (Math.abs(remaining) < 960) ppwr = Math.min(ppwr, 0.5);
+                if (Math.abs(remaining) < 480) ppwr = Math.min(ppwr, 0.25);
+                if (Math.abs(remaining) < 240) ppwr = Math.min(ppwr, 0.08);
             }
 
-            makeGyroCorrections(ppwr, trgtHdg);
+            makeGyroCorrections(ppwr, trgtHdg, dir);
 
             if(!isBusy()) break;
 
@@ -239,12 +239,13 @@ class Drivetrain
 
         if (Math.abs(error) <= TURN_TOLERANCE)
         {
-            gyroGoodCount++;
             if(!gyroFirstGood)
             {
                 gyroFirstGood = true;
+                gyroGoodCount = 0;
                 gyroGoodTimer.reset();
             }
+            gyroGoodCount++;
             logData(true, "GYRO GOOD " + gyroGoodCount + " TIME: " + gyroFrameTime.milliseconds());
             steer = 0.0;
             leftSpeed  = 0.0;
@@ -294,8 +295,6 @@ class Drivetrain
         if(doStopAndReset) stopAndReset();
         logData(true, "ENC TURN");
 
-        resetLastPos();
-
         ElapsedTime tTimer = new ElapsedTime();
 
         double startPwr = 0.1;
@@ -310,7 +309,7 @@ class Drivetrain
 
         while(op.opModeIsActive() &&
               !op.isStopRequested() &&
-              isBusy() &&
+              isBusy(TURN_BUSYTHRESH) &&
               !areMotorsStuck() &&
               tTimer.seconds() < turnTimeLimit)
         {
@@ -320,11 +319,14 @@ class Drivetrain
 
             double ppwr = pwr;
 
+            double tmpL = curLpower;
+            double tmpR = curRpower;
+
             if(rampUp)
             {
-                if(curLpower < pwr) curLpower = Math.min(pwr, curLpower + pwrLIncr);
-                if(curRpower < pwr) curRpower = Math.min(pwr, curRpower + pwrRIncr);
-                ppwr = (curLpower + curRpower)/2;
+                if(tmpL < pwr) tmpL = Math.min(pwr, tmpL + pwrLIncr);
+                if(tmpR < pwr) tmpR = Math.min(pwr, tmpR + pwrRIncr);
+                ppwr = (tmpL + tmpR)/2;
             }
 
             if(rampDown)
@@ -333,9 +335,9 @@ class Drivetrain
                 int rcnt = curRpos;
                 int remaining = (Math.abs(trgtLpos - lcnt) + Math.abs(trgtRpos - rcnt)) / 2;
 
-                if (Math.abs(remaining) < 960) ppwr = Math.min(pwr, 0.5);
-                if (Math.abs(remaining) < 480) ppwr = Math.min(pwr, 0.25);
-                if (Math.abs(remaining) < 240) ppwr = Math.min(pwr, 0.10);
+                if (Math.abs(remaining) < 960) ppwr = Math.min(ppwr, 0.5);
+                if (Math.abs(remaining) < 480) ppwr = Math.min(ppwr, 0.25);
+                if (Math.abs(remaining) < 240) ppwr = Math.min(ppwr, 0.10);
             }
             double lpwr = ppwr;
             double rpwr = ppwr;
@@ -345,7 +347,7 @@ class Drivetrain
                 if(!isMotorBusy(MotorSide.LEFT))  lpwr = 0.0;
                 if(!isMotorBusy(MotorSide.RIGHT)) rpwr = 0.0;
             }
-            else if(!isBusy())
+            else if(!isBusy(TURN_BUSYTHRESH))
             {
                 lpwr = 0.0;
                 rpwr = 0.0;
@@ -536,7 +538,7 @@ class Drivetrain
         period.reset();
     }
 
-    void makeGyroCorrections(double pwr, int thdg)
+    void makeGyroCorrections(double pwr, int thdg, Direction dir)
     {
         if(robot.gyro == null || !robot.gyroReady) return;
 
@@ -546,7 +548,7 @@ class Drivetrain
         double err = getGyroError(thdg);
 
         double steer = getSteer(err, Kp_GyrCorrection);
-        //if (dir == Direction.REVERSE) steer *= -1;
+        if (dir == Direction.REVERSE) steer *= -1;
 
         rdp = pwr + steer;
         ldp = pwr - steer;
@@ -765,24 +767,30 @@ class Drivetrain
     {
         if(usePosStop)
         {
-            int lc = Math.abs(curLpos);
-            int rc = Math.abs(curRpos);
             double lp = Math.abs(curLpower);
             double rp = Math.abs(curRpower);
+
+            if(accelTimer.seconds() < 0.5)
+            {
+                lposLast = curLpos;
+                rposLast = curRpos;
+                noMoveTimer.reset();
+                return false;
+            }
 
             //If power is above threshold and encoders aren't changing,
             //stop after noMoveTimeout
             if(noMoveTimer.seconds() > noMoveTimeout)
             {
-                if ((lp >= 0.0 && Math.abs(lc - lposLast) < noMoveThreshLow) &&
-                    (rp >= 0.0 && Math.abs(rc - rposLast) < noMoveThreshLow))
+                if ((lp >= 0.0 && Math.abs(curLpos - lposLast) < noMoveThreshLow) &&
+                    (rp >= 0.0 && Math.abs(curRpos - rposLast) < noMoveThreshLow))
                 {
                     DbgLog.msg("SJH: MOTORS HAVE POWER BUT AREN'T MOVING - STOPPING %4.2f %4.2f",
                             lp, rp);
                     return true;
                 }
-                lposLast = lc;
-                rposLast = rc;
+                lposLast = curLpos;
+                rposLast = curRpos;
                 noMoveTimer.reset();
             }
         }
@@ -793,31 +801,37 @@ class Drivetrain
     {
         if(usePosStop)
         {
-            int lc = Math.abs(curLpos);
-            int rc = Math.abs(curRpos);
             double lp = Math.abs(curLpower);
             double rp = Math.abs(curRpower);
+
+            if(accelTimer.seconds() < 0.5)
+            {
+                lposLast = curLpos;
+                rposLast = curRpos;
+                noMoveTimer.reset();
+                return false;
+            }
 
             //If power is above threshold and encoders aren't changing,
             //stop after noMoveTimeout
             if(noMoveTimer.seconds() > noDriveMoveTimeout)
             {
-                if ((lp >= 0.0 && Math.abs(lposLast - lc) < noMoveThreshLow) &&
-                    (rp >= 0.0 && Math.abs(rposLast - rc) < noMoveThreshLow))
+                if ((lp >= 0.0 && Math.abs(lposLast - curLpos) < noMoveThreshLow) &&
+                    (rp >= 0.0 && Math.abs(rposLast - curRpos) < noMoveThreshLow))
                 {
                     DbgLog.msg("SJH: MOTORS HAVE POWER BUT AREN'T MOVING - STOPPING %4.2f %4.2f",
                             lp, rp);
                     return true;
                 }
-                if ((lp >= noMovePwrHi && Math.abs(lposLast - lc) < noMoveThreshHi) ||
-                    (rp >= noMovePwrHi && Math.abs(rposLast - rc) < noMoveThreshHi))
+                if ((lp >= noMovePwrHi && Math.abs(lposLast - curLpos) < noMoveThreshHi) ||
+                    (rp >= noMovePwrHi && Math.abs(rposLast - curRpos) < noMoveThreshHi))
                 {
                     DbgLog.msg("SJH: MOTORS HAVE HI POWER BUT AREN'T MOVING - STOPPING %4.2f %4.2f",
                             lp, rp);
                     return true;
                 }
-                lposLast = lc;
-                rposLast = rc;
+                lposLast = curLpos;
+                rposLast = curRpos;
                 noMoveTimer.reset();
             }
         }
@@ -846,11 +860,6 @@ class Drivetrain
 
     boolean isBusy(int thresh)
     {
-//        if(op != null && (!op.opModeIsActive() || op.isStopRequested()))
-//        {
-//            return false;
-//        }
-
         double ct = ptmr.seconds();
         if(ct > nextBusyPrintTime)
         {
@@ -859,7 +868,7 @@ class Drivetrain
                     curLpos, curRpos, noMoveTimer.seconds(), curHdg);
         }
 
-        BUSYTHRESH= thresh;
+        BUSYTHRESH = thresh;
 
         boolean lBusy = isMotorBusy(MotorSide.LEFT);
         boolean rBusy = isMotorBusy(MotorSide.RIGHT);
@@ -1029,16 +1038,17 @@ class Drivetrain
     private int numPts = 0;
 
     private double noMoveTimeout = 1.0;
-    private double noDriveMoveTimeout = 1.0;
+    private double noDriveMoveTimeout = 0.25;
     private int noMoveThreshLow = 4;
     private int noMoveThreshHi = 20;
     private double noMovePwrHi = 0.15;
+    private ElapsedTime accelTimer  = new ElapsedTime();
     private ElapsedTime noMoveTimer = new ElapsedTime();
 
     private double printTimeout = 0.05;
 
     private double minSpeed = 0.09;
-    private double minGyroTurnSpeed = 0.10;
+    private double minGyroTurnSpeed = 0.14;
 
     private LinearOpMode op = null;
 
@@ -1081,6 +1091,7 @@ class Drivetrain
 
     private int tickRate = 10;
     private static int DEF_BUSYTHRESH = 20;
+    private static int TURN_BUSYTHRESH = 10;
     private static int BUSYTHRESH = DEF_BUSYTHRESH;
 
     private ElapsedTime busyTimer = new ElapsedTime();
