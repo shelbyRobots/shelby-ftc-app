@@ -87,6 +87,7 @@ class ShelbyBot
         if(rightMotor != null) rightMotor.setDirection(RIGHT_DIR);
         if(elevMotor  != null)  elevMotor.setDirection(DcMotor.Direction.REVERSE);
         if(sweepMotor != null) sweepMotor.setDirection(DcMotor.Direction.FORWARD);
+        // sweepmotor changed from reverse to forward to run with chain 2/11/17
         if(shotmotor1 != null) shotmotor1.setDirection(DcMotor.Direction.FORWARD);
         if(shotmotor2 != null) shotmotor2.setDirection(DcMotor.Direction.REVERSE);
 

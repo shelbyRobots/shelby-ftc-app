@@ -242,9 +242,9 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             robot.setDriveDir(curSeg.getDir());
 
             drvTrn.setInitValues();
-            drvTrn.logData(true, segName + " \'" +
-                                 curSeg.getStrtPt().toString() + "\' - \'" +
-                                 curSeg.getTgtPt().toString()  + "\' H:" +
+            drvTrn.logData(true, segName + " \"" +
+                                 curSeg.getStrtPt().toString() + "\" - \"" +
+                                 curSeg.getTgtPt().toString()  + "\" H:" +
                                  curSeg.getFieldHeading());
 
             drvTrn.logData(true, segName + " encoderTurn");
@@ -260,7 +260,12 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             DbgLog.msg("SJH: Setting drive tuner to %4.2f", curSeg.getDrvTuner());
             drvTrn.logData(true, segName + " move");
             drvTrn.setDrvTuner(curSeg.getDrvTuner());
-            doMove(curSeg);
+            if (curSeg.getAction() == Segment.Action.SHOOT)
+            {
+                robot.shotmotor1.setPower(DEF_SHT_PWR);
+                robot.shotmotor2.setPower(DEF_SHT_PWR);
+            }
+                doMove(curSeg);
 
             Double pturn = curSeg.getPostTurn();
 
@@ -367,7 +372,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
             sleep(10);
 
-            double colSpd = 0.15;
+            double colSpd = 0.10;
             DbgLog.msg("SJH: Color Driving to pt %s at speed %4.2f", ept, colSpd);
             drvTrn.logData(true, "FIND_LINE CDIST: " + colDist);
             drvTrn.moveInit(colSpd, colSpd);
@@ -839,9 +844,9 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         DbgLog.msg("SJH: SHOOT!!!");
         dashboard.displayPrintf(2, "STATE: %s", "SHOOT");
         ElapsedTime stimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
-        robot.shotmotor1.setPower(DEF_SHT_PWR);
-        robot.shotmotor2.setPower(DEF_SHT_PWR);
-        sleep(500);
+ //     robot.shotmotor1.setPower(DEF_SHT_PWR);
+ //     robot.shotmotor2.setPower(DEF_SHT_PWR);
+ //     sleep(500);
         robot.sweepMotor.setPower(-DEF_SWP_PWR);
         robot.elevMotor.setPower(-DEF_ELV_PWR);
         sleep(1500);
