@@ -622,7 +622,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         BeaconFinder.BeaconSide redSide  = BeaconFinder.BeaconSide.UNKNOWN;
         BeaconFinder.BeaconSide pushSide = BeaconFinder.BeaconSide.UNKNOWN;
 
-        boolean allDone = false;
+        boolean allDone = false, skipDrive = false;
         double baseSpeed = 0.2;
         double bConf = 0, zPos = 0, xPos = 0, nPos = 0, rDv = 0, lDv = 0;
         double tPow = 0, nAng = 0;
@@ -720,13 +720,18 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                             dl.addField(tPow);
                             dl.newLine();
 
-                            rDv = mDir * Range.clip( baseSpeed + tPow, -0.25, 0.25 );
-                            lDv = mDir * Range.clip( baseSpeed - tPow, -0.25, 0.25 );
+                            rDv = mDir * Range.clip( baseSpeed + tPow, -0.45, 0.45 );
+                            lDv = mDir * Range.clip( baseSpeed - tPow, -0.45, 0.45 );
 
                             DbgLog.msg("SJH: /BEACON/INIT > nOff: %5.2f, nPos: %5.2f, nAng: %5.2f, dDist: %5.2f",
                                     nOff, nPos, nAng, dDist );
 
-                            drvTrn.moveInit(lDv, rDv);
+                            if ( xPos > 1.0 ) {
+                                drvTrn.stopMotion();
+                                drvTrn.moveInit(lDv, rDv);
+                            } else {
+                                skipDrive = true;
+                            }
 
                             driveStep = "CENTER";
                             break;
@@ -736,12 +741,12 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                             DbgLog.msg("SJH: /BEACON/CENTER > r: %5.2f, l: %5.2f, d: %5.2f, a: %5.2f"
                                     , rDv, lDv, curDist, hErr );
 
-                            if (Math.abs(curDist) > dDist)
+                            if (Math.abs(curDist) > dDist || skipDrive)
                             {
+                                drvTrn.stopMotion();
+
                                 doEncoderTurn(desHdg);
                                 doGyroTurn(desHdg);
-
-                                drvTrn.stopMotion();
 
                                 xPos = bd.getBeaconPosX();
                                 if ( Math.abs( xPos ) < 1.5 || mDir == -1 )

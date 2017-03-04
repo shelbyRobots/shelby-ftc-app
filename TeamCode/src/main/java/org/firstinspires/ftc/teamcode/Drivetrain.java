@@ -15,8 +15,8 @@ class Drivetrain
 
     public void moveInit(double lPwr, double rPwr)
     {
-        move(lPwr, rPwr);
         resetLastPos();
+        move(lPwr, rPwr);
         logData(true, "INIT PWR SET");
     }
 
