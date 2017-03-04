@@ -242,19 +242,23 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             robot.setDriveDir(curSeg.getDir());
 
             drvTrn.setInitValues();
-            drvTrn.logData(true, segName + " \"" +
-                                 curSeg.getStrtPt().toString() + "\" - \"" +
-                                 curSeg.getTgtPt().toString()  + "\" H:" +
+            drvTrn.logData(true, segName + " " +
+                                 curSeg.getStrtPt().toString() + " - " +
+                                 curSeg.getTgtPt().toString()  + " H:" +
                                  curSeg.getFieldHeading());
 
             drvTrn.logData(true, segName + " encoderTurn");
             DbgLog.msg("SJH: ENCODER TURN %s", curSeg.getName());
             doEncoderTurn(curSeg.getFieldHeading()); //quick but rough
 
-            //drvTrn.setInitValues();
-            //drvTrn.logData(true, segName + " gyroTurn");
-            //DbgLog.msg("SJH: GYRO TURN %s", curSeg.getName());
-            //doGyroTurn(curSeg.getFieldHeading()); //fine tune using gyro
+            if(curSeg.getName().equals("BECN1"))
+            {
+                drvTrn.setInitValues();
+                drvTrn.logData(true, segName + " gyroTurn");
+                DbgLog.msg("SJH: GYRO TURN %s", curSeg.getName());
+                doEncoderTurn(curSeg.getFieldHeading());
+                //doGyroTurn(curSeg.getFieldHeading()); //fine tune using gyro
+            }
 
             drvTrn.setInitValues();
             DbgLog.msg("SJH: Setting drive tuner to %4.2f", curSeg.getDrvTuner());
@@ -744,10 +748,10 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
                             if (Math.abs(curDist) > zPos / 2.0 || skipDrive)
                             {
+                                drvTrn.stopMotion();
+
                                 doEncoderTurn(desHdg);
                                 doGyroTurn(desHdg);
-
-                                drvTrn.stopMotion();
 
                                 xPos = bd.getBeaconPosX();
                                 if ( Math.abs( xPos ) < 1.5 || mDir == -1 )
@@ -901,12 +905,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                 new FtcChoiceMenu<>("PARK:", pushMenu, this);
         FtcChoiceMenu<Field.Alliance> allianceMenu =
                 new FtcChoiceMenu<>("ALLIANCE:", parkMenu, this);
-        FtcChoiceMenu<Team> teamMenu               =
-                new FtcChoiceMenu<>("TEAM:", allianceMenu, this);
         FtcChoiceMenu<Boolean> routeMenu           =
-                new FtcChoiceMenu<>("FLY2LIGHT:", teamMenu, this);
-        //FtcValueMenu powerMenu     = new FtcValueMenu("SHOOTPOWER:", teamMenu, this,
-        //                                                    0.0, 1.0, 0.05, 0.55, "%5.2f");
+                new FtcChoiceMenu<>("FLY2LIGHT:", allianceMenu, this);
         FtcValueMenu delayMenu     = new FtcValueMenu("DELAY:", routeMenu, this,
                 0.0, 20.0, 1.0, 0.0, "%5.2f");
 
@@ -920,14 +920,10 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
         parkMenu.addChoice("CORNER", Field.ParkChoice.CORNER_PARK, allianceMenu);
         parkMenu.addChoice("CENTER", Field.ParkChoice.CENTER_PARK, allianceMenu);
-        parkMenu.addChoice("CORNER", Field.ParkChoice.CORNER_PARK, allianceMenu);
         parkMenu.addChoice("DEFEND", Field.ParkChoice.DEFEND_PARK, allianceMenu);
 
-        allianceMenu.addChoice("RED",  Field.Alliance.RED, teamMenu);
-        allianceMenu.addChoice("BLUE", Field.Alliance.BLUE, teamMenu);
-
-        teamMenu.addChoice("Snowman", Team.SNOWMAN, routeMenu);
-        teamMenu.addChoice("Sonic", Team.SONIC, routeMenu);
+        allianceMenu.addChoice("RED",  Field.Alliance.RED,  routeMenu);
+        allianceMenu.addChoice("BLUE", Field.Alliance.BLUE, routeMenu);
 
         routeMenu.addChoice("FALSE", Boolean.FALSE, delayMenu);
         routeMenu.addChoice("TRUE",  Boolean.TRUE,  delayMenu);
@@ -946,7 +942,6 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         beaconChoice = pushMenu.getCurrentChoiceObject();
         parkChoice = parkMenu.getCurrentChoiceObject();
         alliance = allianceMenu.getCurrentChoiceObject();
-        team = teamMenu.getCurrentChoiceObject();
         useFly2Light = routeMenu.getCurrentChoiceObject();
         delay = delayMenu.getCurrentValue();
 

@@ -15,8 +15,8 @@ class Drivetrain
 
     public void moveInit(double lPwr, double rPwr)
     {
-        move(lPwr, rPwr);
         resetLastPos();
+        move(lPwr, rPwr);
         logData(true, "INIT PWR SET");
     }
 
@@ -804,6 +804,9 @@ class Drivetrain
             double lp = Math.abs(curLpower);
             double rp = Math.abs(curRpower);
 
+            int dLpos = Math.abs(lposLast - curLpos);
+            int dRpos = Math.abs(rposLast - curRpos);
+
             if(accelTimer.seconds() < 0.5)
             {
                 lposLast = curLpos;
@@ -816,15 +819,15 @@ class Drivetrain
             //stop after noMoveTimeout
             if(noMoveTimer.seconds() > noDriveMoveTimeout)
             {
-                if ((lp >= 0.0 && Math.abs(lposLast - curLpos) < noMoveThreshLow) &&
-                    (rp >= 0.0 && Math.abs(rposLast - curRpos) < noMoveThreshLow))
+                if ((lp >= 0.0 && dLpos < noMoveThreshLow) &&
+                    (rp >= 0.0 && dRpos < noMoveThreshLow))
                 {
                     DbgLog.msg("SJH: MOTORS HAVE POWER BUT AREN'T MOVING - STOPPING %4.2f %4.2f",
                             lp, rp);
                     return true;
                 }
-                if ((lp >= noMovePwrHi && Math.abs(lposLast - curLpos) < noMoveThreshHi) ||
-                    (rp >= noMovePwrHi && Math.abs(rposLast - curRpos) < noMoveThreshHi))
+                if ((lp >= noMovePwrHi && dLpos < noMoveThreshHi) ||
+                    (rp >= noMovePwrHi && dRpos < noMoveThreshHi))
                 {
                     DbgLog.msg("SJH: MOTORS HAVE HI POWER BUT AREN'T MOVING - STOPPING %4.2f %4.2f",
                             lp, rp);
@@ -997,8 +1000,8 @@ class Drivetrain
     private ElapsedTime rt = new ElapsedTime();
     private ElapsedTime ptmr = new ElapsedTime();
 
-    private double lposLast;
-    private double rposLast;
+    private int lposLast;
+    private int rposLast;
 
     public int initLpos;
     public int initRpos;
@@ -1091,7 +1094,7 @@ class Drivetrain
 
     private int tickRate = 10;
     private static int DEF_BUSYTHRESH = 20;
-    private static int TURN_BUSYTHRESH = 15;
+    private static int TURN_BUSYTHRESH = 10;
     private static int BUSYTHRESH = DEF_BUSYTHRESH;
 
     private ElapsedTime busyTimer = new ElapsedTime();
