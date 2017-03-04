@@ -221,7 +221,7 @@ class Points
                 curSeg.setPostTurn(nfhdg);
                 DbgLog.msg("SJH: Segment %s setting postTurn %4.2f", sname, nfhdg);
             }
-            if(sname.equals("ASHOOT") || sname.equals("BSHOOT"))
+            if(sname.equals("BSHOOT"))
             {
                 if (alliance == Field.Alliance.BLUE )
                 {
@@ -300,7 +300,7 @@ class Points
     private static final double CTRPRKX = -12.0;
     private static final double CTRPRKY = -12.0;
     private static final double CRNPRKX = -48.0;
-    private static final double CRNPRKY = -40.0;
+    private static final double CRNPRKY = -48.0;
     private static final double DFNPRKX = -12.0;
     private static final double DFNPRKY =  48.0;
 
