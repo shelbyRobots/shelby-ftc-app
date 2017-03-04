@@ -280,6 +280,7 @@ class ShelbyBot
 
     public void turnColorOn()
     {
+        colorEnabled = true;
         colorSensor.getI2cController().registerForI2cPortReadyCallback(colorSensor,
                 getColorPort());
 
@@ -289,6 +290,7 @@ class ShelbyBot
 
     public void turnColorOff()
     {
+        colorEnabled = false;
         colorSensor.enableLed(false);
         op.sleep(50);
         colorSensor.getI2cController().deregisterForPortReadyCallback(getColorPort());
@@ -334,6 +336,8 @@ class ShelbyBot
     private DriveDir ddir = DriveDir.UNKNOWN;
     public DriveDir calibrationDriveDir = DriveDir.UNKNOWN;
     private HardwareMap hwMap = null;
+
+    public boolean colorEnabled = false;
 
     private int initHdg = 0;
 

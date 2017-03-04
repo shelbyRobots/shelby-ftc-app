@@ -22,7 +22,7 @@ public class OpenCVAuton extends OpenCvCameraOpMode
     private ShelbyBot   robot = new ShelbyBot();
     private Drivetrain drvTrn = new Drivetrain();
 
-    private boolean useMotor  = true;
+    private boolean useMotor  = false;
     private boolean gyroReady = false;
     private boolean follow    = false;
 
