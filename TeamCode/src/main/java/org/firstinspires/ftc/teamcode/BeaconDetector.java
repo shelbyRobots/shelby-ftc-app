@@ -149,11 +149,12 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
     {
         if(telemetry == null) return;
 
-        telemetry.addData( "CONF", "%5.2f", getBeaconConf() );
-        telemetry.addData( "X", "%5.2f",  getBeaconPosX() );
-        telemetry.addData( "Z", "%5.2f", getBeaconPosZ() );
-        telemetry.addData( "RED", "%s",  getRedPosSide() );
-        telemetry.addData( "BLUE", "%s", getBluePosSide() );
+//        telemetry.addData( "CONF", "%5.2f", getBeaconConf() );
+//        telemetry.addData( "X", "%5.2f",  getBeaconPosX() );
+//        telemetry.addData( "Z", "%5.2f", getBeaconPosZ() );
+//        telemetry.addData( "RED", "%s",  getRedPosSide() );
+//        telemetry.addData( "BLUE", "%s", getBluePosSide() );
+//        telemetry.update();
     }
 
     public void setTelemetry(Telemetry telemetry)
