@@ -1091,7 +1091,7 @@ class Drivetrain
 
     private int tickRate = 10;
     private static int DEF_BUSYTHRESH = 20;
-    private static int TURN_BUSYTHRESH = 10;
+    private static int TURN_BUSYTHRESH = 15;
     private static int BUSYTHRESH = DEF_BUSYTHRESH;
 
     private ElapsedTime busyTimer = new ElapsedTime();

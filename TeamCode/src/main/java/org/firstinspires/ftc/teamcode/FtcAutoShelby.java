@@ -242,9 +242,9 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             robot.setDriveDir(curSeg.getDir());
 
             drvTrn.setInitValues();
-            drvTrn.logData(true, segName + " \'" +
-                                 curSeg.getStrtPt().toString() + "\' - \'" +
-                                 curSeg.getTgtPt().toString()  + "\' H:" +
+            drvTrn.logData(true, segName + " \"" +
+                                 curSeg.getStrtPt().toString() + "\" - \"" +
+                                 curSeg.getTgtPt().toString()  + "\" H:" +
                                  curSeg.getFieldHeading());
 
             drvTrn.logData(true, segName + " encoderTurn");
@@ -367,7 +367,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
             sleep(10);
 
-            double colSpd = 0.15;
+            double colSpd = 0.10;
             DbgLog.msg("SJH: Color Driving to pt %s at speed %4.2f", ept, colSpd);
             drvTrn.logData(true, "FIND_LINE CDIST: " + colDist);
             drvTrn.moveInit(colSpd, colSpd);
