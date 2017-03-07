@@ -25,22 +25,26 @@ class Drivetrain
         curLpower = lPwr;
         curRpower = rPwr;
 
-//        if(!gangMotors)
-//        {
-            //long t0 = System.nanoTime();
-            //make sure they actually set commanded power
-            robot.leftMotor.setPower(lPwr);
-            //long t1 = System.nanoTime();
-            robot.rightMotor.setPower(rPwr);
-            //long t2 = System.nanoTime();
-            //DbgLog.msg("SJH: LFT set power %f took %f", lPwr, (double)(t1-t0)/1000000);
-            //DbgLog.msg("SJH: RGT set power %f took %f", rPwr, (double)(t2-t1)/1000000);
-//        }
-//        else
-//        {
-//            double[] powers = {lPwr, rPwr};
-//            mc.setMotorsPower(powers);
-//        }
+        if(!gangMotors || mc == null)
+        {
+            if(useSpeedThreads)
+            {
+                lSpdTask.setMotor(robot.leftMotor);
+                rSpdTask.setMotor(robot.rightMotor);
+                lSpdTask.setSpeed(lPwr);
+                rSpdTask.setSpeed(rPwr);
+            }
+            else
+            {
+                robot.leftMotor.setPower(lPwr);
+                robot.rightMotor.setPower(rPwr);
+            }
+        }
+        else
+        {
+            double[] powers = {lPwr, rPwr};
+            mc.setMotorsPower(powers);
+        }
     }
 
     public void move(double pwr)
@@ -80,6 +84,32 @@ class Drivetrain
         noMoveTimer.reset();
         lposLast = robot.leftMotor.getCurrentPosition();
         rposLast = robot.rightMotor.getCurrentPosition();
+    }
+
+    public void driveToTarget(double pwr, int thresh)
+    {
+        setBusyAnd(false);
+        robot.leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        robot.rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        robot.leftMotor.setTargetPosition(trgtLpos);
+        robot.leftMotor.setTargetPosition(trgtRpos);
+        setInitValues();
+        logStartValues("DRIVE_TRGT");
+        moveInit(pwr, pwr);
+        while(isBusy(thresh)         &&
+              !op.isStopRequested()  &&
+              !areDriveMotorsStuck())
+        {
+            setCurValues();
+            logData();
+
+            if(tickRate > 0) waitForTick(tickRate);
+            frame++;
+        }
+
+        stopMotion();
+        setEndValues("DRIVE_TRGT");
+
     }
 
     public void driveDistance(double dst, double pwr, Direction dir)
@@ -132,15 +162,16 @@ class Drivetrain
         {
             setCurValues();
             logData();
-            estimatePosition();
 
             double ppwr = pwr;
+            double tmpL = curLpower;
+            double tmpR = curRpower;
 
             if(rampUp)
             {
-                if(curLpower < pwr) curLpower = Math.min(pwr, curLpower + pwrLIncr);
-                if(curRpower < pwr) curRpower = Math.min(pwr, curRpower + pwrRIncr);
-                ppwr = (curLpower + curRpower)/2;
+                if(tmpL < pwr) tmpL = Math.min(pwr, tmpL + pwrLIncr);
+                if(tmpR < pwr) tmpR = Math.min(pwr, tmpR + pwrRIncr);
+                ppwr = (tmpL + tmpR)/2;
             }
 
             if(rampDown)
@@ -161,7 +192,7 @@ class Drivetrain
             frame++;
         }
 
-        setEndValues("END LINDST");
+        setEndValues("LINDST");
         stopMotion();
         if(logOverrun) logOverrun(overtime);
 
@@ -205,6 +236,8 @@ class Drivetrain
         trgtLpos = initLpos - counts;
         trgtRpos = initRpos + counts;
         trgtHdg  = initHdg  + (int) Math.round(angle);
+        while(trgtHdg >   180) trgtHdg -= 360;
+        while(trgtHdg <= -180) trgtHdg += 360;
         logStartValues("ENC_TURN");
 
         DbgLog.msg("SJH Angle: %5.2f Counts: %4d CHdg: %d", angle, counts, initHdg);
@@ -288,7 +321,7 @@ class Drivetrain
         return onTarget;
     }
 
-    void ctrTurnLinear(double angle, double pwr)
+    void ctrTurnLinear(double angle, double pwr, int thresh)
     {
         DbgLog.msg("SJH: Starting turn of %f", angle);
 
@@ -309,13 +342,12 @@ class Drivetrain
 
         while(op.opModeIsActive() &&
               !op.isStopRequested() &&
-              isBusy(TURN_BUSYTHRESH) &&
+              isBusy(thresh) &&
               !areMotorsStuck() &&
               tTimer.seconds() < turnTimeLimit)
         {
             setCurValues();
             logData();
-            estimatePosition();
 
             double ppwr = pwr;
 
@@ -363,6 +395,11 @@ class Drivetrain
         if(logOverrun) logOverrun(overtime);
     }
 
+    void ctrTurnLinear(double angle, double pwr)
+    {
+        ctrTurnLinear(angle, pwr, TURN_BUSYTHRESH);
+    }
+
     void ctrTurnToHeading(double tgtHdg, double pwr)
     {
         tgtHdg = Math.round(tgtHdg);
@@ -370,6 +407,9 @@ class Drivetrain
         DbgLog.msg("SJH: GYRO TURN to HDG %d", (int)tgtHdg);
 
         if(doStopAndReset) stopAndReset();
+
+        robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         moveInit(0.0, 0.0);
 
@@ -391,12 +431,11 @@ class Drivetrain
         {
             setCurValues();
             logData();
-            estimatePosition();
 
             if(tickRate > 0) waitForTick(tickRate);
             frame++;
         }
-        setEndValues("END GYRO_TURN");
+        setEndValues("GYRO_TURN");
         stopMotion();
         if(logOverrun) logOverrun(overtime);
     }
@@ -520,10 +559,32 @@ class Drivetrain
 
         robot.leftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         robot.rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        //mc = (ModernRoboticsUsbGangedDcMotorController)robot.leftMotor.getController();
+        if(gangMotors)
+            mc = (ModernRoboticsUsbGangedDcMotorController)(robot.leftMotor.getController());
 
         curDriveDir = robot.getDriveDir();
         lastDriveDir = curDriveDir;
+    }
+
+    public void start()
+    {
+        if(useSpeedThreads)
+        {
+            lftSpdThread = new Thread(lSpdTask);
+            rgtSpdThread = new Thread(rSpdTask);
+            lftSpdThread.setName("LeftSpeedThread");
+            rgtSpdThread.setName("RightSpeedThread");
+            lftSpdThread.start();
+            rgtSpdThread.start();
+        }
+    }
+
+    public void cleanup()
+    {
+        stopMotion();
+        DbgLog.msg("SJH: CLOSING Drivetrain");
+        if(lftSpdThread != null) lftSpdThread.interrupt();
+        if(rgtSpdThread != null) rgtSpdThread.interrupt();
     }
 
     public void waitForTick(long periodMs)
@@ -698,6 +759,8 @@ class Drivetrain
         initLpos = robot.leftMotor.getCurrentPosition();
         initRpos = robot.rightMotor.getCurrentPosition();
         initHdg = robot.getGyroFhdg();
+        while (initHdg <= -180) initHdg += 360;
+        while (initHdg >   180) initHdg -= 360;
         curLpos = initLpos;
         curRpos = initRpos;
         curHdg  = initHdg;
@@ -714,6 +777,7 @@ class Drivetrain
             curGrn = robot.colorSensor.green();
             curBlu = robot.colorSensor.blue();
         }
+        estimatePosition();
     }
 
     public void logStartValues(String note)
@@ -755,7 +819,6 @@ class Drivetrain
         {
             setCurValues();
             logData();
-            estimatePosition();
 
             if(tickRate > 0) waitForTick(tickRate);
             frame++;
@@ -825,14 +888,14 @@ class Drivetrain
                 if ((lp >= 0.0 && dLpos < noMoveThreshLow) &&
                     (rp >= 0.0 && dRpos < noMoveThreshLow))
                 {
-                    DbgLog.msg("SJH: MOTORS HAVE POWER BUT AREN'T MOVING - STOPPING %4.2f %4.2f",
+                    DbgLog.msg("SJH: DRIVE MOTORS HAVE POWER BUT AREN'T MOVING - STOPPING %4.2f %4.2f",
                             lp, rp);
                     return true;
                 }
                 if ((lp >= noMovePwrHi && dLpos < noMoveThreshHi) ||
                     (rp >= noMovePwrHi && dRpos < noMoveThreshHi))
                 {
-                    DbgLog.msg("SJH: MOTORS HAVE HI POWER BUT AREN'T MOVING - STOPPING %4.2f %4.2f",
+                    DbgLog.msg("SJH: DRIVE MOTORS HAVE HI POWER BUT AREN'T MOVING - STOPPING %4.2f %4.2f",
                             lp, rp);
                     return true;
                 }
@@ -911,10 +974,10 @@ class Drivetrain
         this.rampDown = rampDown;
     }
 
-//    public void setGangMotors(boolean gangMotors)
-//    {
-//        this.gangMotors = gangMotors;
-//    }
+    public void setGangMotors(boolean gangMotors)
+    {
+        this.gangMotors = gangMotors;
+    }
 
     public void setStopIndividualMotorWhenNotBusy(boolean stopIndvid)
     {
@@ -930,6 +993,8 @@ class Drivetrain
     {
         this.logOverrun = lo;
     }
+
+    public void setUseSpeedThreads(boolean ust) { this.useSpeedThreads = ust; }
 
     public void logData(boolean force, String title)
     {
@@ -1081,8 +1146,8 @@ class Drivetrain
     double nextPrintTime = ptmr.seconds();
     double nextBusyPrintTime = ptmr.seconds();
 
-    private boolean logOverrun = false;
-    private double overtime = 0.5;
+    private boolean logOverrun = true;
+    private double overtime = 0.15;
 
     private double reducePower = 0.3;
     private double reduceTurnPower = 0.2;
@@ -1091,13 +1156,13 @@ class Drivetrain
     private boolean rampUp = true;
     private boolean rampDown = true;
     private boolean stopIndividualMotorWhenNotBusy = false;
-    //private boolean gangMotors = false;
+    private boolean gangMotors = false;
 
-    //private ModernRoboticsUsbGangedDcMotorController mc;
+    private ModernRoboticsUsbGangedDcMotorController mc = null;
 
     private int tickRate = 10;
-    private static int DEF_BUSYTHRESH = 20;
-    private static int TURN_BUSYTHRESH = 10;
+    private static final int DEF_BUSYTHRESH = 20;
+    public  static final int TURN_BUSYTHRESH = 10;
     private static int BUSYTHRESH = DEF_BUSYTHRESH;
 
     private ElapsedTime busyTimer = new ElapsedTime();
@@ -1106,6 +1171,42 @@ class Drivetrain
     private double rBusyTime;
 
     private double turnTimeLimit = 5;
+
+    class SpeedSetTask implements Runnable
+    {
+        public void run()
+        {
+            if(op.opModeIsActive())
+            {
+                if(speed != oldSpeed)
+                {
+                    oldSpeed = speed;
+                    if(motor != null) motor.setPower(speed);
+                }
+            }
+
+            try
+            {
+                Thread.sleep(0, 100);
+            }
+            catch (InterruptedException ie)
+            {
+                System.out.println("Interrupted");
+            }
+        }
+
+        public void setMotor(DcMotor motor) {this.motor = motor;}
+        public void setSpeed(double speed)  {this.speed = Math.round(100*speed)/100;}
+        private DcMotor motor = null;
+        private double speed    = 0.0;
+        private double oldSpeed = -2.0;
+    }
+
+    private SpeedSetTask lSpdTask = new SpeedSetTask();
+    private SpeedSetTask rSpdTask = new SpeedSetTask();
+    private boolean useSpeedThreads = false;
+    private Thread lftSpdThread = null;
+    private Thread rgtSpdThread = null;
 }
 
 

@@ -28,7 +28,6 @@ public class DriveTestUtil
     void estAndLog()
     {
         drvTrn.setCurValues();
-        drvTrn.estimatePosition();
         drvTrn.logData();
     }
 

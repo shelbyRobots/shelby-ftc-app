@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode;
 
 
+import com.qualcomm.robotcore.util.ElapsedTime;
+
 import java.util.Locale;
 
 class Segment
@@ -106,9 +108,55 @@ class Segment
 
     public static void main(String[] args)
     {
-        Point2d ptA = new Point2d(-12.0, -61.0);
-        Point2d ptB = new Point2d(-50.0, -18.0);
-        Segment seg = new Segment("SEG", ptA, ptB);
-        System.out.print("FLDHDG:" + seg.getFieldHeading() + "\n");
+//        Point2d ptA = new Point2d(-12.0, -61.0);
+//        Point2d ptB = new Point2d(-50.0, -18.0);
+//        Segment seg = new Segment("SEG", ptA, ptB);
+//        System.out.print("FLDHDG:" + seg.getFieldHeading() + "\n");
+        class MyRunnable implements Runnable
+        {
+            private int myVal = 0;
+            private int oldMyVal = -1;
+            ElapsedTime timer = new ElapsedTime();
+
+            public void setMyVal(int val) {myVal = val;}
+
+            public void run()
+            {
+                while(timer.seconds() < 30)
+                {
+                    if(myVal != oldMyVal)
+                    {
+                        System.out.println(Thread.currentThread().getId() + " New value " + myVal);
+                        oldMyVal = myVal;
+                    }
+                    try
+                    {
+                        Thread.sleep(10);
+                    }
+                    catch (InterruptedException ie)
+                    {
+                        System.out.println("Interrupted");
+                    }
+                }
+            }
+        }
+
+        MyRunnable mr = new MyRunnable();
+        Thread myThread = new Thread(mr);
+        myThread.start();
+
+        System.out.println("Main " + Thread.currentThread().getId());
+        for (int x = 1; x < 10; x++)
+        {
+            mr.setMyVal(x);
+            try
+            {
+                Thread.sleep(1000);
+            }
+            catch (InterruptedException ie)
+            {
+                System.out.println("Interrupted");
+            }
+        }
     }
 }
