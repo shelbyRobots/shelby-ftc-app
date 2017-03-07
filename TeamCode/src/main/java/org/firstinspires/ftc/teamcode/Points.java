@@ -9,8 +9,6 @@ class Points
 {
     private Vector<Point2d> initPoints()
     {
-        boolean useSquare = false;
-
         Point2d start_pt = ASTART_PT;
         Point2d shoot_pt = ASHOOT_PT;
 
@@ -65,10 +63,6 @@ class Points
         {
             if(!useFly2Light)
             {
-                if(useSquare)
-                {
-                    addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, SQUARE_PT);
-                }
                 addPoint(points, fwd, 0.5,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
             }
             else
@@ -92,11 +86,11 @@ class Points
         {
             if(!useFly2Light)
             {
-                addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
+                addPoint(points, rev, 0.5, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
             }
             else
             {
-                addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, beacon, BECN2_PT);
+                addPoint(points, rev, 0.5, 1.00, Segment.TargetType.ENCODER, beacon, BECN2_PT);
             }
         }
 
@@ -319,8 +313,6 @@ class Points
 
     private Point2d ASTART_PT = new Point2d("ASTART", ASTARTX, ASTARTY);
     private Point2d ASHOOT_PT = new Point2d("ASHOOT", ASTARTX, ASHOOTY);
-
-    private Point2d SQUARE_PT = new Point2d("SQUARE", BECN_X, ASHOOTY);
 
     private Point2d BASKET_PT = new Point2d("BASKET", AIMTOX, AIMTOY);
 

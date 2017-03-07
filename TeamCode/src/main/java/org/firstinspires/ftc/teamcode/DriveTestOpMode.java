@@ -180,11 +180,11 @@ public class DriveTestOpMode extends LinearOpMode
         if(doDriveDist)
         {
             double dist[] = {24.0, 48.0};
-            for (int i = 0 ; i < dist.length; i++)
+            for (double aDist : dist)
             {
-                drvTrn.setCurrPt(new Point2d(0,0));
-                Point2d tPt = new Point2d(dist[i], 0.0);
-                dl.addField("doDriveDist " + dist);
+                drvTrn.setCurrPt(new Point2d(0, 0));
+                Point2d tPt = new Point2d(aDist, 0.0);
+                dl.addField("doDriveDist " + aDist);
                 drvTrn.driveToPointLinear(tPt, 0.8, Drivetrain.Direction.FORWARD);
             }
         }
@@ -193,10 +193,24 @@ public class DriveTestOpMode extends LinearOpMode
         {
             robot.gyro.resetZAxisIntegrator();
             double angle = 5.0; //-90.0;
-            dl.addField("doTurnAngle ENC " + angle);
+            //dl.addField("doTurnAngle ENC " + angle);
             //drvTrn.ctrTurnLinear(angle - robot.getGyroFhdg(), 0.4);
-            dl.addField("doTurnAngle GYRO " + angle); dl.newLine();
-            drvTrn.ctrTurnToHeading(angle, 0.4);
+            for(double spd = 0.1; spd <= 0.4; spd+=0.1)
+            {
+                for (int i = 2; i < 6; i++)
+                {
+                    int cHdg = robot.getGyroFhdg();
+                    dl.addField("doTurnAngle GYRO from " + cHdg + " to " + i + " at " + spd);
+                    dl.newLine();
+                    drvTrn.ctrTurnToHeading(i, spd);
+                    sleep(1000);
+                    cHdg = robot.getGyroFhdg();
+                    dl.addField("doTurnAngle GYRO from " + cHdg + " to " + 0 + " at " + spd);
+                    dl.newLine();
+                    drvTrn.ctrTurnToHeading(0, spd);
+                    sleep(1000);
+                }
+            }
         }
 
 
