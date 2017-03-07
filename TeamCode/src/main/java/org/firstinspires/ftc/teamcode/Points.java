@@ -308,6 +308,12 @@ class Points
     private static final double BECN_X  = -52.0;
     private static final double BECN2X  = -52.0;
 
+    private static final double DFNPTHX = 21;
+    private static final double DFNPTHY = -24;
+    private static final double DFNPTHY2 = 24;
+    private static final double DFNCPRKX = -9;
+    private static final double DFNCPRKY = 0;
+
     private static final double BMID_X  = -24.0;
     private static final double BMID_Y  = -24.0;
 
@@ -334,6 +340,12 @@ class Points
     private Point2d CTRPRKPT = new Point2d("CTRPRK", CTRPRKX, CTRPRKY);
     private Point2d CRNPRKPT = new Point2d("CRNPRK", CRNPRKX, CRNPRKY);
     private Point2d DFNPRKPT = new Point2d("DFNPRK", DFNPRKX, DFNPRKY);
+
+    private Point2d DP1 = new Point2d("DFNPATH", DFNPTHX, DFNPTHY);
+    private Point2d DP2 = new Point2d("DFNPATH", DFNPTHX, DFNPTHY2);
+    private Point2d DFNCPRK = new Point2d("DFNCPRK", DFNCPRKX, DFNCPRKY);
+
+
 
     private final static int    MAX_SEGMENTS = 16;
 
