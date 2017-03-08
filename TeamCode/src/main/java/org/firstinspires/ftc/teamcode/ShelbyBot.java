@@ -6,6 +6,7 @@ import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cColorSensor;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DeviceInterfaceModule;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -48,8 +49,8 @@ class ShelbyBot
 
     final static int    ENCODER_CPR = 1120;     //Encoder Counts per Revolution
 
-    final static DcMotor.Direction  LEFT_DIR = DcMotor.Direction.REVERSE;
-    final static DcMotor.Direction RIGHT_DIR = DcMotor.Direction.FORWARD;
+    final static DcMotor.Direction  LEFT_DIR = DcMotor.Direction.FORWARD;
+    final static DcMotor.Direction RIGHT_DIR = DcMotor.Direction.REVERSE;
 
     boolean gyroReady = false;
 
