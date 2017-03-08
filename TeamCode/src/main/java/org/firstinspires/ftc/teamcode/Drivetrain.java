@@ -1119,7 +1119,7 @@ class Drivetrain
     private double printTimeout = 0.05;
 
     private double minSpeed = 0.09;
-    private double minGyroTurnSpeed = 0.14;
+    private double minGyroTurnSpeed = 0.10;
 
     private LinearOpMode op = null;
 

@@ -272,7 +272,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             drvTrn.logData(true, segName + " move");
             drvTrn.setDrvTuner(curSeg.getDrvTuner());
             doMove(curSeg);
-            boolean doCorrect = true;
+            boolean doCorrect = false;
             //noinspection ConstantConditions
             if(doCorrect) drvTrn.driveToTarget(0.11, 10);
 
