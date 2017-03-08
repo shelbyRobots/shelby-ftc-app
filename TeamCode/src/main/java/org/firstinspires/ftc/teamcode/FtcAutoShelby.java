@@ -274,7 +274,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             doMove(curSeg);
             boolean doCorrect = false;
             //noinspection ConstantConditions
-            if(doCorrect) drvTrn.driveToTarget(0.11, 10);
+            if(doCorrect) drvTrn.driveToTarget(0.14, 5);
 
             Double pturn = curSeg.getPostTurn();
             if(usePostTurn && pturn != null)
@@ -620,7 +620,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             doEncoderTurn(adjHdg);
             doGyroTurn(adjHdg);
             Drivetrain.Direction dir = Drivetrain.Direction.FORWARD;
-            if(posXOffset < 0) dir = Drivetrain.Direction.REVERSE;
+            if(posXOffset > 0) dir = Drivetrain.Direction.REVERSE;
             drvTrn.driveDistanceLinear(Math.abs(posXOffset), 0.1, dir, adjHdg);
             doEncoderTurn(desHdg);
             doGyroTurn(desHdg);
@@ -794,7 +794,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                             DbgLog.msg("SJH: /BEACON/INIT > nOff: %5.2f, nPos: %5.2f, nAng: %5.2f, dDist: %5.2f",
                                     nOff, nPos, nAng, dDist );
 
-                            if ( xPos > 1.5 ) {
+                            if ( Math.abs( xPos ) > 1.5 ) {
                                 drvTrn.stopMotion();
                                 drvTrn.moveInit(lDv, rDv);
                             } else {
