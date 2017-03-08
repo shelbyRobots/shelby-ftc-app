@@ -102,12 +102,6 @@ public class OpenCVAuton extends OpenCvCameraOpMode
             imgProc.logDebug();
             imgProc.logTelemetry();
 
-            telemetry.addData( "RDV", "%5.2f", rDv );
-            telemetry.addData( "LDV", "%5.2f", lDv );
-            telemetry.addData( "DIST", "%5.2f", (double) drvTrn.countsToDistance(curDistCount) );
-            telemetry.addData( "ERR", "%5.2f", hErr );
-            telemetry.update();
-
             if (useMotor)
             {
                 if ( follow ) {

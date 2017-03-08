@@ -67,7 +67,7 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
 
     private RingBuffer beaconConfBuf = new RingBuffer(20);
     private RingBuffer beaconPosXBuf = new RingBuffer(3);
-    private RingBuffer beaconPosZBuf = new RingBuffer(2);
+    private RingBuffer beaconPosZBuf = new RingBuffer(10);
 
     private double beaconConf = 0;
     private double beaconPosX = 0;
@@ -149,12 +149,12 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
     {
         if(telemetry == null) return;
 
-//        telemetry.addData( "CONF", "%5.2f", getBeaconConf() );
-//        telemetry.addData( "X", "%5.2f",  getBeaconPosX() );
-//        telemetry.addData( "Z", "%5.2f", getBeaconPosZ() );
-//        telemetry.addData( "RED", "%s",  getRedPosSide() );
-//        telemetry.addData( "BLUE", "%s", getBluePosSide() );
-//        telemetry.update();
+        telemetry.addData( "CONF", "%5.2f", getBeaconConf() );
+        telemetry.addData( "X", "%5.2f",  getBeaconPosX() );
+        telemetry.addData( "Z", "%5.2f", getBeaconPosZ() );
+        telemetry.addData( "RED", "%s",  getRedPosSide() );
+        telemetry.addData( "BLUE", "%s", getBluePosSide() );
+        telemetry.update();
     }
 
     public void setTelemetry(Telemetry telemetry)
@@ -201,6 +201,7 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
     private void calcPosition()
     {
         double beac_rto = 9.0 / 6.5;
+        double butn_rto = 9.0 / 5.3;
 
         if ( beacon_box.height == 0 || beacon_box.width == 0)
         {
@@ -217,9 +218,21 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
 
         double scrn_ctr = hsvImg.cols() / 2;
         double beac_ctr = beacon_box.x + beacon_box.width / 2;
+        double measure;
+
+        if ( buttons.size() == 2 )
+        {
+            measure = butn_rto *
+                        Math.abs( ( buttons.get(0).x + buttons.get(0).width / 2.0 ) -
+                                    ( buttons.get(1).x + buttons.get(1).width / 2.0 ) );
+        }
+        else
+        {
+            measure = beac_rto * beacon_box.height;
+        }
 
         beaconConf = beaconConfBuf.smooth( scoreFit( beacon_box, red_box, blue_box ) );
-        beaconPosZ = beaconPosZBuf.smooth( ((double) beac_rto * beacon_box.height * -0.0407 + 34.0829) / IMAGE_SCALE_FACTOR );
+        beaconPosZ = beaconPosZBuf.smooth( ((double) measure * -0.0407 + 34.0829) / IMAGE_SCALE_FACTOR );
         beaconPosX = beaconPosXBuf.smooth( (beac_ctr - scrn_ctr) / (IMAGE_WIDTH / ( 1.3 * beaconPosZ - 2.4)));
 
         // Keep in mind that we flip the image before
@@ -453,7 +466,7 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
                     bounded_box.x  > beacon_box.x &&
                     bounded_box.x + bounded_box.width < beacon_box.x + beacon_box.width &&
                     bounded_box.y > beacon_box.y &&
-                    bounded_box.y + bounded_box.height < beacon_box.y + beacon_box.height ) {
+                    bounded_box.y + bounded_box.height < beacon_box.y + beacon_box.height * 1.2 ) {
 
                     black_blobs.add( wrapper );
                     buttons.add( bounded_box );
