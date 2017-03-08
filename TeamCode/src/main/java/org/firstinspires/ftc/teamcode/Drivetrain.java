@@ -1161,12 +1161,12 @@ class Drivetrain
     private ModernRoboticsUsbGangedDcMotorController mc = null;
 
     private int tickRate = 10;
-    private static final int DEF_BUSYTHRESH = 20;
+    private static final int DEF_BUSYTHRESH = 15;
     public  static final int TURN_BUSYTHRESH = 10;
     private static int BUSYTHRESH = DEF_BUSYTHRESH;
 
     private ElapsedTime busyTimer = new ElapsedTime();
-    private double busyTimeOut = 20;
+    private double busyTimeOut = 30;
     private double lBusyTime;
     private double rBusyTime;
 
@@ -1204,7 +1204,7 @@ class Drivetrain
 
     private SpeedSetTask lSpdTask = new SpeedSetTask();
     private SpeedSetTask rSpdTask = new SpeedSetTask();
-    private boolean useSpeedThreads = false;
+    private boolean useSpeedThreads = true;
     private Thread lftSpdThread = null;
     private Thread rgtSpdThread = null;
 }

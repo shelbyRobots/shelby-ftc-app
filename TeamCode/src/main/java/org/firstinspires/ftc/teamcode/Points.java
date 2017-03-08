@@ -86,11 +86,11 @@ class Points
         {
             if(!useFly2Light)
             {
-                addPoint(points, rev, 0.5, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
+                addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
             }
             else
             {
-                addPoint(points, rev, 0.5, 1.00, Segment.TargetType.ENCODER, beacon, BECN2_PT);
+                addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, beacon, BECN2_PT);
             }
         }
 
