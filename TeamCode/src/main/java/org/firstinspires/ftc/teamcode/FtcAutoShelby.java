@@ -794,7 +794,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                             DbgLog.msg("SJH: /BEACON/INIT > nOff: %5.2f, nPos: %5.2f, nAng: %5.2f, dDist: %5.2f",
                                     nOff, nPos, nAng, dDist );
 
-                            if ( xPos > 1.5 ) {
+                            if ( Math.abs( xPos ) > 1.5 ) {
                                 drvTrn.stopMotion();
                                 drvTrn.moveInit(lDv, rDv);
                             } else {
