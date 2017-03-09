@@ -22,8 +22,8 @@ class Drivetrain
 
     public void move(double lPwr, double rPwr)
     {
-        curLpower = lPwr;
-        curRpower = rPwr;
+        curLpower = Math.round(100*lPwr)/100;
+        curRpower = Math.round(100*rPwr)/100;
 
         if(!gangMotors || mc == null)
         {
@@ -164,14 +164,12 @@ class Drivetrain
             logData();
 
             double ppwr = pwr;
-            double tmpL = curLpower;
-            double tmpR = curRpower;
+            double tmpPwr = (curLpower + curRpower)/2;
 
             if(rampUp)
             {
-                if(tmpL < pwr) tmpL = Math.min(pwr, tmpL + pwrLIncr);
-                if(tmpR < pwr) tmpR = Math.min(pwr, tmpR + pwrRIncr);
-                ppwr = (tmpL + tmpR)/2;
+                if(tmpPwr < pwr) tmpPwr = Math.min(pwr, tmpPwr + pwrLIncr);
+                ppwr = tmpPwr;
             }
 
             if(rampDown)
@@ -351,14 +349,12 @@ class Drivetrain
 
             double ppwr = pwr;
 
-            double tmpL = curLpower;
-            double tmpR = curRpower;
+            double tmpPwr = (curLpower + curRpower)/2;
 
             if(rampUp)
             {
-                if(tmpL < pwr) tmpL = Math.min(pwr, tmpL + pwrLIncr);
-                if(tmpR < pwr) tmpR = Math.min(pwr, tmpR + pwrRIncr);
-                ppwr = (tmpL + tmpR)/2;
+                if(tmpPwr < pwr) tmpPwr = Math.min(pwr, tmpPwr + pwrLIncr);
+                ppwr = tmpPwr;
             }
 
             if(rampDown)
@@ -406,6 +402,8 @@ class Drivetrain
 
         DbgLog.msg("SJH: GYRO TURN to HDG %d", (int)tgtHdg);
 
+        gyroFirstGood = false;
+
         if(doStopAndReset) stopAndReset();
 
         robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -437,7 +435,6 @@ class Drivetrain
         }
         setEndValues("GYRO_TURN");
         stopMotion();
-        if(logOverrun) logOverrun(overtime);
     }
 
     void turn(double angle, double pwr, double radius)
@@ -503,7 +500,7 @@ class Drivetrain
             yPos = currPt.getY();
             estPos.setX(xPos);
             estPos.setY(yPos);
-            if(robot.gyro != null) estHdg = robot.getGyroFhdg();
+            estHdg = initHdg;
         }
         ++numPts;
     }
@@ -512,7 +509,7 @@ class Drivetrain
     {
         int curLcnt = curLpos;
         int curRcnt = curRpos;
-        double degHdg = Math.toRadians(curHdg);
+        double radHdg = Math.toRadians(curHdg);
 
         if(curDriveDir != robot.getDriveDir())
         {
@@ -524,8 +521,8 @@ class Drivetrain
 
         int dCntL = curLcnt - lastLcnt;
         int dCntR = curRcnt - lastRcnt;
-        double dX = 0.5*(dCntL+dCntR)/DEF_CPI * Math.cos(degHdg);
-        double dY = 0.5*(dCntL+dCntR)/DEF_CPI * Math.sin(degHdg);
+        double dX = 0.5*(dCntL+dCntR)/DEF_CPI * Math.cos(radHdg);
+        double dY = 0.5*(dCntL+dCntR)/DEF_CPI * Math.sin(radHdg);
         xPos += dX;
         yPos += dY;
         estPos.setX(xPos);
@@ -1062,7 +1059,7 @@ class Drivetrain
     private Point2d currPt = new Point2d(0.0, 0.0);
     private double startHdg = 0.0;
 
-    private int frame   = 0;
+    public int frame   = 0;
     //private LinearOpMode lom;
     private ElapsedTime period  = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
     private ElapsedTime rt = new ElapsedTime();
@@ -1147,7 +1144,7 @@ class Drivetrain
     double nextBusyPrintTime = ptmr.seconds();
 
     private boolean logOverrun = true;
-    private double overtime = 0.15;
+    private double overtime = 0.10;
 
     private double reducePower = 0.3;
     private double reduceTurnPower = 0.2;
@@ -1196,7 +1193,7 @@ class Drivetrain
         }
 
         public void setMotor(DcMotor motor) {this.motor = motor;}
-        public void setSpeed(double speed)  {this.speed = Math.round(100*speed)/100;}
+        public void setSpeed(double speed)  {this.speed = speed;}
         private DcMotor motor = null;
         private double speed    = 0.0;
         private double oldSpeed = -2.0;
