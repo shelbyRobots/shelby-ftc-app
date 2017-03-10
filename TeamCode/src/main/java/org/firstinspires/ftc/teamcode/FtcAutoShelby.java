@@ -590,7 +590,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
         double cHdg = drvTrn.curHdg;
         while(cHdg < 0) cHdg += 360;
-        double hErr = desHdg - drvTrn.curHdg;
+        double hErr = desHdg - cHdg;
 
         //confirm direction of getBeaconPosX() and posXOffset
         hdgXOffset = zPos * Math.tan( Math.toRadians( hErr ) );
@@ -607,20 +607,22 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         drvTrn.logData(true, "zPos  " + zPos);
         drvTrn.logData(true, "Bconf " + bcnf);
 
-        //If we are not centered on beacon, adjust by
-        //turning 90deg, moving by xerr and turning back
-        //Note: we could turn less and back up on hypotn,
-        //since we no zPos.
         double MAXERR = 1.5;
         if(Math.abs(posXOffset) > MAXERR)
         {
             drvTrn.logData(true, "ADJUST");
-            doEncoderTurn(adjHdg);
-            doGyroTurn(adjHdg);
-            Drivetrain.Direction dir = Drivetrain.Direction.FORWARD;
-            if(posXOffset > 0) dir = Drivetrain.Direction.REVERSE;
-            drvTrn.driveDistanceLinear(Math.abs(posXOffset), 0.1, dir, adjHdg);
-            doEncoderTurn(desHdg);
+            double theta = Math.acos(Math.abs(posXOffset)/robot.BOT_WIDTH);
+            double runRad = robot.BOT_WIDTH/2;
+            if(posXOffset < 0)
+            {
+                theta*=-1;
+                runRad*=-1;
+            }
+            drvTrn.logData(true, "CURVE " + theta + " " + runRad);
+            drvTrn.turn(theta, 0.1, runRad);
+            drvTrn.logData(true, "CURVE " + -theta + " " + -runRad);
+            drvTrn.turn(-theta, 0.1, -runRad);
+
             doGyroTurn(desHdg);
         }
 
@@ -666,9 +668,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             Point2d actTouchPt = new Point2d(actTouchX, actTouchY);
             drvTrn.logData(true, "AT PUSH " + actTouchPt.toString());
             drvTrn.setCurrPt(actTouchPt);
-            robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
             drvTrn.driveToPointLinear(touchStart, 0.2,
-                    Drivetrain.Direction.FORWARD, desHdg);
+                    Drivetrain.Direction.REVERSE, desHdg);
             drvTrn.logData(true, "PUSHED?");
         }
 

@@ -439,18 +439,31 @@ class Drivetrain
 
     void turn(double angle, double pwr, double radius)
     {
-        int dir = 1;
-        if (angle < 0) dir = -1;
-        double rl = radius - dir*VEH_WIDTH/2.0;
-        double rr = radius + dir*VEH_WIDTH/2.0;
-        int lcnts = angleToCounts(angle, radius - dir * VEH_WIDTH/2.0);
-        int rcnts = angleToCounts(angle, radius + dir * VEH_WIDTH/2.0);
+        //radius is distance from ctr of bot to ctr of curve
+        //it is positive toward the left side
+        //A radius of 0 is a ctr turn
+        //A radius of +w/2 pivots on the left wheel
+        //A radius of -w/2 pivots on the right wheel
+
+        double rl = radius - VEH_WIDTH/2.0;
+        double rr = radius + VEH_WIDTH/2.0;
+        int lcnts = angleToCounts(angle, rl);
+        int rcnts = angleToCounts(angle, rr);
 
         robot.leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         robot.rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-        int lft_target = robot.leftMotor.getCurrentPosition() + lcnts;
-        int rgt_target = robot.rightMotor.getCurrentPosition() + rcnts;
+        int lft_target = initLpos + lcnts;
+        int rgt_target = initRpos + rcnts;
+
+        setInitValues();
+        trgtLpos = lft_target;
+        trgtRpos = rgt_target;
+        trgtHdg  = initHdg  + (int) Math.round(angle);
+        while(trgtHdg >   180) trgtHdg -= 360;
+        while(trgtHdg <= -180) trgtHdg += 360;
+        logStartValues("ENC_CURVE");
+
         robot.leftMotor.setTargetPosition(lft_target);
         robot.rightMotor.setTargetPosition(rgt_target);
 
@@ -458,15 +471,36 @@ class Drivetrain
         double arr = Math.abs(rr);
         double rad_ratio = Math.min(arl, arr) / Math.max(arl, arr);
 
-        double ipwr = pwr * rad_ratio;
+        double opwr = pwr;
+        double ipwr = opwr * rad_ratio;
 
-        if (arl >= arr)
+        double lp = ipwr;
+        double rp = opwr;
+
+        if (arl > arr)
         {
-            move(ipwr, pwr);
+            lp = opwr;
+            rp = ipwr;
         }
-        else
+
+        moveInit(lp, rp);
+
+        while(op.opModeIsActive() &&
+              !op.isStopRequested() &&
+              isBusy() &&
+              !areMotorsStuck())
         {
-            move(pwr, ipwr);
+            setCurValues();
+            logData();
+            double lpwr = 0.0;
+
+            if(!isBusy(TURN_BUSYTHRESH))
+            {
+                move(0.0, 0.0);
+            }
+
+            if(tickRate > 0) waitForTick(tickRate);
+            frame++;
         }
     }
 
