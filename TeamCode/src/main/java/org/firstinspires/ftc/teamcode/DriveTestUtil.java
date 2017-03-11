@@ -171,7 +171,7 @@ public class DriveTestUtil
         dl.resetTime();
         drvTrn.driveToPointLinear(tgtPt, pwr, Drivetrain.Direction.FORWARD);
         et.reset();
-        while(op.opModeIsActive() && et.seconds() < 5.0) { }
+        op.sleep(2000);
         robot.invertDriveDir();
         drvTrn.driveToPointLinear(strtPt, pwr, Drivetrain.Direction.FORWARD);
     }
@@ -317,5 +317,15 @@ public class DriveTestUtil
         }
 
         drvTrn.stopMotion();
+    }
+
+    public void doDoubleCurveTurn(double sideDist, double spd)
+    {
+        double theta = Math.acos(sideDist);
+        drvTrn.logData(true, "S turn " + theta + " " + spd);
+        drvTrn.turn(theta, spd,   robot.BOT_WIDTH/2);
+        drvTrn.turn(-theta,spd, -robot.BOT_WIDTH/2);
+        op.sleep(1000);
+        drvTrn.turn(90, spd, robot.BOT_WIDTH);
     }
 }

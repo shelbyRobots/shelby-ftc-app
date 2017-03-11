@@ -98,8 +98,9 @@ public class DriveTestOpMode extends LinearOpMode
     boolean doFindBestEncTurnSpeed = false;
     boolean doFindBestGyroTurnSpeed = false;
     boolean doDriveDist = false;
-    boolean doTurnAngle = true;
+    boolean doTurnAngle = false;
     boolean doMotionProfile = false;
+    boolean doSturnTest = true;
 
     boolean useAnd = true;
     boolean rampUp = true;
@@ -228,6 +229,11 @@ public class DriveTestOpMode extends LinearOpMode
             dl.addField("doMinSpeedTest"); dl.newLine();
             dtu.doMinSpeedTest();
             sleep(1000);
+        }
+
+        if(doSturnTest)
+        {
+            dtu.doDoubleCurveTurn(4.0, 0.1);
         }
 //        dtu.driveDist(12.0, 0.2, false);
 //        sleep(5000);

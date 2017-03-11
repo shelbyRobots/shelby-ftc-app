@@ -56,6 +56,7 @@ class Points
         if(startPos != Field.StartPos.START_R_PUSHER)
         {
             addPoint(points, rev, 0.5, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
+            //addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, TMP_PT);
         }
 
         if(pushChoice == Field.BeaconChoice.NEAR ||
@@ -63,16 +64,16 @@ class Points
         {
             if(!useFly2Light)
             {
-                addPoint(points, fwd, 0.5,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
+                addPoint(points, fwd, 0.4,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
             }
             else
             {
-                addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, beacon, BECN1_PT);
+                addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.ENCODER, beacon, BECN1_PT);
             }
 
             if(startPos == Field.StartPos.START_R_PUSHER)
             {
-                addPoint(points, rev, 0.5, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
+                addPoint(points, rev, 0.35, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
             }
         }
 
@@ -86,11 +87,11 @@ class Points
         {
             if(!useFly2Light)
             {
-                addPoint(points, rev, 0.5, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
+                addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
             }
             else
             {
-                addPoint(points, rev, 0.5, 1.00, Segment.TargetType.ENCODER, beacon, BECN2_PT);
+                addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.ENCODER, beacon, BECN2_PT);
             }
         }
 
@@ -280,6 +281,7 @@ class Points
     private static final double AIMTOX  =  -12.0;
     private static final double AIMTOY  =  -10.5;
 
+    private static final double TMPY = -44.0;
     private static final double BSTARTX =  12.0;
     private static final double BSHOOTX =   0.0;
     private static final double BSHOOTY =  ASHOOTY;
@@ -313,6 +315,8 @@ class Points
 
     private Point2d ASTART_PT = new Point2d("ASTART", ASTARTX, ASTARTY);
     private Point2d ASHOOT_PT = new Point2d("ASHOOT", ASTARTX, ASHOOTY);
+
+    private Point2d TMP_PT = new Point2d("TMP", ASTARTX, TMPY);
 
     private Point2d BASKET_PT = new Point2d("BASKET", AIMTOX, AIMTOY);
 
