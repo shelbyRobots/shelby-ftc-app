@@ -55,7 +55,7 @@ class Points
 
         if(startPos != Field.StartPos.START_R_PUSHER)
         {
-            addPoint(points, rev, 0.5, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
+            addPoint(points, rev, 0.4, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
             //addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, TMP_PT);
         }
 
@@ -64,16 +64,16 @@ class Points
         {
             if(!useFly2Light)
             {
-                addPoint(points, fwd, 0.4,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
+                addPoint(points, fwd, 0.55,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
             }
             else
             {
-                addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.ENCODER, beacon, BECN1_PT);
+                addPoint(points, fwd, 0.55, 1.00, Segment.TargetType.ENCODER, beacon, BECN1_PT);
             }
 
             if(startPos == Field.StartPos.START_R_PUSHER)
             {
-                addPoint(points, rev, 0.35, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
+                addPoint(points, rev, 0.4, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
             }
         }
 
@@ -87,11 +87,11 @@ class Points
         {
             if(!useFly2Light)
             {
-                addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
+                addPoint(points, fwd, 0.55, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
             }
             else
             {
-                addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.ENCODER, beacon, BECN2_PT);
+                addPoint(points, fwd, 0.55, 1.00, Segment.TargetType.ENCODER, beacon, BECN2_PT);
             }
         }
 

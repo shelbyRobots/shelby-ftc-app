@@ -22,8 +22,11 @@ class Drivetrain
 
     public void move(double lPwr, double rPwr)
     {
-        curLpower = Math.round(100*lPwr)/100;
-        curRpower = Math.round(100*rPwr)/100;
+//        curLpower = Math.round(100*lPwr)/100;
+//        curRpower = Math.round(100*rPwr)/100;
+
+        curLpower = lPwr;
+        curRpower = rPwr;
 
         if(!gangMotors || mc == null)
         {
@@ -31,18 +34,18 @@ class Drivetrain
             {
                 lSpdTask.setMotor(robot.leftMotor);
                 rSpdTask.setMotor(robot.rightMotor);
-                lSpdTask.setSpeed(lPwr);
-                rSpdTask.setSpeed(rPwr);
+                lSpdTask.setSpeed(curLpower);
+                rSpdTask.setSpeed(curRpower);
             }
             else
             {
-                robot.leftMotor.setPower(lPwr);
-                robot.rightMotor.setPower(rPwr);
+                robot.leftMotor.setPower(curLpower);
+                robot.rightMotor.setPower(curRpower);
             }
         }
         else
         {
-            double[] powers = {lPwr, rPwr};
+            double[] powers = {curLpower, curRpower};
             mc.setMotorsPower(powers);
         }
     }
@@ -75,7 +78,6 @@ class Drivetrain
     {
         move(0.0, 0.0);
         logData(true, "MOTORS STOPPED - RESETTING");
-        resetCounts();
     }
 
     public void resetLastPos()
@@ -92,9 +94,9 @@ class Drivetrain
         robot.leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         robot.rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         robot.leftMotor.setTargetPosition(trgtLpos);
-        robot.leftMotor.setTargetPosition(trgtRpos);
+        robot.rightMotor.setTargetPosition(trgtRpos);
         setInitValues();
-        logStartValues("DRIVE_TRGT");
+        logStartValues("DRIVE_TRGT " + curLpos + " " + curRpos + " - " + trgtLpos + " " + trgtRpos);
         moveInit(pwr, pwr);
         while(isBusy(thresh)         &&
               !op.isStopRequested()  &&
@@ -109,7 +111,6 @@ class Drivetrain
 
         stopMotion();
         setEndValues("DRIVE_TRGT");
-
     }
 
     public void driveDistance(double dst, double pwr, Direction dir)
@@ -150,8 +151,7 @@ class Drivetrain
         initLpower = startPwr;
         initRpower = startPwr;
         int pwrSteps = 5;
-        double pwrLIncr = (pwr - initLpower)/pwrSteps;
-        double pwrRIncr = (pwr - initRpower)/pwrSteps;
+        double pwrIncr = (pwr - startPwr)/pwrSteps;
 
         driveDistance(dst, startPwr, dir);
 
@@ -168,7 +168,7 @@ class Drivetrain
 
             if(rampUp)
             {
-                if(tmpPwr < pwr) tmpPwr = Math.min(pwr, tmpPwr + pwrLIncr);
+                if(tmpPwr < pwr) tmpPwr = Math.min(pwr, tmpPwr + pwrIncr);
                 ppwr = tmpPwr;
             }
 
@@ -179,9 +179,11 @@ class Drivetrain
                 int remaining = Math.abs(((trgtLpos - lcnt) + (trgtRpos - rcnt)) / 2);
                 if (Math.abs(remaining) < 960) ppwr = Math.min(ppwr, 0.5);
                 if (Math.abs(remaining) < 480) ppwr = Math.min(ppwr, 0.25);
-                if (Math.abs(remaining) < 240) ppwr = Math.min(ppwr, 0.08);
+                if (Math.abs(remaining) < 240) ppwr = Math.min(ppwr, 0.09);
             }
 
+            DbgLog.msg("SJH: ppwr " + ppwr + " curLpower " + curLpower +
+                               " curRpower " + curRpower + " pwrIncr " +  pwrIncr);
             makeGyroCorrections(ppwr, trgtHdg, dir);
 
             if(!isBusy()) break;
@@ -450,6 +452,7 @@ class Drivetrain
         int lcnts = angleToCounts(angle, rl);
         int rcnts = angleToCounts(angle, rr);
 
+        setBusyAnd(false);
         robot.leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         robot.rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
@@ -486,22 +489,16 @@ class Drivetrain
         moveInit(lp, rp);
 
         while(op.opModeIsActive() &&
-              !op.isStopRequested() &&
-              isBusy() &&
+              isBusy(TURN_BUSYTHRESH) &&
               !areMotorsStuck())
         {
             setCurValues();
             logData();
-            double lpwr = 0.0;
-
-            if(!isBusy(TURN_BUSYTHRESH))
-            {
-                move(0.0, 0.0);
-            }
 
             if(tickRate > 0) waitForTick(tickRate);
             frame++;
         }
+        move(0.0, 0.0);
     }
 
     int distanceToCounts(double distance)
@@ -1106,8 +1103,8 @@ class Drivetrain
     public int initRpos;
     public int curLpos;
     public int curRpos;
-    private int trgtLpos;
-    private int trgtRpos;
+    public int trgtLpos;
+    public int trgtRpos;
     private int doneLpos;
     private int doneRpos;
     private int overLpos;
@@ -1149,7 +1146,7 @@ class Drivetrain
 
     private double printTimeout = 0.05;
 
-    private double minSpeed = 0.09;
+    private double minSpeed = 0.08;
     private double minGyroTurnSpeed = 0.10;
 
     private LinearOpMode op = null;
@@ -1192,14 +1189,14 @@ class Drivetrain
     private ModernRoboticsUsbGangedDcMotorController mc = null;
 
     private int tickRate = 10;
-    private static final int DEF_BUSYTHRESH = 15;
+    private static final int DEF_BUSYTHRESH = 20;
     public  static final int TURN_BUSYTHRESH = 10;
     private static int BUSYTHRESH = DEF_BUSYTHRESH;
 
     private ElapsedTime busyTimer = new ElapsedTime();
-    private double busyTimeOut = 30;
-    private double lBusyTime;
-    private double rBusyTime;
+    private double busyTimeOut = 20;
+    private double lBusyTime = 0;
+    private double rBusyTime = 0;
 
     private double turnTimeLimit = 5;
 

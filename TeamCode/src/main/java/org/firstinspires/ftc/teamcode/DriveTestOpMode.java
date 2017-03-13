@@ -103,7 +103,7 @@ public class DriveTestOpMode extends LinearOpMode
     boolean doSturnTest = true;
 
     boolean useAnd = true;
-    boolean rampUp = true;
+    boolean rampUp = false;
     boolean rampDown = true;
     boolean stopIndiv = false;
 
@@ -119,6 +119,8 @@ public class DriveTestOpMode extends LinearOpMode
         drvTrn.setRampDown(rampDown);
         drvTrn.setRampUp(rampUp);
         drvTrn.setStopIndividualMotorWhenNotBusy(stopIndiv);
+        drvTrn.setUseSpeedThreads(false);
+        drvTrn.setGangMotors(false);
 
         DbgLog.msg("SJH: Starting test do_main_loop");
         robot.gyro.resetZAxisIntegrator();
@@ -180,13 +182,15 @@ public class DriveTestOpMode extends LinearOpMode
         //Test some common distance and turns from auton
         if(doDriveDist)
         {
-            double dist[] = {24.0, 48.0};
+            double dist[] = {42.0};
+            robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
             for (double aDist : dist)
             {
                 drvTrn.setCurrPt(new Point2d(0, 0));
                 Point2d tPt = new Point2d(aDist, 0.0);
                 dl.addField("doDriveDist " + aDist);
-                drvTrn.driveToPointLinear(tPt, 0.8, Drivetrain.Direction.FORWARD);
+                drvTrn.driveToPointLinear(tPt, 0.55, Drivetrain.Direction.FORWARD);
+                drvTrn.driveToTarget(0.2, 10);
             }
         }
 
@@ -233,7 +237,7 @@ public class DriveTestOpMode extends LinearOpMode
 
         if(doSturnTest)
         {
-            dtu.doDoubleCurveTurn(4.0, 0.1);
+            dtu.doDoubleCurveTurn(4.0, 0.3);
         }
 //        dtu.driveDist(12.0, 0.2, false);
 //        sleep(5000);
