@@ -1130,7 +1130,7 @@ class Drivetrain
 
     private double xPos = 0.0;
     private double yPos = 0.0;
-    private Point2d estPos = new Point2d(xPos, yPos);
+    public Point2d estPos = new Point2d(xPos, yPos);
     private double  estHdg = 0.0;
     private int lastLcnt = 0;
     private int lastRcnt = 0;

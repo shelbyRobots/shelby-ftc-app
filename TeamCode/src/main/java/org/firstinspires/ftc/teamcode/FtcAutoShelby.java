@@ -404,6 +404,11 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                 {
                     linLpos = drvTrn.curLpos;
                     linRpos = drvTrn.curRpos;
+                    if(snm.equals("BECN2"))
+                    {
+                        linLpos -= 80;
+                        linRpos -= 80;
+                    }
                     drvTrn.stopMotion();
                     drvTrn.setEndValues("COLOR_FIND " + linLpos + " " + linRpos);
                     DbgLog.msg("SJH: FOUND LINE");
@@ -489,7 +494,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
         DbgLog.msg("SJH: doGyroTurn CHDG %4d THDG %4d", cHdg, tHdg);
 
-        if(Math.abs(tHdg-cHdg) <= 1.0)
+        if(Math.abs(tHdg-cHdg) < 1.0)
             return;
 
         timer.reset();
@@ -610,7 +615,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         hdgXOffset = zPos * Math.tan( Math.toRadians( hErr ) );
         posXOffset = totXOffset - hdgXOffset;
 
-        //zPos is ~10" when bot is at 52"
+        //zPos is ~11" when bot is at 52"
 
         drvTrn.logData(true, "Bside " + blueSide.toString());
         drvTrn.logData(true, "Rside " + redSide.toString());
@@ -661,7 +666,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
         if(push && pushSide != BeaconFinder.BeaconSide.UNKNOWN)
         {
-            double tgtDist = 15.0;
+            zPos = bd.getBeaconPosZ();
+            double tgtDist = zPos - 0.0; //15.0;
             Point2d touchStart = seg.getTgtPt();
             double touchX = touchStart.getX();
             double touchY = touchStart.getY();
@@ -691,11 +697,13 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
             if (alliance == Field.Alliance.RED)
             {
-                actTouchX -= actDist;
+                //actTouchX -= actDist;
+                actTouchX = drvTrn.estPos.getX();
             }
             else
             {
-                actTouchY += actDist;
+                //actTouchY += actDist;
+                actTouchY = drvTrn.estPos.getY();
             }
 
             Point2d actTouchPt = new Point2d(actTouchX, actTouchY);
