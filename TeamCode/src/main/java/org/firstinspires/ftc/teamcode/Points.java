@@ -95,6 +95,12 @@ class Points
             }
         }
 
+        if(parkChoice == Field.ParkChoice.DEFEND_PARK)
+        {
+            addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.ENCODER, none, DP1);
+            addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.ENCODER, none, DP2);
+        }
+
         //PARK PTS
         addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER,   none, park_pt);
 
