@@ -6,6 +6,8 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
+import java.util.Locale;
+
 class Drivetrain
 {
     Drivetrain()
@@ -127,7 +129,8 @@ class Drivetrain
         setInitValues();
         trgtLpos = initLpos + counts;
         trgtRpos = initRpos + counts;
-        logStartValues("DRIVE_DIST");
+        String dDistStr = String.format(Locale.US, "DRIVE_DIST %4.2f", dst);
+        logStartValues(dDistStr);
 
         robot.leftMotor.setTargetPosition(trgtLpos);
         robot.rightMotor.setTargetPosition(trgtRpos);
@@ -238,7 +241,8 @@ class Drivetrain
         trgtHdg  = initHdg  + (int) Math.round(angle);
         while(trgtHdg >   180) trgtHdg -= 360;
         while(trgtHdg <= -180) trgtHdg += 360;
-        logStartValues("ENC_TURN");
+        String angStr = String.format(Locale.US, "ENC_TURN %4.2f", angle);
+        logStartValues(angStr);
 
         DbgLog.msg("SJH Angle: %5.2f Counts: %4d CHdg: %d", angle, counts, initHdg);
 
@@ -417,7 +421,8 @@ class Drivetrain
         trgtLpos = 0;
         trgtRpos = 0;
         trgtHdg = (int) tgtHdg;
-        logStartValues("GYRO_TURN");
+        String gyroStr = String.format(Locale.US, "GYRO_TURN %4.1f", tgtHdg);
+        logStartValues(gyroStr);
 
         ElapsedTime tTimer = new ElapsedTime();
 

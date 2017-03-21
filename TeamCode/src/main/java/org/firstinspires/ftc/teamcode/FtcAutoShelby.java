@@ -246,15 +246,17 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             robot.setDriveDir(curSeg.getDir());
 
             drvTrn.setInitValues();
-            drvTrn.logData(true, segName + " " +
-                                 curSeg.getStrtPt().toString() + " - " +
-                                 curSeg.getTgtPt().toString()  + " H:" +
-                                 curSeg.getFieldHeading());
+            String segLogStr = String.format(Locale.US, "%s - %s H: %4.1f",
+                    curSeg.getStrtPt().toString(),
+                    curSeg.getTgtPt().toString(),
+                    curSeg.getFieldHeading());
+            drvTrn.logData(true, segName + " " + segLogStr);
 
             DbgLog.msg("SJH: ENCODER TURN %s", curSeg.getName());
             doEncoderTurn(curSeg.getFieldHeading(), segName + " encoderTurn"); //quick but rough
 
-            if(curSeg.getName().equals("BECN1"))
+            if(curSeg.getName().equals("BECN1") ||
+               curSeg.getName().equals("BECN2"))
             {
                 DbgLog.msg("SJH: GYRO TURN %s", curSeg.getName());
                 doGyroTurn(curSeg.getFieldHeading(), segName + " gyroTurn"); //fine tune using gyro
@@ -384,7 +386,10 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
             double colSpd = 0.10;
             DbgLog.msg("SJH: Color Driving to pt %s at speed %4.2f", ept, colSpd);
-            drvTrn.logData(true, "FIND_LINE CDIST: " + colDist + " " + cept.toString());
+            String colDistStr = String.format(Locale.US, "%4.2f %s",
+                    colDist,
+                    cept.toString());
+            drvTrn.logData(true, "FIND_LINE CDIST: " + colDistStr);
 
             drvTrn.driveDistance(colDist+ovrDist, colSpd, Drivetrain.Direction.FORWARD);
 
@@ -583,7 +588,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
         int desHdg = (int) seg.getPostTurn().doubleValue();
 
-        doEncoderTurn(desHdg, "push encoderTurn");
+        //doEncoderTurn(desHdg, "push encoderTurn");
         doGyroTurn(desHdg, "push gyroTurn");
 
         ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
@@ -600,10 +605,6 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             bcnf = bd.getBeaconConf();
             robot.waitForTick(20);
         }
-
-        imgProc.stopSensing();
-
-        setPusher(pushSide);
 
         drvTrn.setInitValues();
 
@@ -626,12 +627,12 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         drvTrn.logData(true, "zPos  " + zPos);
         drvTrn.logData(true, "Bconf " + bcnf);
 
-        double MAXERR = 1.5;
+        double MAXERR = 5;
         if(Math.abs(posXOffset) > MAXERR && bcnf > 0.3)
         {
-            double theta = Math.acos(Math.abs(1- posXOffset/ShelbyBot.BOT_WIDTH));
+            double theta = Math.acos(1- Math.abs(posXOffset/ShelbyBot.BOT_WIDTH));
             double runRad = ShelbyBot.BOT_WIDTH/2;
-            double advDist = ShelbyBot.BOT_WIDTH * Math.sin(theta) + 6;
+            double advDist = ShelbyBot.BOT_WIDTH * Math.sin(theta) + 5;
             theta = Math.toDegrees(theta);
             String outstr = String.format(Locale.US, "%3.1f %3.1f %4.1f %4.1f",
                     theta, advDist, posXOffset, zPos);
@@ -664,10 +665,19 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             doGyroTurn(desHdg, "push postAdjGyroTurn");
         }
 
+        blueSide = bd.getBluePosSide();
+        redSide  = bd.getRedPosSide();
+        pushSide = findPushSide(blueSide, redSide);
+        zPos = bd.getBeaconPosZ();
+        bcnf = bd.getBeaconConf();
+
+        imgProc.stopSensing();
+
+        setPusher(pushSide);
+
         if(push && pushSide != BeaconFinder.BeaconSide.UNKNOWN)
         {
-            zPos = bd.getBeaconPosZ();
-            double tgtDist = zPos - 0.0; //15.0;
+            double tgtDist = zPos + 2.0; //15.0;
             Point2d touchStart = seg.getTgtPt();
             double touchX = touchStart.getX();
             double touchY = touchStart.getY();
@@ -683,7 +693,9 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
             Point2d touchEnd = new Point2d("TCHEND", touchX, touchY);
 
-            drvTrn.logData(true, "PUSHING " + pushSide.toString());
+            String pushStr = String.format(Locale.US, "PUSHING %s dist %4.1f",
+                    pushSide.toString(), tgtDist);
+            drvTrn.logData(true, pushStr);
             int dcount;
             robot.setDriveDir(ShelbyBot.DriveDir.PUSHER);
 
@@ -691,6 +703,10 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                     Drivetrain.Direction.FORWARD, desHdg);
 
             double actDist = drvTrn.countsToDistance(dcount);
+
+            String actDistStr = String.format(Locale.US, "Actual dist %4.1f",
+                    actDist);
+            drvTrn.logData(true, pushStr);
 
             double actTouchX = touchStart.getX();
             double actTouchY = touchStart.getY();
