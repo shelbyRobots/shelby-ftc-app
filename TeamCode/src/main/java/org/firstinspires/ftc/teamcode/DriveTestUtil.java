@@ -321,11 +321,11 @@ public class DriveTestUtil
 
     public void doDoubleCurveTurn(double sideDist, double spd)
     {
-        double theta = Math.acos(sideDist);
-        drvTrn.logData(true, "S turn " + theta + " " + spd);
-        drvTrn.turn(theta, spd,   robot.BOT_WIDTH/2);
-        drvTrn.turn(-theta,spd, -robot.BOT_WIDTH/2);
+        double theta = Math.toDegrees(Math.acos(1 - sideDist/ShelbyBot.BOT_WIDTH));
+        drvTrn.logData(true, "S turn " + theta + " " + spd + " " + sideDist);
+        drvTrn.turn(theta, spd,   ShelbyBot.BOT_WIDTH/2);
+        drvTrn.turn(-theta,spd, -ShelbyBot.BOT_WIDTH/2);
         op.sleep(1000);
-        drvTrn.turn(90, spd, robot.BOT_WIDTH);
+        drvTrn.turn(90, spd, ShelbyBot.BOT_WIDTH);
     }
 }

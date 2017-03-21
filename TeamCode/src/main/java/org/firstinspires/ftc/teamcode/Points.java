@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.ftccommon.DbgLog;
 
-
 import java.util.Vector;
 
 class Points
@@ -55,7 +54,7 @@ class Points
 
         if(startPos != Field.StartPos.START_R_PUSHER)
         {
-            addPoint(points, rev, 0.5, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
+            addPoint(points, rev, 0.4, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
             //addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, TMP_PT);
         }
 
@@ -64,16 +63,16 @@ class Points
         {
             if(!useFly2Light)
             {
-                addPoint(points, fwd, 0.4,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
+                addPoint(points, fwd, 0.55,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
             }
             else
             {
-                addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.ENCODER, beacon, BECN1_PT);
+                addPoint(points, fwd, 0.55, 1.00, Segment.TargetType.ENCODER, beacon, BECN1_PT);
             }
 
             if(startPos == Field.StartPos.START_R_PUSHER)
             {
-                addPoint(points, rev, 0.35, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
+                addPoint(points, rev, 0.4, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
             }
         }
 
@@ -87,11 +86,11 @@ class Points
         {
             if(!useFly2Light)
             {
-                addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
+                addPoint(points, fwd, 0.55, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
             }
             else
             {
-                addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.ENCODER, beacon, BECN2_PT);
+                addPoint(points, fwd, 0.55, 1.00, Segment.TargetType.ENCODER, beacon, BECN2_PT);
             }
         }
 
@@ -102,7 +101,15 @@ class Points
         }
 
         //PARK PTS
-        addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER,   none, park_pt);
+        if(parkChoice == Field.ParkChoice.CENTER_PARK)
+        {
+            addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER, none, PRECTRPT);
+            addPoint(points, fwd, 0.2, 1.00, Segment.TargetType.ENCODER,   none, park_pt);
+        }
+        else
+        {
+            addPoint(points, rev, 0.6, 1.00, Segment.TargetType.ENCODER, none, park_pt);
+        }
 
         return points;
     }
@@ -299,8 +306,10 @@ class Points
 
     private static final double blueBecnScanAdjust = 0.0;
 
-    private static final double CTRPRKX = -12.0;
-    private static final double CTRPRKY = -12.0;
+    private static final double PRECTRX = -28.0;
+    private static final double PRECTRY =   0.0;
+    private static final double CTRPRKX =  -8.0;
+    private static final double CTRPRKY =   0.0;
     private static final double CRNPRKX = -48.0;
     private static final double CRNPRKY = -48.0;
     private static final double DFNPRKX = -12.0;
@@ -339,6 +348,7 @@ class Points
     private Point2d BECN2_PT = new Point2d("BECN2", BECN2X, BECN2_Y);
     private Point2d B_MID_PT = new Point2d("B_MID", BMID_X, BMID_Y);
 
+    private Point2d PRECTRPT = new Point2d("PRECTR", PRECTRX, PRECTRY);
     private Point2d CTRPRKPT = new Point2d("CTRPRK", CTRPRKX, CTRPRKY);
     private Point2d CRNPRKPT = new Point2d("CRNPRK", CRNPRKX, CRNPRKY);
     private Point2d DFNPRKPT = new Point2d("DFNPRK", DFNPRKX, DFNPRKY);
