@@ -141,7 +141,7 @@ class Drivetrain
         moveInit(pwr, pwr);
     }
 
-    int driveDistanceLinear(double dst, double pwr, Direction dir, int targetHdg)
+    int driveDistanceLinear(double dst, double pwr, Direction dir, int targetHdg, boolean useCol)
     {
         trgtHdg = targetHdg;
 
@@ -150,13 +150,19 @@ class Drivetrain
         logData(true, "LINDST");
 
         double startPwr = 0.1;
+        boolean foundLine = false;
 
         initLpower = startPwr;
         initRpower = startPwr;
         int pwrSteps = 5;
         double pwrIncr = (pwr - startPwr)/pwrSteps;
 
+        //extend distance if doing a color find to make sure we reach line
+        if(useCol) dst += 2.0;
+
         driveDistance(dst, startPwr, dir);
+        int linLpos = trgtLpos;
+        int linRpos = trgtRpos;
 
         while(op.opModeIsActive()    &&
               !op.isStopRequested()  &&
@@ -187,7 +193,35 @@ class Drivetrain
 
             DbgLog.msg("SJH: ppwr " + ppwr + " curLpower " + curLpower +
                                " curRpower " + curRpower + " pwrIncr " +  pwrIncr);
-            makeGyroCorrections(ppwr, trgtHdg, dir);
+
+            int COLOR_THRESH = 20;
+            int colGyroOffset = 80;
+            double lRem = countsToDistance(Math.abs(trgtLpos - curLpos));
+            double rRem = countsToDistance(Math.abs(trgtRpos - curRpos));
+            double colOnDist = 6.0;
+            if(useCol && !robot.colorEnabled && (lRem < colOnDist || rRem < colOnDist))
+            {
+                robot.turnColorOn();
+            }
+
+            if(useCol && (curRed + curGrn + curBlu) > COLOR_THRESH)
+            {
+                linLpos = curLpos;
+                linRpos = curRpos;
+                linLpos -= colGyroOffset;
+                linRpos -= colGyroOffset;
+                stopMotion();
+                setEndValues("COLOR_FIND " + linLpos + " " + linRpos);
+                DbgLog.msg("SJH: FOUND LINE");
+                foundLine = true;
+                trgtLpos = linLpos;
+                trgtRpos = linRpos;
+                break;
+            }
+            else
+            {
+                makeGyroCorrections(ppwr, trgtHdg, dir);
+            }
 
             if(!isBusy()) break;
 
@@ -199,7 +233,14 @@ class Drivetrain
         stopMotion();
         if(logOverrun) logOverrun(overtime);
 
+        if(useCol) robot.turnColorOff();
+
         return((doneLpos - initLpos + doneRpos - initRpos)/2);
+    }
+
+    int driveDistanceLinear(double dst, double pwr, Direction dir, int targetHdg)
+    {
+        return driveDistanceLinear(dst, pwr, dir, targetHdg, false);
     }
 
     int driveDistanceLinear(double dst, double pwr, Direction dir)
@@ -516,7 +557,7 @@ class Drivetrain
         return (counts / CPI);
     }
 
-    private int angleToCounts(double angle, double radius)
+    public int angleToCounts(double angle, double radius)
     {
         return distanceToCounts(Math.toRadians(angle) * radius);
     }
@@ -847,14 +888,37 @@ class Drivetrain
     {
         setCurValues();
         logData(true, "LOGGING OVERRUN");
+        int overCnt = 0;
+        int goodCnt = 0;
+        int overLpos = curLpos;
+        int overRpos = curRpos;
+        int overThresh = 3;
         ElapsedTime et = new ElapsedTime();
-        while(et.seconds() < t)
+        while(op.opModeIsActive() && et.seconds() < t)
         {
             setCurValues();
             logData();
 
+            if(Math.abs(curLpos - overLpos) <= overThresh &&
+               Math.abs(curRpos - overRpos) <= overThresh)
+            {
+               goodCnt++;
+            }
+            else
+            {
+               goodCnt = 0;
+               overLpos = curLpos;
+               overRpos = curRpos;
+            }
+
+            if(overCnt >= 4 && goodCnt >=3)
+            {
+               break;
+            }
+
             if(tickRate > 0) waitForTick(tickRate);
             frame++;
+            overCnt++;
         }
         logData(true, "ENDOVER");
     }
@@ -1194,7 +1258,7 @@ class Drivetrain
     private ModernRoboticsUsbGangedDcMotorController mc = null;
 
     private int tickRate = 10;
-    private static final int DEF_BUSYTHRESH = 20;
+    private static final int DEF_BUSYTHRESH = 16;
     public  static final int TURN_BUSYTHRESH = 10;
     private static int BUSYTHRESH = DEF_BUSYTHRESH;
 

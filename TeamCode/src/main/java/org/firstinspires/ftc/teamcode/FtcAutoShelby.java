@@ -355,14 +355,16 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
         timer.reset();
 
+        boolean singleSeg = false;
         if(robot.colorSensor != null && seg.getTgtType() == Segment.TargetType.COLOR)
         {
             drvTrn.setInitValues();
             double pct = 0.90;
+            double fullSegLen = seg.getLength();
             int colSegLbeg = drvTrn.curLpos;
             int colSegRbeg = drvTrn.curRpos;
-            int colSegLend = colSegLbeg + drvTrn.distanceToCounts(seg.getLength());
-            int colSegRend = colSegRbeg + drvTrn.distanceToCounts(seg.getLength());
+            int colSegLend = colSegLbeg + drvTrn.distanceToCounts(fullSegLen);
+            int colSegRend = colSegRbeg + drvTrn.distanceToCounts(fullSegLen);
 
             int linLpos = colSegLend;
             int linRpos = colSegRend;
@@ -371,75 +373,83 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                                        pct * (ept.getY() - spt.getY()) + spt.getY());
 
             int targetHdg = (int) Math.round(fhd);
-            drvTrn.driveToPointLinear(cept, speed, ddir, targetHdg);
-            drvTrn.driveToTarget(0.2, 20);
-
-            DbgLog.msg("SJH: Turning on colorSensor LED");
-            robot.turnColorOn();
 
             double colDist = cept.distance(ept);
             double ovrDist = 2.0;
             int colCnts = drvTrn.distanceToCounts(colDist);
             int ovrCnts = drvTrn.distanceToCounts(ovrDist);
 
-            sleep(10);
-
-            double colSpd = 0.10;
-            DbgLog.msg("SJH: Color Driving to pt %s at speed %4.2f", ept, colSpd);
-            String colDistStr = String.format(Locale.US, "%4.2f %s",
-                    colDist,
-                    cept.toString());
-            drvTrn.logData(true, "FIND_LINE CDIST: " + colDistStr);
-
-            drvTrn.driveDistance(colDist+ovrDist, colSpd, Drivetrain.Direction.FORWARD);
-
-            boolean foundLine = false;
-
-            while(opModeIsActive() && !isStopRequested())
+            if(singleSeg)
             {
-                drvTrn.setCurValues();
-                drvTrn.logData();
+                drvTrn.driveDistanceLinear(fullSegLen, speed, ddir, targetHdg, true);
+            }
+            else
+            {
+                drvTrn.driveToPointLinear(cept, speed, ddir, targetHdg);
+                drvTrn.driveToTarget(0.2, 20);
+                robot.turnColorOn();
 
-                int lTrav = Math.abs(drvTrn.curLpos  - drvTrn.initLpos);
-                int rTrav = Math.abs(drvTrn.curRpos  - drvTrn.initRpos);
+                sleep(10);
 
-                int totColor = drvTrn.curRed + drvTrn.curGrn + drvTrn.curBlu;
+                double colSpd = 0.10;
+                DbgLog.msg("SJH: Color Driving to pt %s at speed %4.2f", ept, colSpd);
+                String colDistStr = String.format(Locale.US, "%4.2f %s",
+                        colDist,
+                        cept.toString());
+                drvTrn.logData(true, "FIND_LINE CDIST: " + colDistStr);
 
-                if (totColor > COLOR_THRESH)
+                drvTrn.driveDistance(colDist+ovrDist, colSpd, Drivetrain.Direction.FORWARD);
+
+                boolean foundLine = false;
+
+                while(opModeIsActive() && !isStopRequested())
                 {
-                    linLpos = drvTrn.curLpos;
-                    linRpos = drvTrn.curRpos;
-                    if(snm.equals("BECN2"))
+                    drvTrn.setCurValues();
+                    drvTrn.logData();
+
+                    int lTrav = Math.abs(drvTrn.curLpos  - drvTrn.initLpos);
+                    int rTrav = Math.abs(drvTrn.curRpos  - drvTrn.initRpos);
+
+                    int totColor = drvTrn.curRed + drvTrn.curGrn + drvTrn.curBlu;
+
+                    if (totColor > COLOR_THRESH)
                     {
-                        linLpos -= 80;
-                        linRpos -= 80;
+                        linLpos = drvTrn.curLpos;
+                        linRpos = drvTrn.curRpos;
+                        int colGyroOffset = 80;
+                        if(snm.equals("BECN1") || snm.equals("BECN2"))
+                        {
+                            linLpos -= colGyroOffset;
+                            linRpos -= colGyroOffset;
+                        }
+                        drvTrn.stopMotion();
+                        drvTrn.setEndValues("COLOR_FIND " + linLpos + " " + linRpos);
+                        DbgLog.msg("SJH: FOUND LINE");
+                        foundLine = true;
+                        drvTrn.trgtLpos = linLpos;
+                        drvTrn.trgtRpos = linRpos;
+                        drvTrn.logOverrun(0.1);
+                        break;
                     }
-                    drvTrn.stopMotion();
-                    drvTrn.setEndValues("COLOR_FIND " + linLpos + " " + linRpos);
-                    DbgLog.msg("SJH: FOUND LINE");
-                    foundLine = true;
-                    break;
-                }
 
-                if(lTrav > (colCnts + ovrCnts) ||
-                   rTrav > (colCnts + ovrCnts))
-                {
-                    drvTrn.stopMotion();
-                    drvTrn.setEndValues("COLOR_MISS - go to" + linLpos + " " + linRpos);
-                    DbgLog.msg("SJH: REACHED OVERRUN PT - Backing up a bit");
-                    break;
-                }
+                    if(lTrav > (colCnts + ovrCnts) ||
+                       rTrav > (colCnts + ovrCnts))
+                    {
+                        drvTrn.stopMotion();
+                        drvTrn.setEndValues("COLOR_MISS - go to" + linLpos + " " + linRpos);
+                        DbgLog.msg("SJH: REACHED OVERRUN PT - Backing up a bit");
+                        drvTrn.trgtLpos = linLpos;
+                        drvTrn.trgtRpos = linRpos;
+                        drvTrn.logOverrun(0.1);
+                        break;
+                    }
 
-                drvTrn.frame++;
-                robot.waitForTick(10);
+                    drvTrn.frame++;
+                    robot.waitForTick(10);
+                }
             }
 
             robot.turnColorOff();
-
-            drvTrn.trgtLpos = linLpos;
-            drvTrn.trgtRpos = linRpos;
-
-            drvTrn.logOverrun(0.1);
         }
         else
         {
@@ -448,8 +458,28 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         }
 
         boolean doCorrect = true;
+
+        //If segment action is shoot, force bot to turn slightly to try to get balls to fall away from beacons
+        double shotAdjAngle = 7.0;
+        int shootAdjCnt = drvTrn.angleToCounts(shotAdjAngle, ShelbyBot.BOT_WIDTH/2.0);
+        String sAdjStr = String.format(Locale.US, "SHOOT ANGLE ADJ %d", shootAdjCnt);
+        drvTrn.logData(true, sAdjStr);
+        if(seg.getAction() == Segment.Action.SHOOT)
+        {
+           if(alliance == Field.Alliance.RED)
+           {
+               drvTrn.trgtLpos += shootAdjCnt;
+               drvTrn.trgtRpos -= shootAdjCnt;
+           }
+           if(alliance == Field.Alliance.BLUE)
+           {
+               drvTrn.trgtLpos -= shootAdjCnt;
+               drvTrn.trgtRpos += shootAdjCnt;
+           }
+        }
+
         //noinspection ConstantConditions
-        if(doCorrect) drvTrn.driveToTarget(0.14, 10);
+        if(doCorrect) drvTrn.driveToTarget(0.14, 18);
 
         drvTrn.setCurrPt(ept);
 
@@ -1095,8 +1125,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
     }
 
     private final static double L_DN_PUSH_POS = 1.0;
-    private final static double R_DN_PUSH_POS = 0.0;
-    private final static double L_UP_PUSH_POS = 0.0;
+    private final static double R_DN_PUSH_POS = 0.05;
+    private final static double L_UP_PUSH_POS = 0.05;
     private final static double R_UP_PUSH_POS = 1.0;
 
     private final static double DEF_ENCTRN_PWR  = 0.4;
