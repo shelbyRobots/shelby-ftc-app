@@ -6,6 +6,7 @@ import java.util.Vector;
 
 class Points
 {
+    @SuppressWarnings("ConstantConditions")
     private Vector<Point2d> initPoints()
     {
         Point2d start_pt = ASTART_PT;
@@ -58,17 +59,17 @@ class Points
             //addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, TMP_PT);
         }
 
+        Segment.TargetType becnSegType = Segment.TargetType.COLOR;
+        if(useFly2Light)
+        {
+            becnSegType = Segment.TargetType.ENCODER;
+        }
+
         if(pushChoice == Field.BeaconChoice.NEAR ||
            pushChoice == Field.BeaconChoice.BOTH)
         {
-            if(!useFly2Light)
-            {
-                addPoint(points, fwd, 0.55,  1.00, Segment.TargetType.COLOR, beacon, BECN1_PT);
-            }
-            else
-            {
-                addPoint(points, fwd, 0.55, 1.00, Segment.TargetType.ENCODER, beacon, BECN1_PT);
-            }
+
+            addPoint(points, fwd, 0.55,  1.00, becnSegType, beacon, BECN1_PT);
 
             if(startPos == Field.StartPos.START_R_PUSHER)
             {
@@ -84,32 +85,24 @@ class Points
         if(pushChoice == Field.BeaconChoice.FAR ||
            pushChoice == Field.BeaconChoice.BOTH)
         {
-            if(!useFly2Light)
-            {
-                addPoint(points, fwd, 0.55, 1.00, Segment.TargetType.COLOR, beacon, BECN2_PT);
-            }
-            else
-            {
-                addPoint(points, fwd, 0.55, 1.00, Segment.TargetType.ENCODER, beacon, BECN2_PT);
-            }
+            addPoint(points, fwd, 0.55, 1.00, becnSegType, beacon, BECN2_PT);
         }
 
+        //PARK PTS
+        ShelbyBot.DriveDir parkDir = rev;
+        boolean parkFull = false;
         if(parkChoice == Field.ParkChoice.DEFEND_PARK)
         {
             addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.ENCODER, none, DP1);
             addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.ENCODER, none, DP2);
         }
+        else if(parkChoice == Field.ParkChoice.CENTER_PARK && parkFull)
+        {
+            addPoint(points, rev, 0.6, 1.00, Segment.TargetType.ENCODER, none, PRECTRPT);
+            parkDir = fwd;
+        }
 
-        //PARK PTS
-        if(parkChoice == Field.ParkChoice.CENTER_PARK)
-        {
-            addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER, none, PRECTRPT);
-            addPoint(points, fwd, 0.2, 1.00, Segment.TargetType.ENCODER,   none, park_pt);
-        }
-        else
-        {
-            addPoint(points, rev, 0.6, 1.00, Segment.TargetType.ENCODER, none, park_pt);
-        }
+        addPoint(points, parkDir, 0.6, 1.00, Segment.TargetType.ENCODER, none, park_pt);
 
         return points;
     }
@@ -319,11 +312,9 @@ class Points
     private static final double BECN_X  = -52.0;
     private static final double BECN2X  = -52.0;
 
-    private static final double DFNPTHX = 21;
+    private static final double DFNPTHX = 24;
     private static final double DFNPTHY = -24;
     private static final double DFNPTHY2 = 24;
-    private static final double DFNCPRKX = -9;
-    private static final double DFNCPRKY = 0;
 
     private static final double BMID_X  = -24.0;
     private static final double BMID_Y  = -24.0;
@@ -355,9 +346,6 @@ class Points
 
     private Point2d DP1 = new Point2d("DFNPATH", DFNPTHX, DFNPTHY);
     private Point2d DP2 = new Point2d("DFNPATH", DFNPTHX, DFNPTHY2);
-    private Point2d DFNCPRK = new Point2d("DFNCPRK", DFNCPRKX, DFNCPRKY);
-
-
 
     private final static int    MAX_SEGMENTS = 16;
 
