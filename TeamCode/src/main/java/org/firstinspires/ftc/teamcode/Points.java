@@ -77,10 +77,10 @@ class Points
             }
         }
 
-        if(pushChoice == Field.BeaconChoice.FAR && startPos == Field.StartPos.START_B_SWEEPER)
-        {
-            addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, B_MID_PT);
-        }
+//        if(pushChoice == Field.BeaconChoice.FAR && startPos == Field.StartPos.START_B_SWEEPER)
+//        {
+//            addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, B_MID_PT);
+//        }
 
         if(pushChoice == Field.BeaconChoice.FAR ||
            pushChoice == Field.BeaconChoice.BOTH)
@@ -90,7 +90,7 @@ class Points
 
         //PARK PTS
         ShelbyBot.DriveDir parkDir = rev;
-        boolean parkFull = false;
+        boolean parkFull = true;
         if(parkChoice == Field.ParkChoice.DEFEND_PARK)
         {
             addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.ENCODER, none, DP1);
@@ -280,7 +280,7 @@ class Points
     private static final double FUDGE   =  0.0;
     private static final double BECN2_Y =  36.0 - FUDGE;
 
-    private static final double ASTARTX =  -12.0;
+    private static final double ASTARTX =  -8.0; //-12.0;
     private static final double ASTARTY =  S_WALL + REAR_OFFSET + 0.5;
     private static final double AIMERY  =  ASTARTY + 3.0;
     private static final double ASHOOTY =  -27.0 - FRNT_OFFSET;

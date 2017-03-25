@@ -355,6 +355,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
         timer.reset();
 
+        boolean doCorrect = true;
         boolean singleSeg = false;
         if(robot.colorSensor != null && seg.getTgtType() == Segment.TargetType.COLOR)
         {
@@ -417,7 +418,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                         linLpos = drvTrn.curLpos;
                         linRpos = drvTrn.curRpos;
                         int colGyroOffset = 80;
-                        if(snm.equals("BECN1") || snm.equals("BECN2"))
+                        if(snm.equals("BECN2"))
                         {
                             linLpos -= colGyroOffset;
                             linRpos -= colGyroOffset;
@@ -457,29 +458,33 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             drvTrn.driveToPointLinear(ept, speed, ddir, targetHdg);
         }
 
-        boolean doCorrect = true;
-
         //If segment action is shoot, force bot to turn slightly to try to get balls to fall away from beacons
-        double shotAdjAngle = 7.0;
-        int shootAdjCnt = drvTrn.angleToCounts(shotAdjAngle, ShelbyBot.BOT_WIDTH/2.0);
-        String sAdjStr = String.format(Locale.US, "SHOOT ANGLE ADJ %d", shootAdjCnt);
-        drvTrn.logData(true, sAdjStr);
+
+        int dtlCorrect = 18;
         if(seg.getAction() == Segment.Action.SHOOT)
         {
-           if(alliance == Field.Alliance.RED)
-           {
-               drvTrn.trgtLpos += shootAdjCnt;
-               drvTrn.trgtRpos -= shootAdjCnt;
-           }
-           if(alliance == Field.Alliance.BLUE)
-           {
-               drvTrn.trgtLpos -= shootAdjCnt;
-               drvTrn.trgtRpos += shootAdjCnt;
-           }
+            dtlCorrect = 16;
+            double shotAdjAngle = 0.0;
+            int shootAdjCnt = drvTrn.angleToCounts(shotAdjAngle, ShelbyBot.BOT_WIDTH/2.0);
+            String sAdjStr = String.format(Locale.US, "SHOOT ANGLE ADJ %d", shootAdjCnt);
+            drvTrn.logData(true, sAdjStr);
+            if(alliance == Field.Alliance.RED && startPos != Field.StartPos.START_R_PUSHER)
+            {
+                drvTrn.trgtLpos += shootAdjCnt;
+                drvTrn.trgtRpos -= shootAdjCnt;
+            }
+            if(alliance == Field.Alliance.BLUE && startPos != Field.StartPos.START_R_PUSHER)
+            {
+                drvTrn.trgtLpos -= shootAdjCnt;
+                drvTrn.trgtRpos += shootAdjCnt;
+            }
         }
 
-        //noinspection ConstantConditions
-        if(doCorrect) drvTrn.driveToTarget(0.14, 18);
+        if(snm.equals("PRECTRPT") || snm.equals("CTRPRKPT") || snm.equals("B_MID_PT"))
+        {
+            doCorrect = false;
+        }
+        if(doCorrect) drvTrn.driveToTarget(0.14, dtlCorrect);
 
         drvTrn.setCurrPt(ept);
 

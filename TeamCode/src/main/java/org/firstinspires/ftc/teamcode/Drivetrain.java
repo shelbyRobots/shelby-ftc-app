@@ -198,7 +198,7 @@ class Drivetrain
             int colGyroOffset = 80;
             double lRem = countsToDistance(Math.abs(trgtLpos - curLpos));
             double rRem = countsToDistance(Math.abs(trgtRpos - curRpos));
-            double colOnDist = 6.0;
+            double colOnDist = 24.0;
             if(useCol && !robot.colorEnabled && (lRem < colOnDist || rRem < colOnDist))
             {
                 robot.turnColorOn();
@@ -850,6 +850,12 @@ class Drivetrain
             curRed = robot.colorSensor.red();
             curGrn = robot.colorSensor.green();
             curBlu = robot.colorSensor.blue();
+        }
+        else
+        {
+            curRed = 0;
+            curGrn = 0;
+            curBlu = 0;
         }
         estimatePosition();
     }
