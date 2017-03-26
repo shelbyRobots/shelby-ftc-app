@@ -158,7 +158,9 @@ class Drivetrain
         double pwrIncr = (pwr - startPwr)/pwrSteps;
 
         //extend distance if doing a color find to make sure we reach line
-        if(useCol) dst += 4.0;
+        double colOverDist = 4.0;
+        int colOverCnt = distanceToCounts(colOverDist);
+        if(useCol) dst +=  colOverDist;
 
         driveDistance(dst, startPwr, dir);
         int linLpos = trgtLpos;
@@ -229,11 +231,17 @@ class Drivetrain
             frame++;
         }
 
+        if(useCol && foundLine == false)
+        {
+            trgtLpos -= colOverCnt;
+            trgtRpos -= colOverCnt;
+        }
+
+        if(useCol) robot.turnColorOff();
+
         setEndValues("LINDST");
         stopMotion();
         if(logOverrun) logOverrun(overtime);
-
-        if(useCol) robot.turnColorOff();
 
         return((doneLpos - initLpos + doneRpos - initRpos)/2);
     }
