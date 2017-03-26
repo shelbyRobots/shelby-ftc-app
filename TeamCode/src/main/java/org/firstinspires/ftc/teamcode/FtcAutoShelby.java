@@ -387,7 +387,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             else
             {
                 drvTrn.driveToPointLinear(cept, speed, ddir, targetHdg);
-                drvTrn.driveToTarget(0.2, 20);
+                //drvTrn.driveToTarget(0.2, 20);
                 robot.turnColorOn();
 
                 sleep(10);
@@ -444,6 +444,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                         drvTrn.logOverrun(0.1);
                         break;
                     }
+
+                    drvTrn.makeGyroCorrections(colSpd, targetHdg, Drivetrain.Direction.FORWARD);
 
                     drvTrn.frame++;
                     robot.waitForTick(10);

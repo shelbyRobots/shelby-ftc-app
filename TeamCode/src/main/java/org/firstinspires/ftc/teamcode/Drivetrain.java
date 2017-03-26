@@ -1141,7 +1141,7 @@ class Drivetrain
 
     private static double DRV_TUNER = 1.00;
     private final static double TRN_TUNER = 1.0;
-    private final static double TURN_TOLERANCE = 1.0;
+    private final static double TURN_TOLERANCE = 2.0;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
     private static double WHL_DIAMETER = 4.1875; //Diameter of the wheel (inches)

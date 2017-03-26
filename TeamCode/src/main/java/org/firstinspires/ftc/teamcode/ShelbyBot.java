@@ -53,6 +53,7 @@ class ShelbyBot
     final static DcMotor.Direction RIGHT_DIR = DcMotor.Direction.REVERSE;
 
     boolean gyroReady = false;
+    int lastRawGyroHdg = 0;
 
     /* local OpMode members. */
     private ElapsedTime period  = new ElapsedTime();
@@ -255,11 +256,25 @@ class ShelbyBot
         if(gyro == null) return 0;
         int dirHdgAdj = 0;
         if(ddir != calibrationDriveDir) dirHdgAdj = 180;
+
+        int rawGyroHdg = gyro.getIntegratedZValue();
+        //There have been cases where gyro incorrectly returns 0 for a frame : needs filter
+        //Uncomment the following block for a test filter
+//        if(rawGyroHdg == 0 &&
+//           Math.abs(lastRawGyroHdg) > 30)
+//        {
+//            rawGyroHdg = lastRawGyroHdg;
+//        }
+//        else
+//        {
+//            lastRawGyroHdg = rawGyroHdg;
+//        }
+
         //NOTE:  gyro.getIntegratedZValue is +ve CCW (left turn)
         //WHEN the freaking gyro is mounted upright.
         //Since snowman 2.0 has gyro mounted upside down, we need
         //to negate the value!!
-        int cHdg = -gyro.getIntegratedZValue() + initHdg + dirHdgAdj;
+        int cHdg = -rawGyroHdg + initHdg + dirHdgAdj;
 
         while (cHdg <= -180) cHdg += 360;
         while (cHdg >   180) cHdg -= 360;
