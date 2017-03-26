@@ -158,7 +158,7 @@ class Drivetrain
         double pwrIncr = (pwr - startPwr)/pwrSteps;
 
         //extend distance if doing a color find to make sure we reach line
-        if(useCol) dst += 2.0;
+        if(useCol) dst += 4.0;
 
         driveDistance(dst, startPwr, dir);
         int linLpos = trgtLpos;
