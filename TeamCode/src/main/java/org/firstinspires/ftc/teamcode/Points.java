@@ -24,6 +24,11 @@ class Points
         }
 
         Point2d park_pt = CTRPRKPT;
+        if(parkChoice == Field.ParkChoice.CENTER_PARK &&
+           startPos == Field.StartPos.START_B_SWEEPER)
+        {
+            park_pt = BCTPRKPT;
+        }
         if(parkChoice == Field.ParkChoice.CORNER_PARK)
         {
             park_pt = CRNPRKPT;
@@ -98,7 +103,10 @@ class Points
         }
         else if(parkChoice == Field.ParkChoice.CENTER_PARK && parkFull)
         {
-            addPoint(points, rev, 0.6, 1.00, Segment.TargetType.ENCODER, none, PRECTRPT);
+            if(startPos == Field.StartPos.START_B_SWEEPER)
+                addPoint(points, rev, 0.6, 1.00, Segment.TargetType.ENCODER, none, BPRCTRPT);
+            else
+                addPoint(points, rev, 0.6, 1.00, Segment.TargetType.ENCODER, none, PRECTRPT);
             parkDir = fwd;
         }
 
@@ -289,8 +297,8 @@ class Points
 
     private static final double TMPY = -44.0;
     private static final double BSTARTX =  12.0;
-    private static final double BSHOOTX =   0.0;
-    private static final double BSHOOTY =  ASHOOTY;
+    private static final double BSHOOTX =    4.0;
+    private static final double BSHOOTY =  -34.0;
 
     private static final double RSTARTX =  -24.0;
     private static final double RSTARTY =  ASTARTY;
@@ -300,13 +308,17 @@ class Points
     private static final double blueBecnScanAdjust = 0.0;
 
     private static final double PRECTRX = -28.0;
-    private static final double PRECTRY =   0.0;
+    private static final double PRECTRY =  -4.0;
+    private static final double BPRCTRX =   2.0;
+    private static final double BPRCTRY =  -28.0;
     private static final double CTRPRKX =  -8.0;
-    private static final double CTRPRKY =   0.0;
+    private static final double CTRPRKY =  -4.0;
     private static final double CRNPRKX = -48.0;
     private static final double CRNPRKY = -48.0;
     private static final double DFNPRKX = -12.0;
     private static final double DFNPRKY =  48.0;
+    private static final double BCTPRKX =  2.0;
+    private static final double BCTPRKY = -8.0;
 
     private static final double SCAN_X  = -38.0;
     private static final double BECN_X  = -52.0;
@@ -340,8 +352,10 @@ class Points
     private Point2d B_MID_PT = new Point2d("B_MID", BMID_X, BMID_Y);
 
     private Point2d PRECTRPT = new Point2d("PRECTR", PRECTRX, PRECTRY);
+    private Point2d BPRCTRPT = new Point2d("BPRCTR", BPRCTRX, BPRCTRY);
     private Point2d CTRPRKPT = new Point2d("CTRPRK", CTRPRKX, CTRPRKY);
     private Point2d CRNPRKPT = new Point2d("CRNPRK", CRNPRKX, CRNPRKY);
+    private Point2d BCTPRKPT = new Point2d("BCTPRK", BCTPRKX, BCTPRKY);
     private Point2d DFNPRKPT = new Point2d("DFNPRK", DFNPRKX, DFNPRKY);
 
     private Point2d DP1 = new Point2d("DFNPATH", DFNPTHX, DFNPTHY);
