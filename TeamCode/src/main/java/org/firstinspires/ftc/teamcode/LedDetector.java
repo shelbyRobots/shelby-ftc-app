@@ -21,6 +21,10 @@ public class LedDetector implements ImageProcessor
     private Mat zonedImg;
     private Mat showImg;
 
+    private Mat hchy;
+    private Mat outMat;
+    private Mat whiteMat;
+
     private static final int LIGHT_CHANNEL = 1;
     private static final int A2RGB = Imgproc.COLOR_HLS2RGB;
     private static final int RGB2A = Imgproc.COLOR_RGB2HLS;
@@ -77,25 +81,37 @@ public class LedDetector implements ImageProcessor
             hsvImage = new Mat();
         }
         Imgproc.cvtColor( img, hsvImage, RGB2A, 4 );
-        showImg = hsvImage.clone();
+        if(showImg == null) showImg = hsvImage.clone();
+        else hsvImage.copyTo(showImg);
 
         if ( !sensingActive ) return;
         findColors();
         firstCalcsDone = true;
     }
 
+    public void snapImage(int imgNum)
+    {
+        //Implement later
+    }
+
+    public void saveImage(int imgNum)
+    {
+        //Implement later
+    }
+
     public Mat draw()
     {
-        Mat out = hsvImage.clone();
-        Imgproc.cvtColor( showImg, out, A2RGB, 4 );
-        if ( !sensingActive || !firstCalcsDone ) return out;
+        if(outMat == null) outMat = hsvImage.clone();
+        else hsvImage.copyTo(outMat);
+        Imgproc.cvtColor( showImg, outMat, A2RGB, 4 );
+        if ( !sensingActive || !firstCalcsDone ) return outMat;
 
         for ( Rect ledRect : leds )
         {
-            Imgproc.rectangle( out, ledRect.tl(), ledRect.br(), new Scalar(0,255,0), 4 );
+            Imgproc.rectangle( outMat, ledRect.tl(), ledRect.br(), new Scalar(0,255,0), 4 );
         }
 
-        return out;
+        return outMat;
     }
 
     public void logDebug()
@@ -132,17 +148,16 @@ public class LedDetector implements ImageProcessor
 
         Mat lum = channels.get( LIGHT_CHANNEL );
 
-        Mat white = lum.clone();
+        if(whiteMat == null) whiteMat = lum.clone();
+        else lum.copyTo(whiteMat);
 
-        Imgproc.threshold( lum, white, MIN_BRIGHTNESS, 255, Imgproc.THRESH_BINARY );
-        Imgproc.erode( white.clone(), white, Imgproc.getGaussianKernel( 5, 2 ) );
+        Imgproc.threshold( lum, whiteMat, MIN_BRIGHTNESS, 255, Imgproc.THRESH_BINARY );
+        Imgproc.erode( whiteMat.clone(), whiteMat, Imgproc.getGaussianKernel( 5, 2 ) );
 
-        channels.set( LIGHT_CHANNEL, white );
+        channels.set( LIGHT_CHANNEL, whiteMat );
 
-        if(zonedImg == null)
-        {
-            zonedImg = hsvImage.clone();
-        }
+        if(zonedImg == null) zonedImg = hsvImage.clone();
+        else hsvImage.copyTo(zonedImg);
 
         Core.merge( channels, zonedImg );
 
@@ -156,7 +171,7 @@ public class LedDetector implements ImageProcessor
 
         Mat d_value = channels.get( LIGHT_CHANNEL );
 
-        Mat hchy = new Mat();
+        if(hchy == null) hchy = new Mat();
         List<MatOfPoint> contours = new ArrayList<>();
 
         Imgproc.findContours(d_value, contours,

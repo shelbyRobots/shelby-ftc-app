@@ -13,5 +13,7 @@ public interface ImageProcessor
     public void setTelemetry(Telemetry telemetry);
 
     public void setImage( Mat img );
+    public void snapImage(int imgNum);
+    public void saveImage(int imgNum);
     public Mat draw();
 }

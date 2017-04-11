@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import android.graphics.Bitmap;
+import android.os.Environment;
 
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.util.Range;
@@ -18,9 +19,15 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 
 
 public class BeaconDetector implements BeaconFinder, ImageProcessor
@@ -41,6 +48,9 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
     private Mat zeroImg;
     private Mat white;
     private Mat out;
+
+    private Mat becn1snap;
+    private Mat becn2snap;
 
     private final static boolean DEBUG = false;
     private final static boolean POS_IS_Y = false;
@@ -133,6 +143,89 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
         findColors();
         firstCalcsDone = true;
 
+    }
+
+    public void snapImage(int imgNum)
+    {
+        if(imgNum == 1)
+        {
+            if(becn1snap == null) becn1snap = showImg.clone();
+            else showImg.copyTo(becn1snap);
+        }
+
+        if(imgNum == 2)
+        {
+            if(becn1snap == null) becn1snap = showImg.clone();
+            else showImg.copyTo(becn1snap);
+        }
+    }
+
+    public void saveImage(int imgNum)
+    {
+        Calendar cal = Calendar.getInstance();
+        int dom = cal.get(Calendar.DATE);
+        int mon = cal.get(Calendar.MONTH);
+        int yr  = cal.get(Calendar.YEAR);
+        int hr  = cal.get(Calendar.HOUR_OF_DAY);
+        int min = cal.get(Calendar.MINUTE);
+        String dateStr = String.format(Locale.US,"%4d%02d%02d_%02d%02d", yr, mon, dom, hr, min);
+        String fileName = "beacon" + imgNum + "_" + dateStr + ".bmp";
+        Mat outImg = null;
+        if(imgNum == 1)
+        {
+            outImg = becn1snap;
+        }
+        if(imgNum == 2)
+        {
+            outImg = becn2snap;
+        }
+
+        if(outImg == null) return;
+        Bitmap bmp = null;
+        try
+        {
+            bmp = Bitmap.createBitmap(outImg.cols(), outImg.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(outImg, bmp);
+        }
+        catch (Exception e)
+        {
+            DbgLog.error(e.getMessage());
+        }
+
+        String directoryPath  = Environment.getExternalStorageDirectory().getPath() +
+                                        "/FIRST/DataLogger";
+        String filePath       = directoryPath + "/" + fileName ;
+
+        File dest = new File(filePath);
+        FileOutputStream out = null;
+        try
+        {
+            out = new FileOutputStream(dest);
+            bmp.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
+            // PNG is a lossless format, the compression factor (100) is ignored
+
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            DbgLog.error(e.getMessage());
+        }
+        finally
+        {
+            try
+            {
+                if (out != null)
+                {
+                    out.close();
+                    DbgLog.msg("SJH: ImageSaved: " + fileName);
+                }
+            }
+            catch (IOException e)
+            {
+                DbgLog.error("SJH " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
     }
 
     public void logDebug()
