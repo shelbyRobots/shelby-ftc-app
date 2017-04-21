@@ -133,6 +133,8 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         robot.lpusher.setPosition(L_DN_PUSH_POS);
         robot.rpusher.setPosition(R_DN_PUSH_POS);
 
+        if(alliance == Field.Alliance.BLUE) drvTrn.setLFirst(false);
+
         if(team == Team.SNOWMAN)
         {
             DEF_SHT_PWR = 0.75;
@@ -267,7 +269,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             {
                 robot.shotmotor1.setPower(DEF_SHT_PWR);
                 robot.shotmotor2.setPower(DEF_SHT_PWR);
-                robot.sweepMotor.setPower(-DEF_SWP_PWR);
+                //robot.sweepMotor.setPower(-DEF_SWP_PWR * 0.1);
             }
             doMove(curSeg);
 
@@ -361,6 +363,32 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         boolean singleSeg = true;
         if(robot.colorSensor != null && seg.getTgtType() == Segment.TargetType.COLOR)
         {
+            colSegNum++;
+            int colGyroOffset = 80;
+            if(alliance == Field.Alliance.RED)
+            {
+                if(colSegNum == 1)
+                {
+                    colGyroOffset = 60;
+                }
+                else
+                {
+                    colGyroOffset = 80;
+                }
+            }
+            else
+            {
+                if(colSegNum == 1)
+                {
+                    colGyroOffset = 60;
+                }
+                else
+                {
+                    colGyroOffset = 80;
+                }
+            }
+
+            drvTrn.setColGyroOffset(colGyroOffset);
             drvTrn.setInitValues();
             double pct = 0.90;
             double fullSegLen = seg.getLength();
@@ -419,7 +447,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                     {
                         linLpos = drvTrn.curLpos;
                         linRpos = drvTrn.curRpos;
-                        int colGyroOffset = 50;
+                        colGyroOffset = 50;
                         if(snm.equals("BECN2"))
                         {
                             linLpos -= colGyroOffset;
@@ -484,11 +512,14 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             }
         }
 
-        if(snm.equals("PRECTRPT") || snm.equals("CTRPRKPT") || snm.equals("B_MID_PT"))
+        if(snm.equals("PRECTR") ||
+           snm.equals("CTRPRK") ||
+           snm.equals("ASHOOT") ||
+           snm.equals("B_MID"))
         {
             doCorrect = false;
         }
-        if(doCorrect) drvTrn.driveToTarget(0.14, dtlCorrect);
+        if(doCorrect) drvTrn.driveToTarget(0.11, dtlCorrect);
 
         drvTrn.setCurrPt(ept);
 
@@ -731,11 +762,13 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
         imgProc.stopSensing();
 
+        doGyroTurn(desHdg, "push gyroTurn2");
+
         setPusher(pushSide);
 
         if(push && pushSide != BeaconFinder.BeaconSide.UNKNOWN)
         {
-            double tgtDist = zPos + 2.5; //15.0;
+            double tgtDist = zPos + 3.5; //15.0;
             Point2d touchStart = seg.getTgtPt();
             double touchX = touchStart.getX();
             double touchY = touchStart.getY();
@@ -772,12 +805,14 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             if (alliance == Field.Alliance.RED)
             {
                 //actTouchX -= actDist;
-                actTouchX = drvTrn.estPos.getX();
+                //actTouchX = drvTrn.estPos.getX();
+                actTouchX = -58.0;
             }
             else
             {
                 //actTouchY += actDist;
-                actTouchY = drvTrn.estPos.getY();
+                //actTouchY = drvTrn.estPos.getY();
+                actTouchY = 58.0;
             }
 
             Point2d actTouchPt = new Point2d(actTouchX, actTouchY);
@@ -1205,6 +1240,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
     private int postSleep = 150;
 
     private int beaconNum = 0;
+    private int colSegNum = 0;
     private static int numBeacons = 2;
 }
 

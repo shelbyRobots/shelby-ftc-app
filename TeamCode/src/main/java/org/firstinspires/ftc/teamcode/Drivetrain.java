@@ -41,8 +41,16 @@ class Drivetrain
             }
             else
             {
-                robot.leftMotor.setPower(curLpower);
-                robot.rightMotor.setPower(curRpower);
+                if(lFirst)
+                {
+                    robot.leftMotor.setPower(curLpower);
+                    robot.rightMotor.setPower(curRpower);
+                }
+                else
+                {
+                    robot.rightMotor.setPower(curRpower);
+                    robot.leftMotor.setPower(curLpower);
+                }
             }
         }
         else
@@ -158,9 +166,13 @@ class Drivetrain
         double pwrIncr = (pwr - startPwr)/pwrSteps;
 
         //extend distance if doing a color find to make sure we reach line
-        double colOverDist = 4.0;
-        int colOverCnt = distanceToCounts(colOverDist);
-        if(useCol) dst +=  colOverDist;
+        int colOverCnt = 0;
+        if(useCol)
+        {
+            double colOverDist = 6.0;
+            colOverCnt = distanceToCounts(colOverDist);
+            dst += colOverDist;
+        }
 
         driveDistance(dst, startPwr, dir);
         int linLpos = trgtLpos;
@@ -187,17 +199,19 @@ class Drivetrain
             {
                 int lcnt = curLpos;
                 int rcnt = curRpos;
+                int hiSlow  = 960;
+                int midSlow = 480;
+                int lowSlow = 240 + colOverCnt;
                 int remaining = Math.abs(((trgtLpos - lcnt) + (trgtRpos - rcnt)) / 2);
-                if (Math.abs(remaining) < 960) ppwr = Math.min(ppwr, 0.5);
-                if (Math.abs(remaining) < 480) ppwr = Math.min(ppwr, 0.25);
-                if (Math.abs(remaining) < 240) ppwr = Math.min(ppwr, 0.09);
+                if (Math.abs(remaining) < hiSlow)  ppwr = Math.min(ppwr, 0.5);
+                if (Math.abs(remaining) < midSlow) ppwr = Math.min(ppwr, 0.25);
+                if (Math.abs(remaining) < lowSlow) ppwr = Math.min(ppwr, 0.09);
             }
 
             DbgLog.msg("SJH: ppwr " + ppwr + " curLpower " + curLpower +
                                " curRpower " + curRpower + " pwrIncr " +  pwrIncr);
 
             int COLOR_THRESH = 20;
-            int colGyroOffset = 80;
             double lRem = countsToDistance(Math.abs(trgtLpos - curLpos));
             double rRem = countsToDistance(Math.abs(trgtRpos - curRpos));
             double colOnDist = 24.0;
@@ -231,10 +245,11 @@ class Drivetrain
             frame++;
         }
 
-        if(useCol && foundLine == false)
+        int kludge = 80;
+        if(useCol && !foundLine)
         {
-            trgtLpos -= colOverCnt;
-            trgtRpos -= colOverCnt;
+            trgtLpos -= (colOverCnt + kludge);
+            trgtRpos -= (colOverCnt + kludge);
         }
 
         if(useCol) robot.turnColorOff();
@@ -1095,6 +1110,16 @@ class Drivetrain
         this.stopIndividualMotorWhenNotBusy = stopIndvid;
     }
 
+    void setColGyroOffset( int offset)
+    {
+        this.colGyroOffset = offset;
+    }
+
+    void setLFirst(boolean lFirst)
+    {
+        this.lFirst = lFirst;
+    }
+
     public void setDrvTuner(double dtnr)
     {
         CPI = ENCODER_CPR * GEAR_REDUC / (CIRCUMFERENCE * dtnr);
@@ -1150,6 +1175,7 @@ class Drivetrain
     private static double DRV_TUNER = 1.00;
     private final static double TRN_TUNER = 1.0;
     private final static double TURN_TOLERANCE = 2.0;
+    private int colGyroOffset = 0;
 
     private final static double VEH_WIDTH   = ShelbyBot.BOT_WIDTH * TRN_TUNER;
     private static double WHL_DIAMETER = 4.1875; //Diameter of the wheel (inches)
@@ -1258,7 +1284,7 @@ class Drivetrain
     double nextBusyPrintTime = ptmr.seconds();
 
     private boolean logOverrun = true;
-    private double overtime = 0.10;
+    private double overtime = 0.12;
 
     private double reducePower = 0.3;
     private double reduceTurnPower = 0.2;
@@ -1280,6 +1306,8 @@ class Drivetrain
     private double busyTimeOut = 20;
     private double lBusyTime = 0;
     private double rBusyTime = 0;
+
+    private boolean lFirst = true;
 
     private double turnTimeLimit = 5;
 

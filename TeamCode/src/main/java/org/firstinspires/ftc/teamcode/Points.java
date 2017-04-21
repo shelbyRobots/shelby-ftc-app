@@ -60,7 +60,7 @@ class Points
 
         if(startPos != Field.StartPos.START_R_PUSHER)
         {
-            addPoint(points, rev, 0.4, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
+            addPoint(points, rev, 0.45, 1.00, Segment.TargetType.ENCODER, shoot, shoot_pt);
             //addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, TMP_PT);
         }
 
@@ -90,7 +90,7 @@ class Points
         if(pushChoice == Field.BeaconChoice.FAR ||
            pushChoice == Field.BeaconChoice.BOTH)
         {
-            addPoint(points, fwd, 0.55, 1.00, becnSegType, beacon, BECN2_PT);
+            addPoint(points, fwd, 0.5, 1.00, becnSegType, beacon, BECN2_PT);
         }
 
         //PARK PTS
@@ -98,15 +98,15 @@ class Points
         boolean parkFull = true;
         if(parkChoice == Field.ParkChoice.DEFEND_PARK)
         {
-            addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.ENCODER, none, DP1);
-            addPoint(points, fwd, 0.4, 1.00, Segment.TargetType.ENCODER, none, DP2);
+            addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, DP1);
+            addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, DP2);
         }
         else if(parkChoice == Field.ParkChoice.CENTER_PARK && parkFull)
         {
             if(startPos == Field.StartPos.START_B_SWEEPER)
                 addPoint(points, rev, 0.6, 1.00, Segment.TargetType.ENCODER, none, BPRCTRPT);
-            else
-                addPoint(points, rev, 0.6, 1.00, Segment.TargetType.ENCODER, none, PRECTRPT);
+//            else
+//                addPoint(points, rev, 0.6, 1.00, Segment.TargetType.ENCODER, none, PRECTRPT);
             parkDir = fwd;
         }
 
@@ -230,6 +230,12 @@ class Points
                 curSeg.setPostTurn(nfhdg);
                 DbgLog.msg("SJH: Segment %s setting postTurn %4.2f", sname, nfhdg);
             }
+//            if(sname.equals("CTRPRK"))
+//            {
+//                double nfhdg = 0.0;
+//                if (alliance == Field.Alliance.BLUE) nfhdg = 180.0;
+//                curSeg.setPostTurn(nfhdg);
+//            }
             if(sname.equals("BSHOOT"))
             {
                 if (alliance == Field.Alliance.BLUE )
@@ -288,7 +294,7 @@ class Points
     private static final double FUDGE   =  0.0;
     private static final double BECN2_Y =  36.0 - FUDGE;
 
-    private static final double ASTARTX =  -8.0; //-12.0;
+    private static final double ASTARTX =  -8.0;
     private static final double ASTARTY =  S_WALL + REAR_OFFSET + 0.5;
     private static final double AIMERY  =  ASTARTY + 3.0;
     private static final double ASHOOTY =  -27.0 - FRNT_OFFSET;
@@ -310,15 +316,15 @@ class Points
     private static final double PRECTRX = -28.0;
     private static final double PRECTRY =  -4.0;
     private static final double BPRCTRX =   2.0;
-    private static final double BPRCTRY =  -28.0;
-    private static final double CTRPRKX =  -8.0;
-    private static final double CTRPRKY =  -4.0;
+    private static final double BPRCTRY = -28.0;
+    private static final double CTRPRKX = -10.0;
+    private static final double CTRPRKY =   0.0;
     private static final double CRNPRKX = -48.0;
     private static final double CRNPRKY = -48.0;
     private static final double DFNPRKX = -12.0;
     private static final double DFNPRKY =  48.0;
-    private static final double BCTPRKX =  2.0;
-    private static final double BCTPRKY = -8.0;
+    private static final double BCTPRKX =   2.0;
+    private static final double BCTPRKY =  -8.0;
 
     private static final double SCAN_X  = -38.0;
     private static final double BECN_X  = -52.0;

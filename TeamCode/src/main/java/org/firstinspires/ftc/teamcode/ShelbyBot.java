@@ -339,7 +339,7 @@ class ShelbyBot
     //NOTE:  Notes reference center of bot on ground as bot coord frame origin.
     //However, it seems logical to use the center of the rear axis (pivot point)
     private static final float MM_PER_INCH     = 25.4f;
-    static final float BOT_WIDTH               = 16.0f; //Vehicle width at rear wheels
+    static final float BOT_WIDTH               = 16.8f; //Vehicle width at rear wheels
     private static final float BOT_LENGTH      = 18.0f;
 
     //Distance from ctr of rear wheel to tail
