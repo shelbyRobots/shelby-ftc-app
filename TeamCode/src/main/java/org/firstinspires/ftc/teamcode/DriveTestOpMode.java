@@ -91,7 +91,7 @@ public class DriveTestOpMode extends LinearOpMode
         do_main_loop();
     }
 
-    boolean doSpeedTest = false;
+    boolean doSpeedTest = true;
     boolean doMaxSpeedTest = false;
     boolean doMinSpeedTest = false;
     boolean doFindBestDriveSpeed = false; //true;
@@ -100,11 +100,11 @@ public class DriveTestOpMode extends LinearOpMode
     boolean doDriveDist = false;
     boolean doTurnAngle = false;
     boolean doMotionProfile = false;
-    boolean doSturnTest = true;
+    boolean doSturnTest = false;
 
     boolean useAnd = true;
     boolean rampUp = false;
-    boolean rampDown = true;
+    boolean rampDown = false;
     boolean stopIndiv = false;
 
     public void do_main_loop()
@@ -182,7 +182,7 @@ public class DriveTestOpMode extends LinearOpMode
         //Test some common distance and turns from auton
         if(doDriveDist)
         {
-            double dist[] = {42.0};
+            double dist[] = {48.0};
             robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
             for (double aDist : dist)
             {
@@ -205,9 +205,10 @@ public class DriveTestOpMode extends LinearOpMode
                 for (int i = 2; i < 6; i++)
                 {
                     int cHdg = robot.getGyroFhdg();
-                    dl.addField("doTurnAngle GYRO from " + cHdg + " to " + i + " at " + spd);
+                    double ang = angle * i;
+                    dl.addField("doTurnAngle GYRO from " + cHdg + " to " + ang + " at " + spd);
                     dl.newLine();
-                    drvTrn.ctrTurnToHeading(i, spd);
+                    drvTrn.ctrTurnToHeading(ang, spd);
                     sleep(1000);
                     cHdg = robot.getGyroFhdg();
                     dl.addField("doTurnAngle GYRO from " + cHdg + " to " + 0 + " at " + spd);

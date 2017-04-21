@@ -179,13 +179,13 @@ public class DriveTestUtil
     public void findBestDriveSpeed()
     {
         robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
-        double distances[] = {24}; //{24, 43};
+        double distances[] = {48}; //{24, 43};
         double tHdg = 0.0;
         op.sleep(200);
         for(int d=0; d < distances.length; d++)
         {
             double dist = distances[d];
-            for (double spd = 0.35; spd <= 0.75; spd += 0.1)
+            for (double spd = 0.25; spd <= 0.75; spd += 0.05)
             {
                 double cHdg = robot.getGyroFhdg();
                 drvTrn.ctrTurnLinear(tHdg-cHdg, 0.4);
@@ -202,7 +202,7 @@ public class DriveTestUtil
 
     public void findBestEncTurnSpeed()
     {
-        double turnAngles[] = {33, 90, 123};
+        double turnAngles[] = {-29, 29, -90, 90, -119, 119};
         double tHdg = 0.0;
         drvTrn.ctrTurnToHeading(tHdg, 0.2);
         for( int a = 0; a < turnAngles.length; a++)
@@ -213,6 +213,7 @@ public class DriveTestUtil
                 dl.resetTime();
                 dl.addField("START ENC SPD OPT " + angle + " " + spd);
                 drvTrn.ctrTurnLinear(angle, spd);
+                op.sleep(100);
             }
         }
     }
