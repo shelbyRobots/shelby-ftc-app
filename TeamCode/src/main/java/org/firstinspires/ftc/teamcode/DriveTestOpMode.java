@@ -11,11 +11,15 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
+import ftclib.FtcChoiceMenu;
+import ftclib.FtcMenu;
 import hallib.HalDashboard;
 
 @Autonomous(name="DriveTestOpMode", group="Auton")
-public class DriveTestOpMode extends LinearOpMode
+public class DriveTestOpMode extends LinearOpMode implements FtcMenu.MenuButtons
 {
 
     public void initRobot()
@@ -29,8 +33,29 @@ public class DriveTestOpMode extends LinearOpMode
         setup();
     }
 
+    Map<String, Boolean> testMap = new HashMap<>();
+    String testToRun = "doSpeedTest";
+    String tests[] =
+            {
+                    "doSpeedTest",
+                    "doMaxSpeedTest",
+                    "doMinSpeedTest",
+                    "doFindBestDriveSpeed",
+                    "doFindBestEncTurnSpeed",
+                    "doFindBestGyroTurnSpeed",
+                    "doDriveDist",
+                    "doTurnAngle",
+                    "doMotionProfile",
+                    "doSturnTest"
+            };
+    
     private void setup()
     {
+//        for(String str : tests)
+//        {
+//            testMap.put(str, str.equals(testToRun));
+//        }
+        
         dashboard.displayPrintf(2, "STATE: %s", "INITIALIZING - PLEASE WAIT FOR MENU");
         DbgLog.msg("SJH: SETUP");
         hardwareMap.logDevices();
@@ -39,6 +64,8 @@ public class DriveTestOpMode extends LinearOpMode
 
         drvTrn.init(robot);
         drvTrn.setOpMode(this);
+
+        doMenus();
 
         setupLogger();
         drvTrn.setDataLogger(dl);
@@ -91,17 +118,6 @@ public class DriveTestOpMode extends LinearOpMode
         do_main_loop();
     }
 
-    boolean doSpeedTest = true;
-    boolean doMaxSpeedTest = false;
-    boolean doMinSpeedTest = false;
-    boolean doFindBestDriveSpeed = false; //true;
-    boolean doFindBestEncTurnSpeed = false;
-    boolean doFindBestGyroTurnSpeed = false;
-    boolean doDriveDist = false;
-    boolean doTurnAngle = false;
-    boolean doMotionProfile = false;
-    boolean doSturnTest = false;
-
     boolean useAnd = true;
     boolean rampUp = false;
     boolean rampDown = false;
@@ -128,7 +144,7 @@ public class DriveTestOpMode extends LinearOpMode
 
         //Test speed and accel/decel for various setPower settings
         double tHdg = 0.0;
-        if(doSpeedTest)
+        if(testMap.get("doSpeedTest"))
         {
             dl.addField("doSpeedTest"); dl.newLine();
             for (double s = 0.1; s <= 1.0; s += 0.1)
@@ -150,14 +166,14 @@ public class DriveTestOpMode extends LinearOpMode
         }
 
         //Find optimal drive speeds
-        if(doFindBestDriveSpeed)
+        if(testMap.get("doFindBestDriveSpeed"))
         {
             dl.addField("doFindBestDriveSpeed"); dl.newLine();
             dtu.findBestDriveSpeed();
         }
 
         //Drive motion profile test
-        if(doMotionProfile)
+        if(testMap.get("doMotionProfile"))
         {
             double d = 24.0;
             double s = 0.7;
@@ -166,21 +182,21 @@ public class DriveTestOpMode extends LinearOpMode
         }
 
         //Find optimal encoder speed
-        if(doFindBestEncTurnSpeed)
+        if(testMap.get("doFindBestEncTurnSpeed"))
         {
             dl.addField("doFindBestEncTurnSpeed"); dl.newLine();
             dtu.findBestEncTurnSpeed();
         }
 
         //Find optimal gyro speed/gain
-        if(doFindBestGyroTurnSpeed)
+        if(testMap.get("doFindBestGyroTurnSpeed"))
         {
             dl.addField("doFindBestGyroTurnSpeed"); dl.newLine();
             dtu.findBestGyroTurnSpeedGain();
         }
 
         //Test some common distance and turns from auton
-        if(doDriveDist)
+        if(testMap.get("doDriveDist"))
         {
             double dist[] = {48.0};
             robot.setDriveDir(ShelbyBot.DriveDir.SWEEPER);
@@ -194,7 +210,7 @@ public class DriveTestOpMode extends LinearOpMode
             }
         }
 
-        if(doTurnAngle)
+        if(testMap.get("doTurnAngle"))
         {
             robot.gyro.resetZAxisIntegrator();
             double angle = 5.0; //-90.0;
@@ -220,7 +236,7 @@ public class DriveTestOpMode extends LinearOpMode
         }
 
 
-        if(doMaxSpeedTest)
+        if(testMap.get("doMaxSpeedTest"))
         {
             dl.addField("doMaxSpeedTest"); dl.newLine();
             dtu.doMaxSpeedTest(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -229,14 +245,14 @@ public class DriveTestOpMode extends LinearOpMode
             sleep(1000);
         }
 
-        if(doMinSpeedTest)
+        if(testMap.get("doMinSpeedTest"))
         {
             dl.addField("doMinSpeedTest"); dl.newLine();
             dtu.doMinSpeedTest();
             sleep(1000);
         }
 
-        if(doSturnTest)
+        if(testMap.get("doSturnTest"))
         {
             dtu.doDoubleCurveTurn(4.0, 0.3);
         }
@@ -263,7 +279,7 @@ public class DriveTestOpMode extends LinearOpMode
         if (logData)
         {
             Date day = new Date();
-            dl = new DataLogger("driveTest");
+            dl = new DataLogger("driveTest_" + testToRun);
             dl.addField("NOTE");
             dl.addField("Frame");
             dl.addField("Gyro");
@@ -278,6 +294,57 @@ public class DriveTestOpMode extends LinearOpMode
             dl.addField("ESTY");
             dl.addField("ESTH");
             dl.newLine();
+        }
+    }
+
+    //
+    // Implements FtcMenu.MenuButtons interface.
+    //
+
+    @Override
+    public boolean isMenuUpButton() { return gamepad1.dpad_up;} //isMenuUpButton
+
+    @Override
+    public boolean isMenuDownButton()
+    {
+        return gamepad1.dpad_down;
+    } //isMenuDownButton
+
+    @Override
+    public boolean isMenuEnterButton()
+    {
+        return gamepad1.a;
+    } //isMenuEnterButton
+
+    @Override
+    public boolean isMenuBackButton()
+    {
+        return gamepad1.dpad_left;
+    }  //isMenuBackButton
+
+    private void doMenus()
+    {
+        FtcChoiceMenu<String> testMenu = new FtcChoiceMenu<>("TEST:", null, this);
+
+        for(String str : tests)
+        {
+            testMenu.addChoice(str, str);
+        }
+
+        FtcMenu.walkMenuTree(testMenu, this);
+
+        String outStr = testMenu.getCurrentChoiceObject();
+
+        for(String str : tests)
+        {
+            if(outStr.equals(str))
+            {
+                testMap.put(str, true);
+            }
+            else
+            {
+                testMap.put(str, false);
+            }
         }
     }
 

@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -96,15 +97,25 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         drvTrn.setUseSpeedThreads(false);
         drvTrn.setRampUp(false);
 
-        setupLogger();
-        drvTrn.setDataLogger(dl);
-
         initOpenCv();
 
         imgProc = new BeaconDetector();
         bd = (BeaconFinder) imgProc;
 
         doMenus();
+
+        setupLogger();
+        drvTrn.setDataLogger(dl);
+
+        dl.addField("Start: " + startPos.toString());
+        dl.addField("Push: " + beaconChoice.toString());
+        dl.addField("Park: " + parkChoice.toString());
+        dl.addField("Alliance: " + alliance.toString());
+        DbgLog.msg("SJH: STARTPOS %s", startPos);
+        DbgLog.msg("SJH: PUSH     %s", beaconChoice);
+        DbgLog.msg("SJH: PARK     %s", parkChoice);
+        DbgLog.msg("SJH: ALLIANCE %s", alliance);
+        DbgLog.msg("SJH: DELAY    %4.2f", delay);
 
         Points pts = new Points(startPos, alliance, beaconChoice, parkChoice, useFly2Light);
         pathSegs = pts.getSegments();
@@ -151,7 +162,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             robot.gyro.resetZAxisIntegrator();
 
             ElapsedTime botRotTimer = new ElapsedTime();
-            while (botRotTimer.seconds() < 10)
+            while (botRotTimer.seconds() < 20)
             {
                 int chdg = robot.gyro.getIntegratedZValue();
                 dashboard.displayPrintf(0, "GHDG: %d", chdg);
@@ -306,6 +317,7 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             {
                 case SHOOT:
                     do_shoot();
+                    drvTrn.driveToTarget(0.13, 18);
                     break;
 
                 case FIND_BEACON:
@@ -380,11 +392,11 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             {
                 if(colSegNum == 1)
                 {
-                    colGyroOffset = 60;
+                    colGyroOffset = 120;
                 }
                 else
                 {
-                    colGyroOffset = 80;
+                    colGyroOffset = 120;
                 }
             }
 
@@ -514,12 +526,15 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
         if(snm.equals("PRECTR") ||
            snm.equals("CTRPRK") ||
+           snm.equals("B_MID")  ||
+           snm.equals("DP1")    ||
            snm.equals("ASHOOT") ||
-           snm.equals("B_MID"))
+           snm.equals("BSHOOT") ||
+           snm.equals("DFNPRK"))
         {
             doCorrect = false;
         }
-        if(doCorrect) drvTrn.driveToTarget(0.11, dtlCorrect);
+        if(doCorrect) drvTrn.driveToTarget(0.13, dtlCorrect);
 
         drvTrn.setCurrPt(ept);
 
@@ -670,9 +685,6 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
                pushSide == BeaconFinder.BeaconSide.UNKNOWN   &&
                itimer.milliseconds() < timeout)
         {
-            blueSide = bd.getBluePosSide();
-            redSide  = bd.getRedPosSide();
-            pushSide = findPushSide(blueSide, redSide);
             totXOffset = bd.getBeaconPosX();
             zPos = bd.getBeaconPosZ();
             bcnf = bd.getBeaconConf();
@@ -737,16 +749,35 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
         itimer.reset();
         pushSide = BeaconFinder.BeaconSide.UNKNOWN;
-        while (opModeIsActive()                             &&
-               pushSide == BeaconFinder.BeaconSide.UNKNOWN  &&
-               itimer.milliseconds() < timeout)
+        int numPsideSamples = 1;
+
+        int numLft = 0;
+        int numRgt = 0;
+        for (int i = 0; i < numPsideSamples; i++)
         {
-            blueSide = bd.getBluePosSide();
-            redSide = bd.getRedPosSide();
-            pushSide = findPushSide(blueSide, redSide);
-            zPos = bd.getBeaconPosZ();
-            bcnf = bd.getBeaconConf();
-            robot.waitForTick(20);
+            BeaconFinder.BeaconSide bs = BeaconFinder.BeaconSide.UNKNOWN;
+
+            while (opModeIsActive() &&
+                   bs == BeaconFinder.BeaconSide.UNKNOWN &&
+                   itimer.milliseconds() < timeout)
+            {
+                blueSide = bd.getBluePosSide();
+                redSide = bd.getRedPosSide();
+                bs = findPushSide(blueSide, redSide);
+                zPos = bd.getBeaconPosZ();
+                bcnf = bd.getBeaconConf();
+                robot.waitForTick(20);
+            }
+            if(bs == BeaconFinder.BeaconSide.LEFT)  numLft++;
+            if(bs == BeaconFinder.BeaconSide.RIGHT) numRgt++;
+            if(numPsideSamples > 1) robot.waitForTick(50);
+        }
+        pushSide = BeaconFinder.BeaconSide.UNKNOWN;
+        if(numLft > numRgt) pushSide = BeaconFinder.BeaconSide.LEFT;
+        if(numRgt > numLft) pushSide = BeaconFinder.BeaconSide.RIGHT;
+        if(numLft > 0 && numRgt > 0)
+        {
+            drvTrn.logData(true, "BEACON_MIX " + numLft + " " + numRgt);
         }
 
         drvTrn.logData(true, "Bside " + blueSide.toString());
@@ -806,18 +837,19 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
             {
                 //actTouchX -= actDist;
                 //actTouchX = drvTrn.estPos.getX();
-                actTouchX = -58.0;
+                actTouchX = -59.0;
             }
             else
             {
                 //actTouchY += actDist;
                 //actTouchY = drvTrn.estPos.getY();
-                actTouchY = 58.0;
+                actTouchY = 59.0;
+                //touchStart.setY(51.0);
             }
 
             Point2d actTouchPt = new Point2d(actTouchX, actTouchY);
             drvTrn.logData(true, "AT PUSH " + actTouchPt.toString());
-            drvTrn.setCurrPt(actTouchPt);
+            drvTrn.setCurrPt(actTouchPt, true);
             drvTrn.driveToPointLinear(touchStart, 0.2,
                     Drivetrain.Direction.REVERSE, desHdg);
             drvTrn.logData(true, "PUSHED?");
@@ -1146,16 +1178,6 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         dashboard.displayPrintf(lnum++, "PUSH: %s", beaconChoice);
         dashboard.displayPrintf(lnum++, "PARK: %s", parkChoice);
         dashboard.displayPrintf(lnum++, "ALLIANCE: %s", alliance);
-
-        dl.addField("Start: " + startPos.toString());
-        dl.addField("Push: " + beaconChoice.toString());
-        dl.addField("Park: " + parkChoice.toString());
-        dl.addField("Alliance: " + alliance.toString());
-        DbgLog.msg("SJH: STARTPOS %s", startPos);
-        DbgLog.msg("SJH: PUSH     %s", beaconChoice);
-        DbgLog.msg("SJH: PARK     %s", parkChoice);
-        DbgLog.msg("SJH: ALLIANCE %s", alliance);
-        DbgLog.msg("SJH: DELAY    %4.2f", delay);
     }
 
     private void setupLogger()
@@ -1163,7 +1185,16 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
         if (logData)
         {
             Date day = new Date();
-            dl = new DataLogger(day.toString() + "autonomousData");
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(day);
+            String dayStr = String.format(Locale.US, "%d%d%d_%02d%02d_%s",
+                    cal.get(Calendar.YEAR),
+                    cal.get(Calendar.MONTH),
+                    cal.get(Calendar.DAY_OF_MONTH),
+                    cal.get(Calendar.HOUR_OF_DAY),
+                    cal.get(Calendar.MINUTE),
+                    alliance.toString() + "_auton");
+            dl = new DataLogger(dayStr);
             dl.addField("NOTE");
             dl.addField("FRAME");
             dl.addField("Gyro");

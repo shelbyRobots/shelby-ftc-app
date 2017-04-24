@@ -200,7 +200,7 @@ class Drivetrain
                 int lcnt = curLpos;
                 int rcnt = curRpos;
                 int hiSlow  = 960;
-                int midSlow = 480;
+                int midSlow = 480 + colOverCnt/4;
                 int lowSlow = 240 + colOverCnt;
                 int remaining = Math.abs(((trgtLpos - lcnt) + (trgtRpos - rcnt)) / 2);
                 if (Math.abs(remaining) < hiSlow)  ppwr = Math.min(ppwr, 0.5);
@@ -245,7 +245,7 @@ class Drivetrain
             frame++;
         }
 
-        int kludge = 80;
+        int kludge = 160;
         if(useCol && !foundLine)
         {
             trgtLpos -= (colOverCnt + kludge);
@@ -590,11 +590,11 @@ class Drivetrain
         return (double)counts/(CPI*radius);
     }
 
-    void setCurrPt(Point2d curPt)
+    void setCurrPt(Point2d curPt, boolean resetEstPt)
     {
         DbgLog.msg("SJH: setCurrPt %s. estPos %s", curPt, estPos);
         currPt = curPt;
-        if(numPts == 0)
+        if(numPts == 0 || resetEstPt)
         {
             xPos = currPt.getX();
             yPos = currPt.getY();
@@ -603,6 +603,11 @@ class Drivetrain
             estHdg = initHdg;
         }
         ++numPts;
+    }
+
+    void setCurrPt(Point2d curPt)
+    {
+        setCurrPt(curPt, false);
     }
 
     public void estimatePosition()

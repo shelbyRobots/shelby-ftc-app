@@ -90,7 +90,7 @@ class Points
         if(pushChoice == Field.BeaconChoice.FAR ||
            pushChoice == Field.BeaconChoice.BOTH)
         {
-            addPoint(points, fwd, 0.5, 1.00, becnSegType, beacon, BECN2_PT);
+            addPoint(points, fwd, 0.55, 1.00, becnSegType, beacon, BECN2_PT);
         }
 
         //PARK PTS
@@ -98,8 +98,8 @@ class Points
         boolean parkFull = true;
         if(parkChoice == Field.ParkChoice.DEFEND_PARK)
         {
-            addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, DP1);
-            addPoint(points, fwd, 0.5, 1.00, Segment.TargetType.ENCODER, none, DP2);
+            addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER, none, DP1);
+            addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER, none, DP2);
         }
         else if(parkChoice == Field.ParkChoice.CENTER_PARK && parkFull)
         {
@@ -110,7 +110,7 @@ class Points
             parkDir = fwd;
         }
 
-        addPoint(points, parkDir, 0.6, 1.00, Segment.TargetType.ENCODER, none, park_pt);
+        addPoint(points, parkDir, 0.7, 1.00, Segment.TargetType.ENCODER, none, park_pt);
 
         return points;
     }
@@ -186,6 +186,11 @@ class Points
                rpt.getName().equals("SCAN1") || rpt.getName().equals("SCAN2"))
             {
                 rpt.setX(rpt.getX() + blueBecnScanAdjust);
+            }
+
+            if(rpt.getName().equals("DFNPRK"))
+            {
+                rpt.setX(-12.0);
             }
 
             bpts.add(convertRtoB(rpt));
@@ -298,33 +303,32 @@ class Points
     private static final double ASTARTY =  S_WALL + REAR_OFFSET + 0.5;
     private static final double AIMERY  =  ASTARTY + 3.0;
     private static final double ASHOOTY =  -27.0 - FRNT_OFFSET;
-    private static final double AIMTOX  =  -12.0;
+    private static final double AIMTOX  =  -10.5;
     private static final double AIMTOY  =  -10.5;
 
-    private static final double TMPY = -44.0;
     private static final double BSTARTX =  12.0;
-    private static final double BSHOOTX =    4.0;
-    private static final double BSHOOTY =  -34.0;
+    private static final double BSHOOTX =    1.0;
+    private static final double BSHOOTY =  -33.5;
 
     private static final double RSTARTX =  -24.0;
     private static final double RSTARTY =  ASTARTY;
-    private static final double RSHOOTX = -27.0 - FRNT_OFFSET;
+    private static final double RSHOOTX = -25.0 - FRNT_OFFSET;
     private static final double RSHOOTY = BECN1_Y;
 
-    private static final double blueBecnScanAdjust = 0.0;
+    private static final double blueBecnScanAdjust = -1.0;
 
     private static final double PRECTRX = -28.0;
     private static final double PRECTRY =  -4.0;
-    private static final double BPRCTRX =   2.0;
-    private static final double BPRCTRY = -28.0;
+    private static final double BPRCTRX =   1.0;
+    private static final double BPRCTRY = -25.0;
     private static final double CTRPRKX = -10.0;
     private static final double CTRPRKY =   0.0;
     private static final double CRNPRKX = -48.0;
     private static final double CRNPRKY = -48.0;
-    private static final double DFNPRKX = -12.0;
+    private static final double DFNPRKX =  -9.0;
     private static final double DFNPRKY =  48.0;
-    private static final double BCTPRKX =   2.0;
-    private static final double BCTPRKY =  -8.0;
+    private static final double BCTPRKX =   0.9;
+    private static final double BCTPRKY =  -6.0;
 
     private static final double SCAN_X  = -38.0;
     private static final double BECN_X  = -52.0;
@@ -339,8 +343,6 @@ class Points
 
     private Point2d ASTART_PT = new Point2d("ASTART", ASTARTX, ASTARTY);
     private Point2d ASHOOT_PT = new Point2d("ASHOOT", ASTARTX, ASHOOTY);
-
-    private Point2d TMP_PT = new Point2d("TMP", ASTARTX, TMPY);
 
     private Point2d BASKET_PT = new Point2d("BASKET", AIMTOX, AIMTOY);
 
@@ -364,8 +366,8 @@ class Points
     private Point2d BCTPRKPT = new Point2d("BCTPRK", BCTPRKX, BCTPRKY);
     private Point2d DFNPRKPT = new Point2d("DFNPRK", DFNPRKX, DFNPRKY);
 
-    private Point2d DP1 = new Point2d("DFNPATH", DFNPTHX, DFNPTHY);
-    private Point2d DP2 = new Point2d("DFNPATH", DFNPTHX, DFNPTHY2);
+    private Point2d DP1 = new Point2d("DP1", DFNPTHX, DFNPTHY);
+    private Point2d DP2 = new Point2d("DP2", DFNPTHX, DFNPTHY2);
 
     private final static int    MAX_SEGMENTS = 16;
 

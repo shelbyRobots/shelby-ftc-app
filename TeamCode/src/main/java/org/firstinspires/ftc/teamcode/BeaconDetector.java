@@ -110,6 +110,8 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
         beaconConfBuf.clear();
         beaconPosXBuf.clear();
         beaconPosZBuf.clear();
+        redPosSide  = BeaconSide.UNKNOWN;
+        bluePosSide = BeaconSide.UNKNOWN;
 
         firstCalcsDone = false;
         sensingActive = true;
