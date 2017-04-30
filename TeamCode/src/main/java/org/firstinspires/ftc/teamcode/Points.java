@@ -74,7 +74,7 @@ class Points
            pushChoice == Field.BeaconChoice.BOTH)
         {
 
-            addPoint(points, fwd, 0.55,  1.00, becnSegType, beacon, BECN1_PT);
+            addPoint(points, fwd, 0.45,  1.00, becnSegType, beacon, BECN1_PT);
 
             if(startPos == Field.StartPos.START_R_PUSHER)
             {
@@ -90,7 +90,7 @@ class Points
         if(pushChoice == Field.BeaconChoice.FAR ||
            pushChoice == Field.BeaconChoice.BOTH)
         {
-            addPoint(points, fwd, 0.55, 1.00, becnSegType, beacon, BECN2_PT);
+            addPoint(points, fwd, 0.45, 1.00, becnSegType, beacon, BECN2_PT);
         }
 
         //PARK PTS
@@ -99,7 +99,7 @@ class Points
         if(parkChoice == Field.ParkChoice.DEFEND_PARK)
         {
             addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER, none, DP1);
-            addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER, none, DP2);
+            //addPoint(points, fwd, 0.6, 1.00, Segment.TargetType.ENCODER, none, DP2);
         }
         else if(parkChoice == Field.ParkChoice.CENTER_PARK && parkFull)
         {
@@ -110,7 +110,7 @@ class Points
             parkDir = fwd;
         }
 
-        addPoint(points, parkDir, 0.7, 1.00, Segment.TargetType.ENCODER, none, park_pt);
+        addPoint(points, parkDir, 0.75, 1.00, Segment.TargetType.ENCODER, none, park_pt);
 
         return points;
     }
@@ -190,7 +190,7 @@ class Points
 
             if(rpt.getName().equals("DFNPRK"))
             {
-                rpt.setX(-12.0);
+                rpt.setX(-11.0);
             }
 
             bpts.add(convertRtoB(rpt));
@@ -315,7 +315,7 @@ class Points
     private static final double RSHOOTX = -25.0 - FRNT_OFFSET;
     private static final double RSHOOTY = BECN1_Y;
 
-    private static final double blueBecnScanAdjust = -1.0;
+    private static final double blueBecnScanAdjust = -3.0;
 
     private static final double PRECTRX = -28.0;
     private static final double PRECTRY =  -4.0;
@@ -323,19 +323,19 @@ class Points
     private static final double BPRCTRY = -25.0;
     private static final double CTRPRKX = -10.0;
     private static final double CTRPRKY =   0.0;
-    private static final double CRNPRKX = -48.0;
+    private static final double CRNPRKX = -45.0;
     private static final double CRNPRKY = -48.0;
     private static final double DFNPRKX =  -9.0;
     private static final double DFNPRKY =  48.0;
     private static final double BCTPRKX =   0.9;
-    private static final double BCTPRKY =  -6.0;
+    private static final double BCTPRKY =  -8.0;
 
     private static final double SCAN_X  = -38.0;
-    private static final double BECN_X  = -52.0;
-    private static final double BECN2X  = -52.0;
+    private static final double BECN_X  = -50.0;
+    private static final double BECN2X  = -51.0;
 
-    private static final double DFNPTHX = 24;
-    private static final double DFNPTHY = -24;
+    private static final double DFNPTHX =  -34; //24;
+    private static final double DFNPTHY =  -30; //-24;
     private static final double DFNPTHY2 = 24;
 
     private static final double BMID_X  = -24.0;
