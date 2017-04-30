@@ -799,7 +799,9 @@ public class FtcAutoShelby extends OpenCvCameraOpMode implements FtcMenu.MenuBut
 
         if(push && pushSide != BeaconFinder.BeaconSide.UNKNOWN)
         {
-            double tgtDist = zPos + 3.5; //15.0;
+            double pushAdd = 4.0;
+            if(alliance == Field.Alliance.BLUE) pushAdd = 5.5;
+            double tgtDist = zPos + pushAdd;
             Point2d touchStart = seg.getTgtPt();
             double touchX = touchStart.getX();
             double touchY = touchStart.getY();
