@@ -211,7 +211,7 @@ class Drivetrain
             DbgLog.msg("SJH: ppwr " + ppwr + " curLpower " + curLpower +
                                " curRpower " + curRpower + " pwrIncr " +  pwrIncr);
 
-            int COLOR_THRESH = 20;
+            int COLOR_THRESH = 30;
             double lRem = countsToDistance(Math.abs(trgtLpos - curLpos));
             double rRem = countsToDistance(Math.abs(trgtRpos - curRpos));
             double colOnDist = 24.0;
