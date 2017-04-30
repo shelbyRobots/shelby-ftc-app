@@ -101,12 +101,17 @@ public class DriveTestOpMode extends LinearOpMode implements FtcMenu.MenuButtons
     public void runOpMode()
     {
         initRobot();
+        robot.turnColorOn();
         while(!isStarted())
         {
             dashboard.displayPrintf(1, "HDG: " + robot.getGyroFhdg());
             dashboard.displayPrintf(2, "LENC: " + robot.leftMotor.getCurrentPosition());
             dashboard.displayPrintf(3, "RENC: " + robot.rightMotor.getCurrentPosition());
+            dashboard.displayPrintf(4, "R " + robot.colorSensor.red());
+            dashboard.displayPrintf(5, "G " + robot.colorSensor.green());
+            dashboard.displayPrintf(6, "B " + robot.colorSensor.blue());
         }
+        robot.turnColorOff();
         waitForStart();
         startMode();
         stopMode();
