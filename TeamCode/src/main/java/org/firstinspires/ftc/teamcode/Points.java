@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.robotcore.util.RobotLog;
 
 import java.util.Vector;
 
@@ -214,7 +214,7 @@ class Points
             seg.setTgtType(ttypes.get(s));
             seg.setDrvTuner(tuners.get(s));
 
-            DbgLog.msg("SJH: setting up segment %s %s %s %4.1f tune: %4.2f",
+            RobotLog.ii("SJH", "setting up segment %s %s %s %4.1f tune: %4.2f",
                     seg.getName(), seg.getStrtPt(), seg.getTgtPt(),
                     seg.getFieldHeading(), seg.getDrvTuner());
 
@@ -233,7 +233,7 @@ class Points
                 double nfhdg = 180.0;
                 if (alliance == Field.Alliance.BLUE) nfhdg = 90.0;
                 curSeg.setPostTurn(nfhdg);
-                DbgLog.msg("SJH: Segment %s setting postTurn %4.2f", sname, nfhdg);
+                RobotLog.ii("SJH", "Segment %s setting postTurn %4.2f", sname, nfhdg);
             }
 //            if(sname.equals("CTRPRK"))
 //            {
@@ -250,7 +250,7 @@ class Points
                 Segment aim = new Segment("AIM", curSeg.getTgtPt(), BASKET_PT);
                 double nfhdg = aim.getFieldHeading();
                 curSeg.setPostTurn(nfhdg);
-                DbgLog.msg("SJH: Segment %s setting postTurn %4.2f", sname, nfhdg);
+                RobotLog.ii("SJH", "Segment %s setting postTurn %4.2f", sname, nfhdg);
             }
         }
 

@@ -2,7 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import android.widget.TextView;
 
-import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -57,7 +57,7 @@ public class DriveTestOpMode extends LinearOpMode implements FtcMenu.MenuButtons
 //        }
         
         dashboard.displayPrintf(2, "STATE: %s", "INITIALIZING - PLEASE WAIT FOR MENU");
-        DbgLog.msg("SJH: SETUP");
+        RobotLog.ii("SJH", "SETUP");
         hardwareMap.logDevices();
 
         robot.init(this);
@@ -82,10 +82,6 @@ public class DriveTestOpMode extends LinearOpMode implements FtcMenu.MenuButtons
             robot.rightMotor != null &&
             robot.gyro != null)
         {
-            int lms = robot.leftMotor.getMaxSpeed();
-            int rms = robot.rightMotor.getMaxSpeed();
-            DbgLog.msg("SJH: MaxSpeeds %d %d", lms, rms);
-
             gyroReady = robot.calibrateGyro();
         }
 
@@ -143,7 +139,7 @@ public class DriveTestOpMode extends LinearOpMode implements FtcMenu.MenuButtons
         drvTrn.setUseSpeedThreads(false);
         drvTrn.setGangMotors(false);
 
-        DbgLog.msg("SJH: Starting test do_main_loop");
+        RobotLog.ii("SJH", "Starting test do_main_loop");
         robot.gyro.resetZAxisIntegrator();
         sleep(100);
 
@@ -154,7 +150,7 @@ public class DriveTestOpMode extends LinearOpMode implements FtcMenu.MenuButtons
             dl.addField("doSpeedTest"); dl.newLine();
             for (double s = 0.1; s <= 1.0; s += 0.1)
             {
-                DbgLog.msg("SJH: Test speed " + s);
+                RobotLog.ii("SJH", "Test speed " + s);
                 drvTrn.logData(true, "TURNING");
                 drvTrn.ctrTurnLinear(tHdg - robot.getGyroFhdg(), 0.4);
                 drvTrn.ctrTurnToHeading(tHdg, 0.2);

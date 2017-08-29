@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.Range;
 
@@ -151,7 +151,7 @@ public class OpenCVAuton extends OpenCvCameraOpMode
                             rDv = Range.clip( baseSpeed + tPow, -0.35, 0.35 );
                             lDv = Range.clip( baseSpeed - tPow, -0.35, 0.35 );
 
-                            DbgLog.msg("SJH: /BEACON/INIT > nOff: %5.2f, nPos: %5.2f, nAng: %5.2f, dDist: %5.2f", nOff, nPos, nAng, dDist );
+                            RobotLog.ii("SJH", "/BEACON/INIT > nOff: %5.2f, nPos: %5.2f, nAng: %5.2f, dDist: %5.2f", nOff, nPos, nAng, dDist );
 
                             robot.rightMotor.setPower( rDv );
                             robot.leftMotor.setPower( lDv );
@@ -166,7 +166,7 @@ public class OpenCVAuton extends OpenCvCameraOpMode
 
                             curDistCount = (robot.leftMotor.getCurrentPosition() + robot.rightMotor.getCurrentPosition()) / 2.0;
 
-                            DbgLog.msg("SJH: /BEACON/CENTER > r: %5.2f, l: %5.2f, d: %5.2f, a: %5.2f", rDv, lDv, drvTrn.countsToDistance(curDistCount), hErr );
+                            RobotLog.ii("SJH", "/BEACON/CENTER > r: %5.2f, l: %5.2f, d: %5.2f, a: %5.2f", rDv, lDv, drvTrn.countsToDistance(curDistCount), hErr );
 
                             if (drvTrn.countsToDistance(curDistCount) > zPos / 2.0) {
 
@@ -190,7 +190,7 @@ public class OpenCVAuton extends OpenCvCameraOpMode
 
                             curDistCount = (robot.leftMotor.getCurrentPosition() + robot.rightMotor.getCurrentPosition()) / 2.0;
 
-                            DbgLog.msg("SJH: /BEACON/ALIGN > r: %5.2f, l: %5.2f, d: %5.2f, a: %5.2f", rDv, lDv, drvTrn.countsToDistance(curDistCount), hErr );
+                            RobotLog.ii("SJH", "/BEACON/ALIGN > r: %5.2f, l: %5.2f, d: %5.2f, a: %5.2f", rDv, lDv, drvTrn.countsToDistance(curDistCount), hErr );
 
                             if ( Math.abs( hErr ) < 2.0 ) {
 
@@ -212,7 +212,7 @@ public class OpenCVAuton extends OpenCvCameraOpMode
 
                             curDistCount = (robot.leftMotor.getCurrentPosition() + robot.rightMotor.getCurrentPosition()) / 2.0;
 
-                            DbgLog.msg("SJH: /BEACON/DRIVE > r: %5.2f, l: %5.2f, d: %5.2f, a: %5.2f", rDv, lDv, drvTrn.countsToDistance(curDistCount), hErr );
+                            RobotLog.ii("SJH", "/BEACON/DRIVE > r: %5.2f, l: %5.2f, d: %5.2f, a: %5.2f", rDv, lDv, drvTrn.countsToDistance(curDistCount), hErr );
 
                             robot.rightMotor.setPower( baseSpeed );
                             robot.leftMotor.setPower( baseSpeed );
@@ -254,7 +254,7 @@ public class OpenCVAuton extends OpenCvCameraOpMode
                                     break;
                             }
 
-                            DbgLog.msg("SJH: /BEACON/FORWARD > FOUND ON %s", pushSide);
+                            RobotLog.ii("SJH", "/BEACON/FORWARD > FOUND ON %s", pushSide);
 
                         }
 
@@ -262,7 +262,7 @@ public class OpenCVAuton extends OpenCvCameraOpMode
                             beaconStep = "WAIT";
                             robot.rightMotor.setPower(0);
                             robot.leftMotor.setPower(0);
-                            DbgLog.msg("SJH: /BEACON/FORWARD > NOT MOVING? YIKES! %5.2f", curDistCount);
+                            RobotLog.ii("SJH", "/BEACON/FORWARD > NOT MOVING? YIKES! %5.2f", curDistCount);
                         }
                     }
                 }

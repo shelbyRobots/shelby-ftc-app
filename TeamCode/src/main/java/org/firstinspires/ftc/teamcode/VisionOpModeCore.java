@@ -6,7 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
-import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -38,7 +38,7 @@ public abstract class VisionOpModeCore extends LinearOpMode implements CameraBri
     }
 
     private void error(String message) {
-        DbgLog.msg("SJH: %s", message);
+        RobotLog.ii("SJH", "%s", message);
         telemetry.addData("Vision Status", message);
     }
 
@@ -70,7 +70,7 @@ public abstract class VisionOpModeCore extends LinearOpMode implements CameraBri
         width = openCVCamera.getWidth();
         height = openCVCamera.getHeight();
         if (width == 0 || height == 0) {
-            DbgLog.msg("SJH: %s", "OpenCV Camera failed to initialize width and height properties on startup.\r\n" +
+            RobotLog.ii("SJH", "%s", "OpenCV Camera failed to initialize width and height properties on startup.\r\n" +
                     "This is generally okay, but if you use width or height during init() you may\r\n" +
                     "run into a problem.");
         }
@@ -99,7 +99,7 @@ public abstract class VisionOpModeCore extends LinearOpMode implements CameraBri
                     switch (status) {
                         case LoaderCallbackInterface.SUCCESS: {
                             //Woohoo!
-                            DbgLog.msg("OpenCV Manager connected!");
+                            RobotLog.ii("SJH", "OpenCV Manager connected!");
                             openCVInitialized = true;
                         }
                         break;
@@ -121,20 +121,20 @@ public abstract class VisionOpModeCore extends LinearOpMode implements CameraBri
         activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
         if (!OpenCVLoader.initDebug()) {
-            DbgLog.msg("Internal OpenCV library not found. Using OpenCV Manager for initialization");
+            RobotLog.ii("SJH", "Internal OpenCV library not found. Using OpenCV Manager for initialization");
             boolean success = OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, hardwareMap.appContext, openCVLoaderCallback);
             if (!success) {
                 error("Could not initialize OpenCV!\r\n" +
                         "Did you install the OpenCV Manager from the Play Store?");
             } else {
-                DbgLog.msg("OpenCV: Asynchronous initialization succeeded!");
+                RobotLog.ii("SJH", "OpenCV: Asynchronous initialization succeeded!");
             }
         } else {
-            DbgLog.msg("OpenCV library found inside package. Using it!");
+            RobotLog.ii("SJH", "OpenCV library found inside package. Using it!");
             if (openCVLoaderCallback != null)
                 openCVLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
             else {
-                DbgLog.msg("Failed to load OpenCV from package!");
+                RobotLog.ee("SJH", "Failed to load OpenCV from package!");
                 return;
             }
         }
@@ -197,13 +197,13 @@ public abstract class VisionOpModeCore extends LinearOpMode implements CameraBri
     public void onCameraViewStarted(int width, int height) {
         this.width = width;
         this.height = height;
-        DbgLog.msg("SJH: size " + String.valueOf(width) + "x" + String.valueOf(height));
-        DbgLog.msg("SJH: CAMERA STARTED");
+        RobotLog.ii("SJH", "size " + String.valueOf(width) + "x" + String.valueOf(height));
+        RobotLog.ii("SJH", "CAMERA STARTED");
     }
 
     @Override
     public void onCameraViewStopped() {
-        DbgLog.msg("SJH: CAMERA STOPPED");
+        RobotLog.ii("SJH", "CAMERA STOPPED");
     }
 
     @Override

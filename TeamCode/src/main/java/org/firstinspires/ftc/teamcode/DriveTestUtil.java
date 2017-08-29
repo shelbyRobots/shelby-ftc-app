@@ -1,7 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 
-import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -265,24 +265,24 @@ public class DriveTestUtil
         double aspds[] = new double[nFiltFrms];
         double dspds[] = new double[nFiltFrms];
 
-        DbgLog.msg("Accel speeds");
+        RobotLog.ii("SJH", "Accel speeds");
         while(frm < nFiltFrms)
         {
             f1spd = (double)Math.min(frm+1, f1Ticks)/f1Ticks * spd;
             f2spd = (double)Math.min(frm+1, f2Ticks)/f2Ticks * f1spd;
             aspds[frm] = f2spd;
-            DbgLog.msg("aspds["+frm+"]="+aspds[frm]);
+            RobotLog.ii("SJH", "aspds["+frm+"]="+aspds[frm]);
             frm++;
         }
 
-        DbgLog.msg("Decel speeds");
+        RobotLog.ii("SJH", "Decel speeds");
         frm = 0;
         while(frm < nFiltFrms)
         {
             f1spd = (double)Math.min(frm+1, f1Ticks)/f1Ticks * spd;
             f2spd = (double)Math.min(frm+1, f2Ticks)/f2Ticks * f1spd;
             dspds[frm] = spd - f2spd;
-            DbgLog.msg("dspds["+frm+"]="+dspds[frm]);
+            RobotLog.ii("SJH", "dspds["+frm+"]="+dspds[frm]);
             frm++;
         }
 

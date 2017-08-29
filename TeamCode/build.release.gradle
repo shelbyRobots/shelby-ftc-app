@@ -5,6 +5,7 @@ dependencies {
     compile (name: 'FtcCommon-release', ext: 'aar')
     compile (name:'Analytics-release', ext:'aar')
     compile (name:'WirelessP2p-release', ext:'aar')
+    compile (name:'ModernRobotics-release', ext:'aar')
 
     compile project(':openCVLibrary310')
     compile project(':Ftc3543Lib')

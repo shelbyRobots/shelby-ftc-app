@@ -79,7 +79,8 @@ public class TimingTest extends LinearOpMode
         double curSpd = 0.3;
         long stoppedSleepTime = 0;
 
-        colorSensor.getI2cController().deregisterForPortReadyCallback(colorSensor.getPort());
+        //TODO: SBH - Figure out how to register/deregister if timing shows its needed
+        //colorSensor.getI2cController().deregisterForPortReadyCallback(colorSensor.getPort());
 
         while (opModeIsActive() && curSpd <= 0.35)
         {
@@ -140,8 +141,9 @@ public class TimingTest extends LinearOpMode
             if(curSpd < 0.15) curSpd += 0.01;
             else curSpd += 0.05;
 
-            colorSensor.getI2cController()
-                       .registerForI2cPortReadyCallback(colorSensor, colorSensor.getPort());
+            //TODO: SBH - Figure out how to register/deregister if timing shows its needed
+            //colorSensor.getI2cController()
+            //           .registerForI2cPortReadyCallback(colorSensor, colorSensor.getPort());
         }
         stopRobot();
 

@@ -2,7 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import android.os.Environment;
 
-import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.robotcore.util.RobotLog;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -35,7 +35,7 @@ public class DataLogger {
         // Create directory if it does not exist
         if(!fDir.isDirectory() && !fDir.mkdirs())
         {
-                DbgLog.error("SJH: Could not create directory " + directoryPath);
+                RobotLog.ee("SJH", "Could not create directory " + directoryPath);
         }
 
         try
@@ -45,7 +45,7 @@ public class DataLogger {
         }
         catch (IOException e)
         {
-            DbgLog.error("SJH: Could not create file " + filePath);
+            RobotLog.ee("SJH", "Could not create file " + filePath);
         }
 
         msBase = System.currentTimeMillis();
@@ -56,7 +56,7 @@ public class DataLogger {
         }
         catch (IOException e)
         {
-            DbgLog.error("SJH: Could not write header");
+            RobotLog.ee("SJH", "Could not write header");
         }
     }
 
@@ -75,7 +75,7 @@ public class DataLogger {
         }
         catch (IOException e)
         {
-            DbgLog.error("SJH: Could not write in flushLineBuffer()");
+            RobotLog.ee("SJH", "Could not write in flushLineBuffer()");
         }
         lineStart = true;
     }
@@ -110,7 +110,7 @@ public class DataLogger {
         }
         catch (IOException e)
         {
-            DbgLog.error("SJH: IoException in closeDataLogger()");
+            RobotLog.ee("SJH", "IoException in closeDataLogger()");
         }
     }
 

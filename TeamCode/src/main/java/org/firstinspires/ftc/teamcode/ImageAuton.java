@@ -34,7 +34,7 @@ package org.firstinspires.ftc.teamcode;
 
 import android.graphics.Bitmap;
 
-import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -101,7 +101,7 @@ public class ImageAuton extends LinearOpMode {
 
     private boolean findSensedLoc()
     {
-        DbgLog.msg("SJH findSensedLoc");
+        RobotLog.ii("SJH", "findSensedLoc");
         tracker.setActive(true);
         telemetry.addData("2", "STATE: %s", "FIND IMG LOC");
         curPos = null;
@@ -133,8 +133,8 @@ public class ImageAuton extends LinearOpMode {
         if ( sensedBotPos != null )
         {
             double t = itimer.seconds();
-            DbgLog.msg("SJH Senesed Pos: %s %5.2f %2.3f", sensedBotPos, sensedFldHdg, t);
-            DbgLog.msg("SJH IMG %s frame %d", tracker.getLocString(), frm);
+            RobotLog.ii("SJH", "Senesed Pos: %s %5.2f %2.3f", sensedBotPos, sensedFldHdg, t);
+            RobotLog.ii("SJH", "IMG %s frame %d", tracker.getLocString(), frm);
             telemetry.addData("SLOC", "SLOC: %s %4.1f", sensedBotPos, sensedFldHdg);
             telemetry.addData("IMG", "%s  frame %d", tracker.getLocString(), frm);
         }
@@ -150,7 +150,7 @@ public class ImageAuton extends LinearOpMode {
 //            currPos = lastLocation.getTranslation();
 //            String locStr = tracker.getLocString();
 //            telemetry.addData("LOC2", locStr);
-//            DbgLog.msg("SJH " + locStr);
+//            RobotLog.ii("SJH", " + locStr);
 //        }
 
         return (curPos != null);
@@ -158,7 +158,7 @@ public class ImageAuton extends LinearOpMode {
 
     private void do_findBeaconOrder(boolean push)
     {
-        DbgLog.msg("SJH: FIND BEACON ORDER!!!");
+        RobotLog.ii("SJH", "FIND BEACON ORDER!!!");
         telemetry.addData("2", "STATE: %s", "BEACON FIND");
         int timeout = 500;
         BeaconFinder.LightOrder ord = BeaconFinder.LightOrder.UNKNOWN;
@@ -195,7 +195,7 @@ public class ImageAuton extends LinearOpMode {
         if (ord != BeaconFinder.LightOrder.UNKNOWN)
         {
             double t = itimer.seconds();
-            DbgLog.msg("SJH: Found Beacon!!! %s %3.3f frame: %d", ord, t, frame);
+            RobotLog.ii("SJH", "Found Beacon!!! %s %3.3f frame: %d", ord, t, frame);
             telemetry.addData("BORD", "SJH LightOrder = %s frame %d", ord, frame);
         }
         telemetry.update();
@@ -216,7 +216,7 @@ public class ImageAuton extends LinearOpMode {
         //tracker.setFrameQueueSize(10);
 
         telemetry.addData(":", "Visual Cortex activated!");
-        DbgLog.msg("SJH: Visual Cortex activated!");
+        RobotLog.ii("SJH", "Visual Cortex activated!");
         telemetry.update();
 
         /** Start tracking */

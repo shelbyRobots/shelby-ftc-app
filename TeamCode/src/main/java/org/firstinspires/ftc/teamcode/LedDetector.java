@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.opencv.android.OpenCVLoader;
@@ -52,7 +52,7 @@ public class LedDetector implements ImageProcessor
     {
         if (!OpenCVLoader.initDebug())
         {
-            DbgLog.error("SJH: OpenCVLoader error");
+            RobotLog.ee("SJH", "OpenCVLoader error");
         }
     }
 
@@ -116,7 +116,7 @@ public class LedDetector implements ImageProcessor
 
     public void logDebug()
     {
-        DbgLog.msg("SJH: Num LEDs: %4d", numLeds);
+        RobotLog.ii("SJH", "Num LEDs: %4d", numLeds);
     }
 
     public void setTelemetry(Telemetry telemetry)
@@ -196,7 +196,7 @@ public class LedDetector implements ImageProcessor
 
             if(skipCnt % SKIP == 0)
             {
-                DbgLog.msg("SJH : LED at %5d, %5d", ledX, ledY);
+                RobotLog.ii("SJH", "LED at %5d, %5d", ledX, ledY);
             }
         }
     }

@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cColorSensor;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -150,15 +150,18 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode
         robot.setDriveDir(ddir);
         dl.addField(ddir.toString()); dl.newLine();
 
-        turnColorOn();
+        robot.turnColorOn();
         telemetry.addData("SEG", "SWEEPER FWD " + DD);
         telemetry.update();
         encoderDrive(DRIVE_SPEED,  DD,  DD, 30.0);
-        turnColorOff();
+        robot.turnColorOff();
+        r = 0;
+        g = 0;
+        b = 0;
         telemetry.addData("SEG", "SWEEPER LFT " + TD);
         telemetry.update();
         encoderDrive(TURN_SPEED, -TD, TD, 30.0);
-        turnColorOn();
+        robot.turnColorOn();
         telemetry.addData("SEG", "SWEEPER BCK " + DD);
         telemetry.update();
         encoderDrive(DRIVE_SPEED, -DD, -DD, 30.0);
@@ -196,7 +199,7 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode
             robot.leftMotor.setTargetPosition(newLeftTarget);
             robot.rightMotor.setTargetPosition(newRightTarget);
 
-            DbgLog.msg("SJH: TGT : %7d %7d", newLeftTarget, newRightTarget);
+            RobotLog.ii("SJH", "TGT : %7d %7d", newLeftTarget, newRightTarget);
             robot.leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             robot.rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
@@ -219,7 +222,7 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode
                         telemetry.addData("ROT", "%d", robot.getGyroFhdg());
                     if(robot.colorSensor != null)
                         telemetry.addData("RGB", "RGB %3d %3d %3d", r, g, b);
-                    DbgLog.msg("SJH: Pos : %7d %7d",
+                    RobotLog.dd("SJH", "Pos : %7d %7d",
                             robot.leftMotor.getCurrentPosition(),
                             robot.rightMotor.getCurrentPosition());
                     telemetry.update();
@@ -229,7 +232,7 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode
 
             logData();
 
-            DbgLog.msg("SJH: Done: %7d %7d",
+            RobotLog.ii("SJH", "Done: %7d %7d",
                     robot.leftMotor.getCurrentPosition(),
                     robot.rightMotor.getCurrentPosition());
 
@@ -247,29 +250,6 @@ public class AutoDriveByEncoder_Linear extends LinearOpMode
             robot.leftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             robot.rightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
-    }
-
-    private void turnColorOn()
-    {
-        if(robot.colorSensor == null) return;
-        colorOn = true;
-        ModernRoboticsI2cColorSensor cs = robot.colorSensor;
-        cs.getI2cController().registerForI2cPortReadyCallback(robot.colorSensor,
-                robot.getColorPort());
-
-        cs.enableLed(true);
-    }
-
-    private void turnColorOff()
-    {
-        if(robot.colorSensor == null) return;
-        colorOn = false;
-        ModernRoboticsI2cColorSensor cs = robot.colorSensor;
-        cs.enableLed(false);
-        cs.getI2cController().deregisterForPortReadyCallback(robot.getColorPort());
-        r = 0;
-        g = 0;
-        b = 0;
     }
 
     public void logData()

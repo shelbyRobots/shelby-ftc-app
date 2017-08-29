@@ -7,7 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -43,7 +43,7 @@ public abstract class OpenCvCameraOpMode extends LinearOpMode
 //        openCVCamera.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK);
 //        if (initialized)
 //            if (!openCVCamera.connectCamera(width, height))
-//                DbgLog.error("SJH Could not initialize camera!\r\n" +
+//                RobotLog.ee("SJH", Could not initialize camera!\r\n" +
 //                              "This may occur because the OpenCV Manager is not installed,\r\n" +
 //                              "CAMERA permission is not allowed in AndroidManifest.xml,\r\n" +
 //                              "or because another app is currently locking it.");
@@ -59,7 +59,7 @@ public abstract class OpenCvCameraOpMode extends LinearOpMode
 //        openCVCamera.setMaxFrameSize((int) frameSize.width, (int) frameSize.height);
 //        if (initialized)
 //            if (!openCVCamera.connectCamera((int) frameSize.width, (int) frameSize.height))
-//                DbgLog.error("SJH: Could not initialize camera!\r\n" +
+//                RobotLog.ee("SJH", "Could not initialize camera!\r\n" +
 //                              "This may occur because the OpenCV Manager is not installed,\r\n" +
 //                              "CAMERA permission is not allowed in AndroidManifest.xml,\r\n" +
 //                              "or because another app is currently locking it.");
@@ -68,7 +68,8 @@ public abstract class OpenCvCameraOpMode extends LinearOpMode
 //        width = openCVCamera.getMeasuredWidth();
 //        height = openCVCamera.getMeasuredHeight();
 //        if (width == 0 || height == 0) {
-//            DbgLog.msg("FTCVision", "OpenCV Camera failed to initialize width and height properties on startup.\r\n" +
+//            RobotLog.ee("SJH", "OpenCV Camera failed to initialize width and height properties on startup.\r\n" +
+
 //                                       "This is generally okay, but if you use width or height during init() you may\r\n" +
 //                                       "run into a problem.");
 //        }
@@ -141,7 +142,7 @@ public abstract class OpenCvCameraOpMode extends LinearOpMode
 
         width = openCVCamera.getMeasuredWidth();
         height = openCVCamera.getMeasuredHeight();
-        DbgLog.msg("SJH: CAMERA %d x %d", width, height);
+        RobotLog.ii("SJH", "CAMERA %d x %d", width, height);
     }
 
     protected void initOpenCv()
@@ -196,13 +197,13 @@ public abstract class OpenCvCameraOpMode extends LinearOpMode
     @Override
     public void onCameraViewStarted(int width, int height)
     {
-        DbgLog.msg("SJH: CAMERA VIEW STARTED %4dx%4d", width, height);
+        RobotLog.ii("SJH", "CAMERA VIEW STARTED %4dx%4d", width, height);
     }
 
     @Override
     public void onCameraViewStopped()
     {
-        DbgLog.msg("SJH: CAMERA VIEW STOPPED");
+        RobotLog.ii("SJH", "CAMERA VIEW STOPPED");
         if(imgProc != null)
         {
             imgProc.stopSensing();

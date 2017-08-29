@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode;
 import android.graphics.Bitmap;
 import android.widget.TextView;
 
-import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -75,10 +74,6 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
             //robot.shotmotor1.setPower(0.5);
             //robot.shotmotor2.setPower(0.5);
 
-            DbgLog.msg("SJH: LMAXSPD %d", robot.leftMotor.getMaxSpeed());
-            DbgLog.msg("SJH: RMAXSPD %d", robot.rightMotor.getMaxSpeed());
-            DbgLog.msg("SJH: LSMAXSPD %d", robot.shotmotor1.getMaxSpeed());
-            DbgLog.msg("SJH: RSMAXSPD %d", robot.shotmotor2.getMaxSpeed());
             sleep(500);
 
             ElapsedTime sTimer = new ElapsedTime();
@@ -108,10 +103,10 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
                     s1cnts_last = s1cnts;
                     s2cnts_last = s2cnts;
 
-                    DbgLog.msg("SJH: %4.2f LEFT  AVG SPD %4.2f", mspdTimer.seconds(), lavgspd);
-                    DbgLog.msg("SJH: %4.2f RIGHT AVG SPD %4.2f", mspdTimer.seconds(), ravgspd);
-                    DbgLog.msg("SJH: %4.2f SHOT1 AVG SPD %4.2f", mspdTimer.seconds(), s1avgspd);
-                    DbgLog.msg("SJH: %4.2f SHOT2 AVG SPD %4.2f", mspdTimer.seconds(), s2avgspd);
+                    RobotLog.ii("SJH", "%4.2f LEFT  AVG SPD %4.2f", mspdTimer.seconds(), lavgspd);
+                    RobotLog.ii("SJH", "%4.2f RIGHT AVG SPD %4.2f", mspdTimer.seconds(), ravgspd);
+                    RobotLog.ii("SJH", "%4.2f SHOT1 AVG SPD %4.2f", mspdTimer.seconds(), s1avgspd);
+                    RobotLog.ii("SJH", "%4.2f SHOT2 AVG SPD %4.2f", mspdTimer.seconds(), s2avgspd);
 
                     sTimer.reset();
                 }
@@ -120,8 +115,8 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
             int delta_r = robot.rightMotor.getCurrentPosition() - rcnts_0;
             lavgspd = (delta_l) / mspdTimer.seconds();
             ravgspd = (delta_r) / mspdTimer.seconds();
-            DbgLog.msg("SJH: %4.2f LEFT  TOTAL AVG MAX SPD %4.2f", mspdTimer.seconds(), lavgspd);
-            DbgLog.msg("SJH: %4.2f RIGHT TOTAL AVG MAX SPD %4.2f", mspdTimer.seconds(), ravgspd);
+            RobotLog.ii("SJH", "%4.2f LEFT  TOTAL AVG MAX SPD %4.2f", mspdTimer.seconds(), lavgspd);
+            RobotLog.ii("SJH", "%4.2f RIGHT TOTAL AVG MAX SPD %4.2f", mspdTimer.seconds(), ravgspd);
         }
 
         robot.leftMotor.setPower(0.0);
@@ -166,10 +161,6 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
         hardwareMap.logDevices();
         robot.init(this);
 
-        int lms = robot.leftMotor.getMaxSpeed();
-        int rms = robot.rightMotor.getMaxSpeed();
-        DbgLog.msg("SJH: MaxSpeeds %d %d", lms, rms);
-
         tracker = new ImageTracker();
 
         doMenus();
@@ -189,7 +180,7 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
         {
             drvTrn.init(robot);
             drvTrn.setOpMode(this);
-            DbgLog.msg("SJH: Starting gyro calibration");
+            RobotLog.ii("SJH", "Starting gyro calibration");
             gyroReady = robot.calibrateGyro();
         }
 
@@ -216,7 +207,7 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
         robot.lpusher.setPosition(ZER_PUSH_POS);
 
         timer.reset();
-        DbgLog.msg("SJH Start %s. Time: %6.3f", currPoint, timer.time());
+        RobotLog.ii("SJH", "Start %s. Time: %6.3f", currPoint, timer.time());
 
         dashboard.displayPrintf(3, "PATH: Start at %s %6.3f", currPoint,
                                                               timer.seconds());
@@ -262,12 +253,12 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
 
             if(usePostTurn && pturn != null)
             {
-                DbgLog.msg("SJH POST TURN %s", curSeg.getName());
+                RobotLog.ii("SJH", "POST TURN %s", curSeg.getName());
                 doEncoderPostTurn(pturn);
                 if(gyroReady) doPostTurn(pturn);
             }
 
-            DbgLog.msg("SJH Planned pos: %s %s",
+            RobotLog.ii("SJH", "Planned pos: %s %s",
                     pathSegs[i].getTgtPt(),
                     pathSegs[i].getFieldHeading());
 
@@ -284,7 +275,7 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
                 case SCAN_IMAGE:
                     if (findSensedLoc())
                     {
-                        DbgLog.msg("SJH Sensed pos: %s %s",
+                        RobotLog.ii("SJH", "Sensed pos: %s %s",
                                 curPos, curHdg);
                     }
                     break;
@@ -332,7 +323,7 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
         double cHdg = robot.getGyroFhdg();
         double tHdg = Math.round(fHdg);
         double angle = tHdg - cHdg;
-        DbgLog.msg("SJH: doEncoderPostTurn CHDG %4.1f THDG %4.1f",
+        RobotLog.ii("SJH", "doEncoderPostTurn CHDG %4.1f THDG %4.1f",
                 cHdg,
                 tHdg);
 
@@ -340,12 +331,12 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
         while (angle >   180.0) angle -= 360.0;
         if(Math.abs(angle) <= 5.0) return;
 
-        DbgLog.msg("SJH: Turn %5.2f", angle);
+        RobotLog.ii("SJH", "Turn %5.2f", angle);
         dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
         timer.reset();
         drvTrn.ctrTurnLinear(angle, DEF_ENCTRN_PWR);
         cHdg = robot.getGyroFhdg();
-        DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f CHDG: %5.2f",
+        RobotLog.ii("SJH", "Completed turn %5.2f. Time: %6.3f CHDG: %5.2f",
                 angle, timer.time(), cHdg);
     }
 
@@ -354,7 +345,7 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
         double cHdg = robot.getGyroFhdg();
         double tHdg = seg.getFieldHeading();
         double angle = tHdg - cHdg;
-        DbgLog.msg("SJH: doEncoderTurn %s CHDG %4.1f THDG %4.1f",
+        RobotLog.ii("SJH", "doEncoderTurn %s CHDG %4.1f THDG %4.1f",
                 seg.getName(),
                 cHdg,
                 tHdg);
@@ -363,13 +354,13 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
         while (angle >   180.0) angle -= 360.0;
         if(Math.abs(angle) <= 1.0) return;
 
-        DbgLog.msg("SJH: Turn %5.2f", angle);
+        RobotLog.ii("SJH", "Turn %5.2f", angle);
         dashboard.displayPrintf(2, "STATE: %s %5.2f", "TURN", angle);
         timer.reset();
         drvTrn.ctrTurnLinear(angle,DEF_ENCTRN_PWR);
         //drvTrn.ctrTurnLinearGyro(angle,DEF_TRN_PWR);
         cHdg = robot.getGyroFhdg();
-        DbgLog.msg("SJH Completed turn %5.2f. Time: %6.3f CHDG: %5.2f",
+        RobotLog.ii("SJH", "Completed turn %5.2f. Time: %6.3f CHDG: %5.2f",
                 angle, timer.time(), cHdg);
     }
 
@@ -379,7 +370,7 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
         double cHdg = robot.getGyroFhdg();
         double tHdg = Math.round(fHdg);
 
-        DbgLog.msg("SJH: do post GyroTurn CHDG %4.1f THDG %4.1f",
+        RobotLog.ii("SJH", "do post GyroTurn CHDG %4.1f THDG %4.1f",
                 cHdg,
                 tHdg);
 
@@ -390,7 +381,7 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
         drvTrn.ctrTurnToHeading(tHdg, DEF_GYRTRN_PWR);
 
         cHdg = robot.getGyroFhdg();
-        DbgLog.msg("SJH Completed post turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
+        RobotLog.ii("SJH", "Completed post turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
                 tHdg, timer.time(), cHdg);
     }
 
@@ -399,7 +390,7 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
         double tHdg = seg.getFieldHeading();
         double cHdg = robot.getGyroFhdg();
 
-        DbgLog.msg("SJH: doGyroTurn %s CHDG %4.1f THDG %4.1f",
+        RobotLog.ii("SJH", "doGyroTurn %s CHDG %4.1f THDG %4.1f",
                 seg.getName(),
                 cHdg,
                 tHdg);
@@ -410,13 +401,13 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
         timer.reset();
         drvTrn.ctrTurnToHeading(tHdg, DEF_ENCTRN_PWR);
         cHdg = robot.getGyroFhdg();
-        DbgLog.msg("SJH Completed turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
+        RobotLog.ii("SJH", "Completed turnGyro %5.2f. Time: %6.3f CHDG: %5.2f",
                 tHdg, timer.time(), cHdg);
     }
 
     private boolean findSensedLoc()
     {
-        DbgLog.msg("SJH findSensedLoc");
+        RobotLog.ii("SJH", "findSensedLoc");
         dashboard.displayPrintf(2, "STATE: %s", "FIND IMG LOC");
         curPos = null;
         ElapsedTime itimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
@@ -441,7 +432,7 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
 
         if ( sensedBotPos != null )
         {
-            DbgLog.msg("Image based location: %s %5.2f", sensedBotPos, sensedFldHdg);
+            RobotLog.ii("SJH", "Image based location: %s %5.2f", sensedBotPos, sensedFldHdg);
             dashboard.displayPrintf(4, "SENSLOC: %s %5.2f",
                     sensedBotPos, sensedFldHdg);
         }
@@ -462,7 +453,7 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
 
     private boolean do_findBeaconOrder(boolean push)
     {
-        DbgLog.msg("SJH: FIND BEACON ORDER!!!");
+        RobotLog.ii("SJH", "FIND BEACON ORDER!!!");
         dashboard.displayPrintf(2, "STATE: %s", "BEACON FIND");
         int timeout = 1000;
         BeaconFinder.LightOrder ord = BeaconFinder.LightOrder.UNKNOWN;
@@ -488,7 +479,7 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
 
         if (ord != BeaconFinder.LightOrder.UNKNOWN)
         {
-            DbgLog.msg("SJH: Found Beacon!!! " + ord);
+            RobotLog.ii("SJH", "Found Beacon!!! " + ord);
         }
 
         if (ord == BeaconFinder.LightOrder.BLUE_RED)
@@ -514,7 +505,7 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
             }
         }
 
-        DbgLog.msg("SJH: Gonna push button " + bSide);
+        RobotLog.ii("SJH", "Gonna push button " + bSide);
         dashboard.displayPrintf(5, "BUTTON: %s", bSide);
 
         if(push)
@@ -526,22 +517,22 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
 
     private void do_pushButton(ButtonSide bside)
     {
-        DbgLog.msg("SJH: PUSH BUTTON!!!");
+        RobotLog.ii("SJH", "PUSH BUTTON!!!");
         dashboard.displayPrintf(2, "STATE: %s", "BUTTON PUSH");
         if (bside == ButtonSide.LEFT)
         {
             robot.lpusher.setPosition(LFT_PUSH_POS);
-            DbgLog.msg("SJH: Pushing left button");
+            RobotLog.ii("SJH", "Pushing left button");
         }
         else if (bside == ButtonSide.RIGHT)
         {
             robot.lpusher.setPosition(RGT_PUSH_POS);
-            DbgLog.msg("SJH: Pushing right button");
+            RobotLog.ii("SJH", "Pushing right button");
         }
         else
         {
             robot.lpusher.setPosition(CTR_PUSH_POS);
-            DbgLog.msg("SJH: Not Pushing A Button");
+            RobotLog.ii("SJH", "Not Pushing A Button");
 
         }
 
@@ -549,7 +540,7 @@ public class FtcAutoTest extends LinearOpMode implements FtcMenu.MenuButtons
 
     private void do_shoot()
     {
-        DbgLog.msg("SJH: SHOOT!!!");
+        RobotLog.ii("SJH", "SHOOT!!!");
         dashboard.displayPrintf(2, "STATE: %s", "SHOOT");
         ElapsedTime stimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
         robot.shotmotor1.setPower(DEF_SHT_PWR);

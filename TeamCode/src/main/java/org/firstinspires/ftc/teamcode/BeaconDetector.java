@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import android.graphics.Bitmap;
 import android.os.Environment;
 
-import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -92,7 +92,7 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
     static
     {
         if (!OpenCVLoader.initDebug()) {
-            DbgLog.error("SJH: OpenCVLoader error"); //Handle opencv loader issue
+            RobotLog.ee("SJH", "OpenCVLoader error"); //Handle opencv loader issue
         }
     }
 
@@ -191,7 +191,7 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
         }
         catch (Exception e)
         {
-            DbgLog.error(e.getMessage());
+            RobotLog.ee("SJH", e.getMessage());
         }
 
         String directoryPath  = Environment.getExternalStorageDirectory().getPath() +
@@ -210,7 +210,7 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
         catch (Exception e)
         {
             e.printStackTrace();
-            DbgLog.error(e.getMessage());
+            RobotLog.ee("SJH", e.getMessage());
         }
         finally
         {
@@ -219,12 +219,12 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
                 if (out != null)
                 {
                     out.close();
-                    DbgLog.msg("SJH: ImageSaved: " + fileName);
+                    RobotLog.ii("SJH", "ImageSaved: " + fileName);
                 }
             }
             catch (IOException e)
             {
-                DbgLog.error("SJH " + e.getMessage());
+                RobotLog.ee("SJH", e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -232,7 +232,7 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
 
     public void logDebug()
     {
-        DbgLog.msg("SJH: CONF: %5.2f, X: %5.2f, Z: %5.2f, RED: %s, BLUE: %s",
+        RobotLog.ii("SJH", "CONF: %5.2f, X: %5.2f, Z: %5.2f, RED: %s, BLUE: %s",
                 beaconConf,
                 beaconPosX,
                 beaconPosZ,
@@ -282,7 +282,7 @@ public class BeaconDetector implements BeaconFinder, ImageProcessor
         double rb_ratio_factor =
                 Math.pow( Range.clip( 0.4 - ( red_rt + blue_rt ) / 2, -0.4, 0.4 ) * 2.5, 2 );
 
-        //DbgLog.msg("SJH: scoreFit beac_apsect_factor %4.3f" +
+        //RobotLog.ii("SJH", "scoreFit beac_apsect_factor %4.3f" +
         //           "wb_ratio_factor %4.3f rb_ratio_factor %4.3f",
         //        beac_aspect_factor, wb_ratio_factor, rb_ratio_factor);
 

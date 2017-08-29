@@ -1,7 +1,7 @@
 
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cColorSensor;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -126,14 +126,15 @@ class ShelbyBot
 
         if(colorSensor != null)
         {
-            colorPort = colorSensor.getPort();
-            DbgLog.msg("SJH: I2C Controller version %d",
-                    colorSensor.getI2cController().getVersion());
+            //TODO: SBH - Figure out how to register/deregister if timing shows its needed
+            //colorPort = colorSensor.getPort();
+            //RobotLog.ii("SJH", "I2C Controller version %d",
+            //        colorSensor.getI2cController().getVersion());
 
-            DbgLog.msg("SJH: COLOR_SENSOR");
-            DbgLog.msg("SJH:  ConnectionInfo %s", colorSensor.getConnectionInfo());
-            DbgLog.msg("SJH:  I2cAddr %s", Integer.toHexString(colorSensor.getI2cAddress().get8Bit()));
-            DbgLog.msg("SJH:  I2cAddr %s", Integer.toHexString(colorSensor.getI2cAddress().get7Bit()));
+            RobotLog.ii("SJH", "COLOR_SENSOR");
+            RobotLog.ii("SJH", "ConnectionInfo %s", colorSensor.getConnectionInfo());
+            RobotLog.ii("SJH", "I2cAddr %s", Integer.toHexString(colorSensor.getI2cAddress().get8Bit()));
+            RobotLog.ii("SJH", "I2cAddr %s", Integer.toHexString(colorSensor.getI2cAddress().get7Bit()));
 
             colorSensor.enableLed(false);
             colorSensor.enableLed(true);
@@ -143,10 +144,10 @@ class ShelbyBot
 
         if(gyro != null)
         {
-            DbgLog.msg("SJH: GYRO_SENSOR");
-            DbgLog.msg("SJH:  ConnectionInfo %s", gyro.getConnectionInfo());
-            DbgLog.msg("SJH:  I2cAddr %s", Integer.toHexString(gyro.getI2cAddress().get8Bit()));
-            DbgLog.msg("SJH:  I2cAddr %s", Integer.toHexString(gyro.getI2cAddress().get7Bit()));
+            RobotLog.ii("SJH", "GYRO_SENSOR");
+            RobotLog.ii("SJH", "ConnectionInfo %s", gyro.getConnectionInfo());
+            RobotLog.ii("SJH", "I2cAddr %s", Integer.toHexString(gyro.getI2cAddress().get8Bit()));
+            RobotLog.ii("SJH", "I2cAddr %s", Integer.toHexString(gyro.getI2cAddress().get7Bit()));
         }
     }
 
@@ -154,7 +155,7 @@ class ShelbyBot
     {
         if(ddir == DriveDir.UNKNOWN)
         {
-            DbgLog.error("SJH: ERROR - setDriveDir UNKNOWN not allowed.  Setting SWEEPER.");
+            RobotLog.ee("SJH", "ERROR - setDriveDir UNKNOWN not allowed.  Setting SWEEPER.");
             ddir = DriveDir.SWEEPER;
         }
 
@@ -165,7 +166,7 @@ class ShelbyBot
 
         this.ddir = ddir;
 
-        DbgLog.msg("SJH: Setting Drive Direction to " + ddir);
+        RobotLog.ii("SJH", "Setting Drive Direction to " + ddir);
 
         switch (ddir)
         {
@@ -200,7 +201,7 @@ class ShelbyBot
                 outDir = DriveDir.SWEEPER; break;
         }
 
-        DbgLog.msg("SJH: Changing from %s FWD to %s FWD", inDir, outDir);
+        RobotLog.ii("SJH", "Changing from %s FWD to %s FWD", inDir, outDir);
         setDriveDir(outDir);
         return outDir;
     }
@@ -214,18 +215,18 @@ class ShelbyBot
     {
         if(gyro == null)
         {
-            DbgLog.error("SJH: NO GYRO FOUND TO CALIBRATE");
+            RobotLog.ee("SJH", "NO GYRO FOUND TO CALIBRATE");
             return false;
         }
 
         if(calibrationDriveDir == DriveDir.UNKNOWN)
         {
-            DbgLog.msg("SJH: calibrateGyro called without having set a drive Direction. " +
+            RobotLog.ii("SJH", "calibrateGyro called without having set a drive Direction. " +
                        "Defaulting to SWEEPER.");
             setDriveDir(DriveDir.SWEEPER);
         }
 
-        DbgLog.msg("SJH: Starting gyro calibration");
+        RobotLog.ii("SJH", "Starting gyro calibration");
         gyro.calibrate();
 
         double gyroInitTimout = 5.0;
@@ -238,12 +239,12 @@ class ShelbyBot
             op.sleep(50);
             if(gyroTimer.seconds() > gyroInitTimout)
             {
-                DbgLog.msg("SJH: GYRO INIT TIMED OUT!!");
+                RobotLog.ii("SJH", "GYRO INIT TIMED OUT!!");
                 gyroCalibTimedout = true;
                 break;
             }
         }
-        DbgLog.msg("SJH: Gyro calibrated in %4.2f seconds", gyroTimer.seconds());
+        RobotLog.ii("SJH", "Gyro calibrated in %4.2f seconds", gyroTimer.seconds());
 
         boolean gyroReady = !gyroCalibTimedout;
         if(gyroReady) gyro.resetZAxisIntegrator();
@@ -296,10 +297,11 @@ class ShelbyBot
 
     public void turnColorOn()
     {
-        DbgLog.msg("SJH: Turning on colorSensor LED");
+        RobotLog.ii("SJH", "Turning on colorSensor LED");
         colorEnabled = true;
-        colorSensor.getI2cController().registerForI2cPortReadyCallback(colorSensor,
-                getColorPort());
+        //TODO: SBH - Figure out how to register/deregister if timing shows its needed
+        //colorSensor.getI2cController().registerForI2cPortReadyCallback(colorSensor,
+        //        getColorPort());
 
         op.sleep(50);
         colorSensor.enableLed(true);
@@ -310,7 +312,8 @@ class ShelbyBot
         colorEnabled = false;
         colorSensor.enableLed(false);
         op.sleep(50);
-        colorSensor.getI2cController().deregisterForPortReadyCallback(getColorPort());
+        //TODO: SBH - Figure out how to register/deregister if timing shows its needed
+        //colorSensor.getI2cController().deregisterForPortReadyCallback(getColorPort());
     }
 
     DriveDir getDriveDir() { return ddir; }

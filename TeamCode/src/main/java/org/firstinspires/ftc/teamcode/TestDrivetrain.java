@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -59,7 +59,7 @@ class TestDrivetrain
     public void driveDistance(double dst, double pwr, Direction dir)
     {
         int counts = distanceToCounts(dst);
-        DbgLog.msg("SJH driveDistance: %6.2f Counts %d", dst, counts);
+        RobotLog.ii("SJH", "driveDistance: %6.2f Counts %d", dst, counts);
 
         if(dir == Direction.REVERSE)
         {
@@ -97,7 +97,7 @@ class TestDrivetrain
 
         left_drive.setPower(0.0);
         right_drive.setPower(0.0);
-        DbgLog.msg("SJH: driveDistanceLinear ldc %6d rdc %6d",
+        RobotLog.ii("SJH", "driveDistanceLinear ldc %6d rdc %6d",
                 left_drive.getCurrentPosition(),
                 right_drive.getCurrentPosition());
 
@@ -106,16 +106,16 @@ class TestDrivetrain
 
     void driveToPoint(Point2d tgtPt, double pwr, Direction dir)
     {
-        if (tgtPt == null)  DbgLog.error("SJH tgtPt null in driveToPoint");
-        if (currPt == null) DbgLog.error("SJH currPt null in driveToPoint");
+        if (tgtPt == null)  RobotLog.ee("SJH", "tgtPt null in driveToPoint");
+        if (currPt == null) RobotLog.ee("SJH", "currPt null in driveToPoint");
         double dist = currPt.distance(tgtPt);
         driveDistance(dist, pwr, dir);
     }
 
     void driveToPointLinear(Point2d tgtPt, double pwr, Direction dir, int targetHdg)
     {
-        if (tgtPt == null)  DbgLog.error("SJH tgtPt null in driveToPoint");
-        if (currPt == null) DbgLog.error("SJH currPt null in driveToPoint");
+        if (tgtPt == null)  RobotLog.ee("SJH", "tgtPt null in driveToPoint");
+        if (currPt == null) RobotLog.ee("SJH", "currPt null in driveToPoint");
 
         int tHdg = targetHdg;
 
@@ -125,7 +125,7 @@ class TestDrivetrain
         noMoveTimer.reset();
         lposLast = left_drive.getCurrentPosition();
         rposLast = right_drive.getCurrentPosition();
-        DbgLog.msg("SJH: Starting drive corrections");
+        RobotLog.ii("SJH", "Starting drive corrections");
         while(isBusy() &&
                 !areMotorsStuck() &&
                 op.opModeIsActive() &&
@@ -137,7 +137,7 @@ class TestDrivetrain
             }
             else
             {
-                DbgLog.msg("SJH: GYRO NOT READY");
+                RobotLog.ii("SJH", "GYRO NOT READY");
             }
             op.idle();
 
@@ -146,12 +146,12 @@ class TestDrivetrain
 
         left_drive.setPower(0.0);
         right_drive.setPower(0.0);
-        DbgLog.msg("SJH: ldc %6d rdc %6d",
+        RobotLog.ii("SJH", "ldc %6d rdc %6d",
                 left_drive.getCurrentPosition(),
                 right_drive.getCurrentPosition());
 
         stopAndReset();
-        DbgLog.msg("SJH: driveToPointLinear end - set currPt to %s", tgtPt);
+        RobotLog.ii("SJH", "driveToPointLinear end - set currPt to %s", tgtPt);
         currPt = tgtPt;
     }
 
@@ -168,7 +168,7 @@ class TestDrivetrain
         //left turns are positive angles
 
         int counts = angleToCounts(angle, VEH_WIDTH/2.0);
-        DbgLog.msg("SJH Angle: %5.2f Counts: %4d", angle, counts);
+        RobotLog.ii("SJH", "Angle: %5.2f Counts: %4d", angle, counts);
 
         int lft_target = left_drive.getCurrentPosition()  - counts;
         int rgt_target = right_drive.getCurrentPosition() + counts;
@@ -218,7 +218,7 @@ class TestDrivetrain
         if(ptmr.seconds() > printTimeout)
         {
             ptmr.reset();
-            DbgLog.msg("SJH: TGT %d CHDG %d ERR %d STR %4.2f L %4.2f R %4.2f",
+            RobotLog.ii("SJH", "TGT %d CHDG %d ERR %d STR %4.2f L %4.2f R %4.2f",
                     (int) hdg, getGryoFhdg(),
                     (int) error, steer, leftSpeed, rightSpeed);
         }
@@ -233,7 +233,7 @@ class TestDrivetrain
         noMoveTimer.reset();
         lposLast = left_drive.getCurrentPosition();
         rposLast = right_drive.getCurrentPosition();
-        DbgLog.msg("SJH: Starting turn corrections");
+        RobotLog.ii("SJH", "Starting turn corrections");
         while(isBusy() &&
               !areMotorsStuck() &&
               op.opModeIsActive() &&
@@ -244,7 +244,7 @@ class TestDrivetrain
             if(ptmr.seconds() > printTimeout) ptmr.reset();
         }
 
-        DbgLog.msg("SJH: ldc %6d rdc %6d",
+        RobotLog.ii("SJH", "ldc %6d rdc %6d",
                 left_drive.getCurrentPosition(),
                 right_drive.getCurrentPosition());
 
@@ -266,7 +266,7 @@ class TestDrivetrain
     {
         tgtHdg = Math.round(tgtHdg);
 
-        DbgLog.msg("SJH: GYRO TURN to HDG %d", (int)tgtHdg);
+        RobotLog.ii("SJH", "GYRO TURN to HDG %d", (int)tgtHdg);
 
         stopAndReset();
         left_drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -276,7 +276,7 @@ class TestDrivetrain
         noMoveTimer.reset();
         lposLast = left_drive.getCurrentPosition();
         rposLast = right_drive.getCurrentPosition();
-        DbgLog.msg("SJH: Starting gyro turn corrections");
+        RobotLog.ii("SJH", "Starting gyro turn corrections");
         while(!ctrTurnGyro(tgtHdg, pwr) &&
               !areMotorsStuck()         &&
               op.opModeIsActive()       &&
@@ -296,7 +296,7 @@ class TestDrivetrain
         int tgtHdg = (int)angle + curHdg;
         while(tgtHdg > 180)   tgtHdg -= 360;
         while(tgtHdg <= -180) tgtHdg += 360;
-        DbgLog.msg("SJH: GYRO TURN %d to HDG %d PASS %d", (int)angle, tgtHdg, pass);
+        RobotLog.ii("SJH", "GYRO TURN %d to HDG %d PASS %d", (int)angle, tgtHdg, pass);
 
         ctrTurn(angle, pwr);
         ptmr.reset();
@@ -304,7 +304,7 @@ class TestDrivetrain
         lposLast = left_drive.getCurrentPosition();
         rposLast = right_drive.getCurrentPosition();
         int hDiff = tgtHdg - curHdg;
-        DbgLog.msg("SJH: Starting turn corrections");
+        RobotLog.ii("SJH", "Starting turn corrections");
         while(isBusy() &&
               hDiff > TURN_TOLERANCE &&
               !areMotorsStuck() &&
@@ -317,7 +317,7 @@ class TestDrivetrain
             if(ptmr.seconds() > printTimeout) ptmr.reset();
         }
 
-        DbgLog.msg("SJH: ldc %6d rdc %6d",
+        RobotLog.ii("SJH", "ldc %6d rdc %6d",
                 left_drive.getCurrentPosition(),
                 right_drive.getCurrentPosition());
         if(pass == 0) ctrTurnLinearGyro(hDiff, pwr, 1);
@@ -378,7 +378,7 @@ class TestDrivetrain
 
     void setCurrPt(Point2d curPt)
     {
-        DbgLog.msg("SJH: setCurrPt to %s", curPt);
+        RobotLog.ii("SJH", "setCurrPt to %s", curPt);
         currPt = curPt;
     }
 
@@ -399,7 +399,7 @@ class TestDrivetrain
 
     public void init(DcMotor lft_drv, DcMotor rgt_drv, ModernRoboticsI2cGyro gyro)
     {
-        DbgLog.msg("SJH CPI: %5.2f", CPI);
+        RobotLog.ii("SJH", "CPI: %5.2f", CPI);
         frame = 0;
         left_drive  = lft_drv;
         right_drive = rgt_drv;
@@ -450,7 +450,7 @@ class TestDrivetrain
 
         if (ptmr.seconds() > printTimeout)
         {
-            DbgLog.msg("SJH %4d lpwr: %5.3f rpwr: %5.3f err: %5.3f str %5.3f rt %5.3f chdg %d thdg %d",
+            RobotLog.ii("SJH", "%4d lpwr: %5.3f rpwr: %5.3f err: %5.3f str %5.3f rt %5.3f chdg %d thdg %d",
                     frame, ldp, rdp, err, steer, rt.seconds(), getGryoFhdg(), thdg);
         }
     }
@@ -515,7 +515,7 @@ class TestDrivetrain
 
             if (ptmr.seconds() > printTimeout)
             {
-                DbgLog.msg("SJH %4d ldc: %6d rdc: %6d diff: %2d " +
+                RobotLog.ii("SJH", "%4d ldc: %6d rdc: %6d diff: %2d " +
                                 "lpwr: %5.3f rpwr: %5.3f err: %5.3f str %5.3f rt %5.3f",
                         frame, ldc, rdc, diff, ldp, rdp, err, steer, rt.seconds());
             }
@@ -557,7 +557,7 @@ class TestDrivetrain
         double ldp = left_drive.getPower();
         double rdp = right_drive.getPower();
 
-        DbgLog.msg("SJH " +
+        RobotLog.ii("SJH",
                 " ldb:" + ldb + " rdb:" + rdb +
                 " ldc:" + ldc + " rdc:" + rdc +
                 " ldp:" + ldp + " rdp:" + rdp);
@@ -579,7 +579,7 @@ class TestDrivetrain
                 if ((lp >= 0.0 && Math.abs(lposLast - lc) < noMoveThresh) ||
                     (rp >= 0.0 && Math.abs(rposLast - rc) < noMoveThresh))
                 {
-                    DbgLog.msg("SJH: MOTORS HAVE POWER BUT AREN'T MOVING - STOPPING %4.2f %4.2f",
+                    RobotLog.ii("SJH", "MOTORS HAVE POWER BUT AREN'T MOVING - STOPPING %4.2f %4.2f",
                             lp, rp);
                     return true;
                 }
@@ -600,7 +600,7 @@ class TestDrivetrain
 
         if(ptmr.seconds() > printTimeout)
         {
-            DbgLog.msg("SJH: ldc %6d rdc %6d  mptimer: %4.2f chdg %5d",
+            RobotLog.ii("SJH", "ldc %6d rdc %6d  mptimer: %4.2f chdg %5d",
                     left_drive.getCurrentPosition(),
                     right_drive.getCurrentPosition(),
                     noMoveTimer.seconds(),

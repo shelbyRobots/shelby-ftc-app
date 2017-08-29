@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -222,7 +222,7 @@ public class TeleopTank_Driver extends LinearOpMode
             lbump = gamepad2.left_bumper;
             if(lbump && !lbump_last)
             {
-                DbgLog.msg("SJH AUTOSHOOT");
+                RobotLog.ii("SJH", "AUTOSHOOT");
                 robot.shotmotor1.setPower(shoot_scale);
                 robot.shotmotor2.setPower(shoot_scale);
                 robot.sweepMotor.setPower(-1.0);
@@ -233,7 +233,7 @@ public class TeleopTank_Driver extends LinearOpMode
                 }
                 dtrn.stopAndReset();
 
-                DbgLog.msg("SJH DONE AUTOSHOOT MOVE");
+                RobotLog.ii("SJH", "DONE AUTOSHOOT MOVE");
 //                ElapsedTime stimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
 //                sleep(500);
 //                robot.sweepMotor.setPower(-1.0);
@@ -243,7 +243,7 @@ public class TeleopTank_Driver extends LinearOpMode
 //                robot.shotmotor2.setPower(0);
 //                robot.sweepMotor.setPower(0);
 //                robot.elevMotor.setPower(0);
-//                DbgLog.msg("SJH DONE AUTOSHOOT");
+//                RobotLog.ii("SJH", DONE AUTOSHOOT");
             }
             lbump_last = lbump;
 

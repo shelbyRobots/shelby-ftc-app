@@ -34,7 +34,7 @@ package org.firstinspires.ftc.teamcode;
 
 import android.graphics.Bitmap;
 
-import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.qualcomm.ftcrobotcontroller.R;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -150,7 +150,7 @@ public class ImageNav extends LinearOpMode {
         this.vuforia = ClassFactory.createVuforiaLocalizer(parameters);
         Vuforia.setFrameFormat( PIXEL_FORMAT.RGB565, true );
 
-        DbgLog.msg("SJH Vuforia LicKey: " + parameters.vuforiaLicenseKey);
+        RobotLog.ii("SJH", "Vuforia LicKey: " + parameters.vuforiaLicenseKey);
 
         ftcImages = this.vuforia.loadTrackablesFromAsset("FTC_2016-17");
         //Wheels are on blue side closest to blue corner
@@ -267,7 +267,7 @@ public class ImageNav extends LinearOpMode {
         }
         catch (InterruptedException e)
         {
-            DbgLog.msg("SJH: What is going on here");
+            RobotLog.ii("SJH", "What is going on here");
         }
 
         if(frame == null) return null;
@@ -311,7 +311,7 @@ public class ImageNav extends LinearOpMode {
         timer.reset();
 
         telemetry.addData(":", "Visual Cortex activated!");
-        DbgLog.msg("SJH: Visual Cortex activated!");
+        RobotLog.ii("SJH", "Visual Cortex activated!");
         telemetry.update();
 
         ftcImages.activate();
@@ -326,7 +326,7 @@ public class ImageNav extends LinearOpMode {
                 currPos = lastLocation.getTranslation();
                 String locStr = getLocStirng(lastLocation);
                 telemetry.addData("LOC", locStr);
-                DbgLog.msg("SJH " + locStr);
+                RobotLog.ii("SJH", locStr);
             }
 
             vuforia.setFrameQueueCapacity(10);
@@ -336,7 +336,7 @@ public class ImageNav extends LinearOpMode {
             detector.setBitmap(rgbImage);
             vuforia.setFrameQueueCapacity(0);
 
-            DbgLog.msg("SJH Beacon Color: " + detector.getLightOrder());
+            RobotLog.ii("SJH", "Beacon Color: " + detector.getLightOrder());
             telemetry.addData("Beacon Color: ", detector.getLightOrder());
 
             telemetry.update();

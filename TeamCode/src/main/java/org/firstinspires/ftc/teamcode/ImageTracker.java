@@ -2,7 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import android.graphics.Bitmap;
 
-import com.qualcomm.ftccommon.DbgLog;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.qualcomm.robotcore.util.RobotLog;
 import com.vuforia.Image;
 import com.vuforia.PIXEL_FORMAT;
@@ -62,7 +62,7 @@ public class ImageTracker
         //Set the image sets to allow getting frames from vuforia
         Vuforia.setFrameFormat( PIXEL_FORMAT.RGB565, true );
         vuforia.setFrameQueueCapacity(10);
-        DbgLog.msg("SJH Vuforia LicKey: " + parameters.vuforiaLicenseKey);
+        RobotLog.ii("SJH", "Vuforia LicKey: " + parameters.vuforiaLicenseKey);
 
         ftcImages = vuforia.loadTrackablesFromAsset("FTC_2016-17");
         //Wheels are on blue side closest to blue corner
@@ -184,7 +184,7 @@ public class ImageTracker
                 lastVisName = trackable.getName();
                 float xyz[] = robotLocationTransform.getTranslation().getData();
                 currPos = new Point2d(xyz[0]/MM_PER_INCH, xyz[1]/MM_PER_INCH);
-                DbgLog.msg("SJH Found Image " + lastVisName);
+                RobotLog.ii("SJH", "Found Image " + lastVisName);
                 currOri = Orientation.getOrientation(robotLocationTransform,
                         AxesReference.EXTRINSIC, AxesOrder.ZXY, AngleUnit.DEGREES);
                 currYaw = Double.valueOf((double)currOri.firstAngle);
@@ -253,12 +253,12 @@ public class ImageTracker
         }
         catch (InterruptedException e)
         {
-            DbgLog.error("SJH: InterruptedException in ImageTracker.getImage");
+            RobotLog.ee("SJH", "InterruptedException in ImageTracker.getImage");
         }
 
         if(frame == null)
         {
-            DbgLog.msg("SJH getImage frame null");
+            RobotLog.ii("SJH", "getImage frame null");
             return null;
         }
 
@@ -277,7 +277,7 @@ public class ImageTracker
 
         if(imgdata == null)
         {
-            DbgLog.msg("SJH imgData null");
+            RobotLog.ii("SJH", "imgData null");
             return null;
         }
 
